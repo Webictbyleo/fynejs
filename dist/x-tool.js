@@ -499,13 +499,18 @@ const XToolFramework = function () {
             const handler = (e) => {
                 let cur = e.target;
                 while (cur && cur !== root.parentElement) {
+                    if (e.cancelBubble)
+                        break;
                     const map = this._delegated.get(cur);
                     if (map) {
                         const list = map.get(e.type);
                         if (list && list.length) {
                             for (const h of [...list]) {
                                 try {
-                                    if (!this._byEl.get(cur)) {
+                                    if (h.comp && h.comp.isDestroyed) {
+                                        const i = list.indexOf(h);
+                                        if (i > -1)
+                                            list.splice(i, 1);
                                         continue;
                                     }
                                     if (!h.filter || h.filter(e)) {
@@ -524,9 +529,12 @@ const XToolFramework = function () {
                     cur = cur.parentElement;
                 }
             };
-            const events = ['click', 'input', 'change', 'keydown', 'keyup'];
-            for (const ev of events)
+            const captureEvents = ['keydown', 'keyup'];
+            const bubbleEvents = ['click', 'input', 'change'];
+            for (const ev of captureEvents)
                 root.addEventListener(ev, handler, true);
+            for (const ev of bubbleEvents)
+                root.addEventListener(ev, handler, false);
             this._delegatedRootBound = true;
         }
         _registerDelegated(element, event, entry) {
@@ -717,7 +725,6 @@ const XToolFramework = function () {
                     const currentContext = this._createMethodContext();
                     const prev = this._isInMethodExecution;
                     this._isInMethodExecution = true;
-                    console.error(`Calling method: ${methodName} with args`, args);
                     try {
                         const ctx = this._createContextProxy(undefined, undefined);
                         if (compiledWrapper) {
