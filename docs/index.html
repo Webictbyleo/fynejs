@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>X-Tool Documentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .code-bg { background: #1a1b26; }
+    .prose pre { background: #1a1b26; border-radius: 8px; }
+    .prose code:not(pre code) { 
+      background: #f1f5f9; 
+      color: #334155; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+      font-size: 0.875em;
+    }
+    /* Enhanced code blocks */
+    pre[class*='bg-gray-900'] { position: relative; }
+    .code-block { position: relative; background:#1a1b26; color:#cbd5e1; padding:1rem 1rem 1.25rem; border-radius:0.75rem; overflow:auto; box-shadow:0 1px 2px rgba(0,0,0,0.4) inset,0 0 0 1px #0f172a; }
+    .code-block::-webkit-scrollbar { height:10px; }
+    .code-block::-webkit-scrollbar-track { background:#0f172a; }
+    .code-block::-webkit-scrollbar-thumb { background:#334155; border-radius:6px; }
+    .code-block[data-lang]::before { content: attr(data-lang); position:absolute; top:0; right:0; font-size:10px; letter-spacing:.05em; background:#0f172a; color:#64748b; padding:4px 6px; border-bottom-left-radius:6px; font-weight:600; text-transform:uppercase; }
+    .copy-btn { position:absolute; top:6px; right:6px; background:rgba(255,255,255,0.06); color:#e2e8f0; font-size:11px; padding:4px 8px; border:1px solid #334155; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:4px; backdrop-filter:blur(4px); transition:all .15s ease; }
+    .copy-btn:hover { background:#1e293b; color:#fff; }
+    .copy-btn.copied { background:#059669; border-color:#047857; color:#fff; }
+    .copy-btn svg { width:14px; height:14px; }
+    @media (max-width:640px){ .code-block { font-size:13px; padding:0.75rem 0.75rem 1rem; } }
+    .code-fade { position:absolute; pointer-events:none; bottom:0; left:0; right:0; height:32px; background:linear-gradient(to bottom,rgba(26,27,38,0),#1a1b26); }
+    .code-line-numbers { counter-reset: line; }
+    .code-line-numbers code { display:block; }
+    .code-line-numbers code span { display:block; counter-increment: line; padding-left: var(--ln-pad, 0); }
+    .code-line-numbers code span::before { content: counter(line); display:inline-block; width:2ch; margin-right:12px; color:#465269; text-align:right; }
+    .dark .code-block { background:#0f172a; }
+    .dark .copy-btn { background:rgba(255,255,255,0.08); }
+    .dark .copy-btn:hover { background:#1e293b; }
+  /* Unified code block style */
+  .xt-code { background:#0f172a !important; color:#cdd6f4 !important; font-size:0.825rem; line-height:1.4; }
+  .xt-code code { color:inherit; }
+  .xt-code .copy-btn { font-size:10px; }
+    .nav-item { transition: all 0.2s ease; }
+    .nav-item:hover { transform: translateX(4px); }
+    .section-enter { animation: slideIn 0.4s ease-out; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  </style>
+  <script>
+    // Enhance code blocks: wrap, add copy button, optional language detection
+    document.addEventListener('DOMContentLoaded', () => {
+      const guessLang = (code) => {
+        const txt = code.trim();
+        if (/^</.test(txt) && /<\/?(div|span|script|component|button)/i.test(txt)) return 'html';
+        if (/\b(XTool|function|=>|const|let|var)\b/.test(txt)) return 'js';
+        if (/npm install|yarn add|pnpm add/.test(txt)) return 'bash';
+        return '';
+      };
+      document.querySelectorAll('pre > code').forEach(codeEl => {
+        const pre = codeEl.parentElement;
+        if (pre.classList.contains('enhanced')) return;
+        // Normalize classes for consistency
+        pre.classList.add('enhanced','code-block','xt-code');
+        // Remove tailwind color background modifiers to avoid inconsistency
+        pre.className = pre.className
+          .split(/\s+/)
+          .filter(c => !/^text-green|^text-blue|^text-gray-\d+$|^bg-gray-900$|^bg-slate|^text-slate/.test(c))
+          .join(' ');
+        const raw = codeEl.textContent;
+        const lang = guessLang(raw);
+        if (lang) pre.dataset.lang = lang;
+        // Line numbers if multiline & longer than 3 lines
+        const lines = raw.split(/\n/);
+        if (lines.length > 3) {
+          codeEl.innerHTML = lines.map(l => `<span>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>`).join('\n');
+          pre.classList.add('code-line-numbers');
+          pre.style.setProperty('--ln-pad', '8px');
+        }
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-btn';
+        btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16h8M8 12h8m-6 8h4a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2zm10 0h1a2 2 0 002-2V8m-6-6h-2"/></svg><span>Copy</span>';
+        btn.addEventListener('click', () => {
+          navigator.clipboard.writeText(raw).then(() => {
+            btn.classList.add('copied');
+            btn.querySelector('span').textContent = 'Copied';
+            setTimeout(() => { btn.classList.remove('copied'); btn.querySelector('span').textContent = 'Copy'; }, 1600);
+          });
+        });
+        pre.appendChild(btn);
+        const fade = document.createElement('div');
+        fade.className = 'code-fade';
+        pre.appendChild(fade);
+      });
+    });
+  </script>
+  <script src="../dist/x-tool.min.js"></script>
+  <!-- Modular demo components loader -->
+  <script src="demo-loader.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+  <!-- Main Content -->
+  <div class="flex min-h-screen" x-data="{ 
+    section: (location.hash && location.hash.slice(1)) || 'intro',
+    mobileMenuOpen: false,
+    scrollToSection(id) { 
+      if (this.section !== id) this.section = id; 
+      this.mobileMenuOpen = false;
+      if (location.hash.slice(1) !== id) {
+        // Use pushState so back/forward navigates sections
+        history.pushState(null, '', '#' + id);
+      }
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-section='${id}']`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  }">
+    
+    <!-- Mobile Menu Button -->
+    <button 
+      class="fixed top-4 left-4 z-50 md:hidden bg-white shadow-lg rounded-lg p-3"
+      x-on:click="mobileMenuOpen = !mobileMenuOpen"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-72 bg-white shadow-lg border-r border-gray-200 fixed h-full z-40 transform transition-transform overflow-y-auto"
+           x:class="{ '-translate-x-full md:translate-x-0': !mobileMenuOpen, 'translate-x-0': mobileMenuOpen }">
+      <div class="sticky top-0 h-screen">
+        <div class="p-6">
+          <div class="mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">X-Tool</h1>
+            <p class="text-sm text-gray-600 mt-1">Tiny, fast, no-build-needed UI sprinkle framework</p>
+          </div>
+          <nav class="space-y-1">
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='intro', 'text-gray-600 hover:bg-gray-50': section!=='intro' }" 
+                    x-on:click="scrollToSection('intro')">
+              Introduction
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='getting', 'text-gray-600 hover:bg-gray-50': section!=='getting' }" 
+                    x-on:click="scrollToSection('getting')">
+              Getting Started
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='directives', 'text-gray-600 hover:bg-gray-50': section!=='directives' }" 
+                    x-on:click="scrollToSection('directives')">
+              Directives
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='components', 'text-gray-600 hover:bg-gray-50': section!=='components' }" 
+                    x-on:click="scrollToSection('components')">
+              Components
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='props', 'text-gray-600 hover:bg-gray-50': section!=='props' }" 
+                    x-on:click="scrollToSection('props')">
+              Reactive Props
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='api', 'text-gray-600 hover:bg-gray-50': section!=='api' }" 
+                    x-on:click="scrollToSection('api')">
+              API Reference
+            </button>
+            <button class="nav-item w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-all" 
+                    x:class="{ 'bg-blue-100 text-blue-700 border-l-4 border-blue-500': section==='examples', 'text-gray-600 hover:bg-gray-50': section!=='examples' }" 
+                    x-on:click="scrollToSection('examples')">
+              Examples
+            </button>
+          </nav>
+          
+          <!-- Quick Links -->
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Links</h3>
+            <div class="space-y-1">
+              <a href="https://github.com/Webictbyleo/x-tool" class="flex items-center text-sm text-gray-600 hover:text-blue-600 px-3 py-1 rounded transition-colors" target="_blank">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"/></svg>
+                GitHub
+              </a>
+              <a href="../examples/" class="flex items-center text-sm text-gray-600 hover:text-blue-600 px-3 py-1 rounded transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 002 2H4a2 2 0 01-2-2V5zm3 1h6v4H5V6zm6 6H5v2h6v-2z" clip-rule="evenodd"/></svg>
+                Examples
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <!-- Main Content Area -->
+    <main class="flex-1 ml-0 md:ml-72 bg-white">
+      <div class="max-w-4xl mx-auto px-6 py-12">
+        
+        <!-- Introduction Section -->
+        <section data-section="intro" x-show="section==='intro'" class="section-enter" id="getting-started">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Introduction</h1>
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-blue-700">
+                    <strong>X-Tool</strong> is a lightweight reactive framework that brings immediate interactivity to your HTML with zero build steps.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="prose prose-lg max-w-none">
+              <p class="text-xl text-gray-600 mb-8">
+                Add reactivity to any HTML page with simple attributes. No compilation, no complex setup—just drop the script and start building. It ships with <strong>zero runtime dependencies</strong> (no external libraries required) so you can use it anywhere.
+              </p>
+
+              <!-- Download Stats -->
+              <div x-data="downloadStatsComponent()" x-init="init()" class="mb-12">
+                <div class="flex items-center gap-4 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-500">NPM Downloads:</span>
+                    <template x-if="loading">
+                      <span class="animate-pulse text-gray-400 text-sm">Loading…</span>
+                    </template>
+                    <template x-if="!loading">
+                      <div class="flex gap-3">
+                        <div class="text-center">
+                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(day)"></div>
+                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Day</div>
+                        </div>
+                        <div class="text-center">
+                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(week)"></div>
+                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Week</div>
+                        </div>
+                        <div class="text-center">
+                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(month)"></div>
+                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Month</div>
+                        </div>
+                      </div>
+                    </template>
+                    <template x-if="error">
+                      <span class="text-xs text-red-600" x-text="error"></span>
+                    </template>
+                  </div>
+                  <button x-on:click="refresh()" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100 transition disabled:opacity-40" :disabled="loading">
+                    Refresh
+                  </button>
+                  <span class="text-[10px] text-gray-400" x-text="lastUpdated ? 'Updated ' + timeAgo(lastUpdated) : ''"></span>
+                </div>
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <div>
+                  <h2 class="text-2xl font-semibold text-gray-800 mb-4">Quick Start</h2>
+                  <pre class="text-sm bg-gray-900 text-green-200 rounded-lg p-4 overflow-x-auto mb-4"><code>&lt;!-- Include (via CDN or local build) --&gt;
+&lt;script src="/dist/x-tool.min.js" defer&gt;&lt;/script&gt;
+
+&lt;!-- Use anywhere --&gt;
+&lt;div x-data="{ count: 0 }" class="p-4 border rounded"&gt;
+  &lt;h3 x-text="'Count: ' + count" class="text-lg font-medium mb-2"&gt;&lt;/h3&gt;
+  &lt;button x-on:click="count++" class="px-3 py-1 bg-blue-600 text-white rounded mr-2"&gt;+1&lt;/button&gt;
+  &lt;button x-on:click="count=0" class="px-3 py-1 bg-gray-200 rounded"&gt;Reset&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                  <p class="text-sm text-gray-600">That’s all you need. The framework auto-discovers elements with <code>x-data</code> and wires directives instantly.</p>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-semibold text-gray-800 mb-4">Features</h2>
+                  <ul class="space-y-2 text-sm text-gray-700">
+                    <li><strong>Tiny & Fast:</strong> Minimal runtime with efficient reactivity caching.</li>
+                    <li><strong>Declarative Directives:</strong> Text, HTML, show/hide, if/else, loops, model binding, events, styles, classes.</li>
+                    <li><strong>Powerful Events:</strong> Rich modifier system (keys, buttons, touch, outside, once, passive, capture, combos).</li>
+                    <li><strong>Computed & Watch:</strong> Derived state and change observers.</li>
+                    <li><strong>Lifecycle Hooks:</strong> beforeMount, mounted, updated, beforeUnmount, unmounted.</li>
+                    <li><strong>Slot & Props:</strong> Lightweight composition via component registration.</li>
+                    <li><strong>No Build Required:</strong> Works directly in the browser—enhanced builds optional.</li>
+                    <li><strong>Zero Dependencies:</strong> Ships as plain JavaScript (authored in TypeScript internally).</li>
+                    <li><strong>Plugin Friendly:</strong> Register custom directives & extend core behavior.</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
+                  <div class="text-green-600 mb-3">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                  <h3 class="font-semibold text-gray-900 mb-2">Zero Build</h3>
+                  <p class="text-sm text-gray-600">No webpack, no compilation. Works directly in the browser.</p>
+                </div>
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
+                  <div class="text-blue-600 mb-3">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15.586 13H14a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                  <h3 class="font-semibold text-gray-900 mb-2">Tiny Size</h3>
+                  <p class="text-sm text-gray-600">Minimal footprint, maximum impact. Gzipped under 8KB.</p>
+                </div>
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl">
+                  <div class="text-purple-600 mb-3">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                    </svg>
+                  </div>
+                  <h3 class="font-semibold text-gray-900 mb-2">Composable</h3>
+                  <p class="text-sm text-gray-600">Build reusable components with props and reactive data flow.</p>
+                </div>
+              </div>
+
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Core Features</h2>
+              <ul class="space-y-3 mb-8">
+                <li class="flex items-start">
+                  <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Declarative <code>x-*</code> attributes and <code>{{ }}</code> expressions</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Reusable components with slot support</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Reactive parent-child prop passing with <code>x-prop</code></span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7-293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Custom directives and extensible architecture</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Quality of life: empty <code>{{ }}</code> are ignored; escape with <code>\{{ ... }}</code></span>
+                </li>
+              </ul>
+
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Quick Example</h2>
+              <div class="bg-gray-900 text-green-400 p-6 rounded-xl text-left text-sm mb-8">
+                <div class="text-gray-400 mb-2">// Drop it in, add attributes, get reactivity</div>
+                <div><span class="text-blue-400">&lt;div</span> <span class="text-yellow-400">x-data</span>=<span class="text-green-300">"{ count: 0 }"</span><span class="text-blue-400">&gt;</span></div>
+                <div class="ml-4"><span class="text-blue-400">&lt;span</span> <span class="text-yellow-400">x-text</span>=<span class="text-green-300">"count"</span><span class="text-blue-400">&gt;&lt;/span&gt;</span></div>
+                <div class="ml-4"><span class="text-blue-400">&lt;button</span> <span class="text-yellow-400">x-on:click</span>=<span class="text-green-300">"count++"</span><span class="text-blue-400">&gt;</span>+<span class="text-blue-400">&lt;/button&gt;</span></div>
+                <div><span class="text-blue-400">&lt;/div&gt;</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Getting Started Section -->
+        <section data-section="getting" x-show="section==='getting'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Getting Started</h1>
+            
+            <div class="bg-gray-50 rounded-xl p-6 mb-8">
+              <h3 class="text-lg font-semibold mb-4">Installation</h3>
+              <div class="space-y-4">
+                <div>
+                  <h4 class="font-medium text-gray-700 mb-2">Via CDN</h4>
+                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>&lt;script src="https://unpkg.com/x-tool@latest/dist/x-tool.min.js"&gt;&lt;/script&gt;</code></pre>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-700 mb-2">Via NPM</h4>
+                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>npm install x-tool</code></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h3 class="text-xl font-semibold mb-4">Basic Example</h3>
+                <pre class="bg-gray-900 text-sm rounded-lg overflow-hidden">
+<code class="text-green-400">&lt;div x-data="{ msg: 'Hello' }"&gt;
+  &lt;h1 x-text="msg"&gt;&lt;/h1&gt;
+  &lt;button x-on:click="msg='Hi'"&gt;Change&lt;/button&gt;
+&lt;/div&gt;
+&lt;script src="/dist/x-tool.js"&gt;&lt;/script&gt;
+&lt;script&gt;XTool.init();&lt;/script&gt;</code>
+                </pre>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold mb-4">Programmatic Component</h3>
+                <pre class="bg-gray-900 text-sm rounded-lg overflow-hidden">
+<code class="text-green-400">XTool.createComponent({
+  data: { count: 0 },
+  template: `&lt;div&gt;
+    &lt;span x-text="count"&gt;&lt;/span&gt;
+    &lt;button x-on:click="count++"&gt;+1&lt;/button&gt;
+  &lt;/div&gt;`
+});</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Directives Section -->
+        <section data-section="directives" x-show="section==='directives'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Directives Reference</h1>
+            
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-8">
+              <p class="text-blue-800">
+                Directives are special attributes that tell X-Tool how to make your HTML reactive. 
+                They all start with <code class="bg-white px-2 py-1 rounded">x-</code> and each serves a specific purpose.
+              </p>
+            </div>
+
+            <div class="mb-10">
+              <h2 class="text-xl font-semibold text-gray-800 mb-4">At-a-Glance</h2>
+              <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="min-w-full text-sm">
+                  <thead class="bg-gray-50 text-gray-700 text-xs uppercase tracking-wide">
+                    <tr>
+                      <th class="px-4 py-2 text-left">Directive</th>
+                      <th class="px-4 py-2 text-left">Purpose</th>
+                      <th class="px-4 py-2 text-left">Notes / Modifiers</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 bg-white">
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-data</td>
+                      <td class="px-4 py-2">Component state scope</td>
+                      <td class="px-4 py-2">Accepts object literal or function returning state</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-text</td>
+                      <td class="px-4 py-2">Set textContent</td>
+                      <td class="px-4 py-2">Escaped, fast update</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-html</td>
+                      <td class="px-4 py-2">Set innerHTML</td>
+                      <td class="px-4 py-2">Use with trusted content only</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-show</td>
+                      <td class="px-4 py-2">Toggle visibility</td>
+                      <td class="px-4 py-2">Manipulates inline style display</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-if</td>
+                      <td class="px-4 py-2">Conditional render</td>
+                      <td class="px-4 py-2">Supports x-else / x-else-if</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-for</td>
+                      <td class="px-4 py-2">List / loop rendering</td>
+                      <td class="px-4 py-2">Provides scoped loop vars</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-model</td>
+                      <td class="px-4 py-2">Two-way binding</td>
+                      <td class="px-4 py-2">Works with inputs, selects, textarea</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-bind / :attr</td>
+                      <td class="px-4 py-2">Bind attribute/prop</td>
+                      <td class="px-4 py-2">Shorthand <code>:</code></td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-style</td>
+                      <td class="px-4 py-2">Inline style binding</td>
+                      <td class="px-4 py-2">Object or string expression</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-on / @event</td>
+                      <td class="px-4 py-2">Event listener</td>
+                      <td class="px-4 py-2">Rich modifiers (.once .prevent .stop .self .outside .passive .capture keys/buttons/touch/combos)</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x:class</td>
+                      <td class="px-4 py-2">Dynamic classes</td>
+                      <td class="px-4 py-2">Object / conditional</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-prop</td>
+                      <td class="px-4 py-2">Pass props to child component</td>
+                      <td class="px-4 py-2">Works with registered components</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-mono">x-slot</td>
+                      <td class="px-4 py-2">Named content insertion</td>
+                      <td class="px-4 py-2">Lightweight slot support</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Core Directives -->
+            <div class="space-y-8">
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Core Directives</h2>
+                </div>
+                <div class="p-6">
+                  <div class="grid gap-6">
+                    <!-- x-data -->
+                    <div class="border-l-4 border-blue-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-blue-100 text-blue-800 px-2 py-1 rounded">x-data</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Defines reactive data scope for a component.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-data="{ name: 'World', count: 0 }"&gt;
+  &lt;!-- reactive scope --&gt;
+&lt;/div&gt;</code></pre>
+                    </div>
+
+                    <!-- x-text -->
+                    <div class="border-l-4 border-green-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-green-100 text-green-800 px-2 py-1 rounded">x-text</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Sets the text content of an element.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;span x-text="name"&gt;&lt;/span&gt;
+&lt;h1 x-text="'Hello ' + name"&gt;&lt;/h1&gt;</code></pre>
+                    </div>
+
+                    <!-- x-html -->
+                    <div class="border-l-4 border-yellow-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">x-html</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Sets the innerHTML of an element. <span class="text-red-600 font-medium">Use with caution!</span></p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-html="'&lt;strong&gt;Bold&lt;/strong&gt; text'"&gt;&lt;/div&gt;</code></pre>
+                    </div>
+
+                    <!-- x-show -->
+                    <div class="border-l-4 border-purple-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-purple-100 text-purple-800 px-2 py-1 rounded">x-show</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Toggles visibility with <code>display: none</code>. Element stays in DOM.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-show="isVisible"&gt;Toggle me!&lt;/div&gt;
+&lt;button x-on:click="isVisible = !isVisible"&gt;Toggle&lt;/button&gt;</code></pre>
+                    </div>
+
+                    <!-- x-if -->
+                    <div class="border-l-4 border-red-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-red-100 text-red-800 px-2 py-1 rounded">x-if</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Conditional rendering. Element is added/removed from DOM.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-if="showContent"&gt;
+  This appears/disappears completely
+&lt;/div&gt;
+&lt;div x-else&gt;
+  Fallback content
+&lt;/div&gt;</code></pre>
+                    </div>
+
+                    <!-- x-for -->
+                    <div class="border-l-4 border-indigo-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded">x-for</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Loop through arrays or iterables to create repeated elements.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;ul&gt;
+  &lt;li x-for="(item, index) in items"&gt;
+    #\{{index}}: \{{item.name}}
+  &lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Event & Binding Directives -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Events & Binding</h2>
+                </div>
+                <div class="p-6">
+                  <div class="grid gap-6">
+                    <!-- x-on -->
+                    <div class="border-l-4 border-orange-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-orange-100 text-orange-800 px-2 py-1 rounded">x-on:event</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Event listeners with modifier support. Arrow functions allowed.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;button x-on:click="count++"&gt;Simple&lt;/button&gt;
+&lt;button x-on:click="(e) =&gt; handleClick(e)"&gt;Arrow&lt;/button&gt;
+&lt;input x-on:keyup.enter="submit()"&gt;
+&lt;div x-on:click.outside="close()"&gt;Modal&lt;/div&gt;</code></pre>
+                    </div>
+
+                    <!-- x-model -->
+                    <div class="border-l-4 border-pink-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-pink-100 text-pink-800 px-2 py-1 rounded">x-model</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Two-way data binding for form controls.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;input x-model="name" type="text"&gt;
+&lt;input x-model="agreed" type="checkbox"&gt;
+&lt;select x-model="selected"&gt;
+  &lt;option value="a"&gt;Option A&lt;/option&gt;
+&lt;/select&gt;</code></pre>
+                    </div>
+
+                    <!-- x-bind -->
+                    <div class="border-l-4 border-teal-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-teal-100 text-teal-800 px-2 py-1 rounded">x-bind:attr</code> or <code class="bg-teal-100 text-teal-800 px-2 py-1 rounded">x:attr</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Reactive attribute and property binding.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;img x-bind:src="imageUrl" x-bind:alt="imageAlt"&gt;
+&lt;div x:class="{ active: isActive, disabled: !enabled }"&gt;
+&lt;input x:disabled="isLoading"&gt;</code></pre>
+                    </div>
+
+                    <!-- x:class (special case) -->
+                    <div class="border-l-4 border-emerald-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">x:class</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Powerful class binding with string, array, and object syntax. Preserves existing classes.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;!-- Object syntax (most common) --&gt;
+&lt;div x:class="{ 'bg-blue-500': isActive, 'text-white': isActive }"&gt;
+
+&lt;!-- String syntax --&gt;
+&lt;div x:class="isActive ? 'bg-blue-500 text-white' : 'bg-gray-200'"&gt;
+
+&lt;!-- Array syntax --&gt;
+&lt;div x:class="['base-class', isActive && 'active-class']"&gt;</code></pre>
+                    </div>
+
+                    <!-- x-style -->
+                    <div class="border-l-4 border-cyan-500 pl-6">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <code class="bg-cyan-100 text-cyan-800 px-2 py-1 rounded">x-style</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Dynamic inline styles with object or string values.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-style="{ color: textColor, fontSize: size + 'px' }"&gt;
+&lt;div x-style="'background: ' + bgColor"&gt;</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Text Interpolation -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Text Interpolation</h2>
+                </div>
+                <div class="p-6">
+                  <div class="border-l-4 border-emerald-500 pl-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                      <code class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded">\{{ expression }}</code>
+                    </h3>
+                    <p class="text-gray-600 mb-3">Inline reactive text within text nodes. Empty expressions ignored.</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;p&gt;Hello \{{ name }}! You have \{{ count }} items.&lt;/p&gt;
+&lt;span&gt;Computed: \{{ price * quantity }}&lt;/span&gt;
+
+&lt;!-- Escape with backslash --&gt;
+&lt;code&gt;\{{ this shows literally }}&lt;/code&gt;</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Components Section -->
+        <section data-section="components" x-show="section==='components'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Components</h1>
+            
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 mb-8">
+              <p class="text-purple-800">
+                Build reusable, encapsulated UI pieces with reactive props, slots, and lifecycle hooks.
+                Components help you organize complex UIs into manageable, testable units.
+              </p>
+            </div>
+
+            <!-- Lifecycle Overview -->
+            <div class="bg-white border border-emerald-200 rounded-xl overflow-hidden mb-8">
+              <div class="bg-emerald-50 px-6 py-4 border-b border-emerald-200">
+                <h2 class="text-2xl font-semibold text-gray-900">Lifecycle Hooks</h2>
+              </div>
+              <div class="p-6">
+                <p class="text-gray-600 mb-4">Each component instance can tap into lifecycle hooks for setup, DOM interaction, and cleanup. Hooks run in the order shown below.</p>
+                <ol class="list-decimal list-inside space-y-1 text-sm text-gray-700 mb-4">
+                  <li><code class="bg-gray-100 px-2 py-0.5 rounded">beforeMount</code> - Component created, element not yet processed.</li>
+                  <li><code class="bg-gray-100 px-2 py-0.5 rounded">mounted</code> - Initial directives applied, element in DOM.</li>
+                  <li><code class="bg-gray-100 px-2 py-0.5 rounded">updated</code> - Runs after each reactive flush that changes DOM.</li>
+                  <li><code class="bg-gray-100 px-2 py-0.5 rounded">beforeUnmount</code> - Right before removal/cleanup.</li>
+                  <li><code class="bg-gray-100 px-2 py-0.5 rounded">unmounted</code> - After all listeners/observers detached.</li>
+                </ol>
+                <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto"><code>XTool.registerComponent({
+  name: 'timer',
+  template: `&lt;div&gt;Seconds: &lt;span x-text="secs"&gt;&lt;/span&gt;&lt;/div&gt;`,
+  makeData() { return { secs: 0, handle: null }; },
+  beforeMount() { console.log('init logic'); },
+  mounted() { this.handle = setInterval(() =&gt; { this.secs++; }, 1000); },
+  updated() { /* react to DOM updates if needed */ },
+  beforeUnmount() { clearInterval(this.handle); },
+  unmounted() { console.log('gone'); }
+});</code></pre>
+              </div>
+            </div>
+
+            <!-- Basic Component -->
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-8">
+              <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900">Basic Component Registration</h2>
+              </div>
+              <div class="p-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">Definition</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'counter',
+  template: `&lt;div class="counter"&gt;
+    &lt;span x-text="count"&gt;&lt;/span&gt;
+    &lt;button x-on:click="inc"&gt;+&lt;/button&gt;
+  &lt;/div&gt;`,
+  makeData: (props) =&gt; ({ 
+    count: Number(props.start || 0) 
+  }),
+  methods: { 
+    inc() { this.count++; } 
+  }
+});</code></pre>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">Usage</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;component source="counter" start="5"&gt;
+&lt;/component&gt;
+
+&lt;!-- Multiple instances --&gt;
+&lt;component source="counter" start="10"&gt;
+&lt;/component&gt;</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Component Features -->
+            <div class="space-y-8">
+              <!-- Slots -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Slots & Content Projection</h2>
+                </div>
+                <div class="p-6">
+                  <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3">Card Component</h3>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'card',
+  template: `&lt;div class="card"&gt;
+    &lt;header class="card-header"&gt;
+      &lt;slot name="header"&gt;&lt;/slot&gt;
+    &lt;/header&gt;
+    &lt;div class="card-body"&gt;
+      &lt;slot&gt;&lt;/slot&gt;
+    &lt;/div&gt;
+    &lt;footer class="card-footer"&gt;
+      &lt;slot name="footer"&gt;&lt;/slot&gt;
+    &lt;/footer&gt;
+  &lt;/div&gt;`
+});</code></pre>
+                    </div>
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3">Using Slots</h3>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;component source="card"&gt;
+  &lt;h4 slot="header"&gt;Card Title&lt;/h4&gt;
+  
+  &lt;p&gt;This is the main content that goes 
+  into the default slot.&lt;/p&gt;
+  
+  &lt;small slot="footer"&gt;
+    Last updated: today
+  &lt;/small&gt;
+&lt;/component&gt;</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lifecycle & Methods -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Lifecycle Hooks & Methods</h2>
+                </div>
+                <div class="p-6">
+                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'timer',
+  template: `&lt;div&gt;
+    &lt;div x-text="'Time: ' + seconds + 's'"&gt;&lt;/div&gt;
+    &lt;button x-on:click="toggle"&gt;\{{ running ? 'Pause' : 'Start' }}&lt;/button&gt;
+    &lt;button x-on:click="reset"&gt;Reset&lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () =&gt; ({ 
+    seconds: 0, 
+    running: false, 
+    interval: null 
+  }),
+
+  methods: {
+    toggle() {
+      this.running = !this.running;
+      if (this.running) {
+        this.interval = setInterval(() =&gt; this.seconds++, 1000);
+      } else {
+        clearInterval(this.interval);
+      }
+    },
+    reset() {
+      this.seconds = 0;
+      this.running = false;
+      clearInterval(this.interval);
+    }
+  },
+
+  // Lifecycle hooks
+  beforeMount() {
+    console.log('Timer about to mount');
+  },
+  mounted() {
+    console.log('Timer mounted');
+  },
+  beforeUnmount() {
+    clearInterval(this.interval);
+  },
+  unmounted() {
+    console.log('Timer cleaned up');
+  }
+});</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reactive Props Section -->
+        <section data-section="props" x-show="section==='props'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Reactive Props & Effects</h1>
+            
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-8">
+              <p class="text-green-800">
+                Pass reactive data from parent to child components using <code class="bg-white px-2 py-1 rounded">x-prop</code>. 
+                React to prop changes with <code class="bg-white px-2 py-1 rounded">propEffects</code> hooks.
+              </p>
+            </div>
+
+            <!-- x-prop Usage -->
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-8">
+              <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900">Passing Props with x-prop</h2>
+              </div>
+              <div class="p-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">Parent Component</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;div x-data="{ 
+  isOpen: false, 
+  heading: 'Settings',
+  user: { name: 'John', role: 'admin' }
+}"&gt;
+  &lt;button x-on:click="isOpen = !isOpen"&gt;
+    Toggle Panel
+  &lt;/button&gt;
+  
+  &lt;component 
+    source="panel" 
+    x-prop="{
+      open: isOpen,
+      title: heading,
+      user: user
+    }"&gt;
+    &lt;p&gt;Panel content here...&lt;/p&gt;
+  &lt;/component&gt;
+&lt;/div&gt;</code></pre>
+                  </div>
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">Child Component</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'panel',
+  template: `&lt;div x-show="open" class="panel"&gt;
+    &lt;h3 x-text="title"&gt;&lt;/h3&gt;
+    &lt;div x-text="'Welcome ' + user.name"&gt;&lt;/div&gt;
+    &lt;slot&gt;&lt;/slot&gt;
+    &lt;button x-on:click="close"&gt;Close&lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () =&gt; ({
+    // Props will be automatically added
+  }),
+  
+  methods: {
+    close() {
+      // Emit events or call parent methods
+      this.$props.open = false;
+    }
+  }
+});</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- propEffects -->
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-8">
+              <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-900">Prop Change Reactions with propEffects</h2>
+              </div>
+              <div class="p-6">
+                <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'notification',
+  template: `&lt;div x-show="visible" 
+                  x-bind:class="'alert alert-' + type"&gt;
+    &lt;span x-text="message"&gt;&lt;/span&gt;
+    &lt;button x-on:click="hide"&gt;×&lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () =&gt; ({
+    visible: false,
+    autoHideTimeout: null
+  }),
+
+  // React to specific prop changes
+  propEffects: {
+    message(newMessage, oldMessage) {
+      if (newMessage && newMessage !== oldMessage) {
+        this.visible = true;
+        this.scheduleAutoHide();
+      }
+    },
+    
+    type(newType) {
+      console.log(`Notification type changed to: ${newType}`);
+    },
+    
+    autoHide(shouldAutoHide) {
+      if (shouldAutoHide) {
+        this.scheduleAutoHide();
+      } else {
+        clearTimeout(this.autoHideTimeout);
+      }
+    }
+  },
+
+  methods: {
+    hide() {
+      this.visible = false;
+      clearTimeout(this.autoHideTimeout);
+    },
+    
+    scheduleAutoHide() {
+      clearTimeout(this.autoHideTimeout);
+      if (this.autoHide) {
+        this.autoHideTimeout = setTimeout(() =&gt; {
+          this.hide();
+        }, 3000);
+      }
+    }
+  },
+
+  beforeUnmount() {
+    clearTimeout(this.autoHideTimeout);
+  }
+});</code></pre>
+                <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p class="text-sm text-blue-800">
+                    <strong>Note:</strong> <code>propEffects</code> only fire for parent-driven prop changes via <code>x-prop</code>. 
+                    For other reactive needs, use the optional <code>watch()</code> function from extras.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+  <!-- API Reference Section -->
+        <section data-section="api" x-show="section==='api'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">API Reference</h1>
+            
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6 mb-8">
+              <p class="text-gray-800">
+                Complete reference for X-Tool's JavaScript API, initialization options, and advanced features.
+              </p>
+            </div>
+
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-6 mb-10">
+              <h2 class="text-xl font-semibold text-indigo-900 mb-2">Plugins & Extensions</h2>
+              <p class="text-indigo-800 text-sm mb-3">Extend X-Tool by registering custom directives or adding utilities—no fork required.</p>
+              <ul class="text-xs text-indigo-700 space-y-1 mb-4 list-disc list-inside">
+                <li><strong>Custom Directives:</strong> <code>XTool.directive(name, { bind, update, unbind })</code></li>
+              </ul>
+              <pre class="bg-gray-900 text-green-300 p-4 rounded-lg text-xs overflow-x-auto"><code>// Directive example
+XTool.directive('focus', {
+  bind(el) { el.focus(); },
+  update(el, value) { if (value) el.focus(); },
+  unbind() {}
+});
+// &lt;input x-focus="isActive" /&gt;</code></pre>
+            </div>
+
+              <!-- Global API -->
+              <div class="space-y-8">
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-900">Core API Methods</h2>
+                  </div>
+                  <div class="p-6 space-y-6">
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3">
+                        <code class="bg-blue-100 text-blue-800 px-3 py-1 rounded">XTool.init(options?)</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Initialize X-Tool and start processing directives in the DOM.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>// Basic initialization
+XTool.init();
+
+// With options
+XTool.init({
+  container: 'body',           // Root element selector (default: 'body')
+  prefix: 'x',                 // Directive prefix (default: 'x')
+  debug: false,                // Enable debug logging
+  staticDirectives: true       // Optimize static directive performance
+});</code></pre>
+                    </div>
+
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3">
+                        <code class="bg-green-100 text-green-800 px-3 py-1 rounded">XTool.registerComponent(definition)</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Register a reusable component that can be used with <code>&lt;component&gt;</code> elements.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>XTool.registerComponent({
+  name: 'my-component',        // Required: component name
+  template: '&lt;div&gt;...&lt;/div&gt;',     // Required: HTML template string or selector
+  makeData: (props) =&gt; ({}),   // Optional: data factory function
+  methods: {                   // Optional: component methods
+    doSomething() { /* */ }
+  },
+  computed: {                  // Optional: computed properties
+    fullName() { return this.first + ' ' + this.last; }
+  },
+  propEffects: {               // Optional: prop change handlers
+    value(newVal, oldVal) { /* react to prop changes */ }
+  },
+  // Lifecycle hooks (all optional)
+  beforeMount() { /* before DOM insertion */ },
+  mounted() { /* after DOM insertion */ },
+  updated() { /* after reactive update */ },
+  beforeUnmount() { /* before removal */ },
+  unmounted() { /* after cleanup */ }
+});</code></pre>
+                    </div>
+
+                    <div>
+                      <h3 class="text-lg font-semibold mb-3">
+                        <code class="bg-purple-100 text-purple-800 px-3 py-1 rounded">XTool.directive(name, definition)</code>
+                      </h3>
+                      <p class="text-gray-600 mb-3">Register custom directives to extend X-Tool's functionality.</p>
+                      <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>// Custom directive example
+XTool.directive('tooltip', {
+  bind(element, value, expression, component, modifiers, evaluator) {
+    // Called when directive is first bound
+    element.title = value;
+    element.style.position = 'relative';
+  },
+  
+  update(element, value, expression, component, modifiers, evaluator) {
+    // Called when the bound value changes
+    element.title = value;
+  },
+  
+  unbind(element, component) {
+    // Called when directive is removed (cleanup)
+    element.removeAttribute('title');
+  }
+});
+
+// Usage: &lt;div x-tooltip="'Hover message'"&gt;&lt;/div&gt;
+
+// Advanced directive with modifiers
+XTool.directive('animate', {
+  bind(element, value, expression, component, modifiers) {
+    const duration = modifiers?.duration || 300;
+    const easing = modifiers?.ease || 'ease-in-out';
+    
+    element.style.transition = `all ${duration}ms ${easing}`;
+    if (value) element.classList.add(value);
+  },
+  
+  update(element, value) {
+    // Toggle animation class
+    element.classList.toggle(value, !!value);
+  }
+});
+
+// Usage: &lt;div x-animate.duration.500.ease="'fade-in'"&gt;&lt;/div&gt;</code></pre>
+                      <div class="mt-4 p-4 bg-amber-50 rounded-lg">
+                        <p class="text-sm text-amber-800">
+                          <strong>Note:</strong> Custom directive names must NOT start with <code>x-</code> (reserved for built-ins). 
+                          The framework automatically handles the <code>x-</code> prefix when processing directives.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              <!-- Advanced Features -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Advanced Features & Optimizations</h2>
+                  <p class="text-sm text-gray-600 mt-2">What makes X-Tool powerful yet lightweight</p>
+                </div>
+                <div class="p-6 space-y-6">
+                  <!-- Template System -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">🎯 Flexible Template System</h3>
+                    <p class="text-gray-600 mb-3">X-Tool supports multiple template sources for maximum flexibility:</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>// HTML string template
+template: '&lt;div x-text="message"&gt;&lt;/div&gt;'
+
+// Element selector (any element, not just &lt;template&gt;)
+template: '#my-template'       // Uses element with id="my-template"
+template: '.template-class'    // Uses first element with class
+
+// Special behavior:
+// - &lt;template&gt; elements: Content is cloned for new instances
+// - Other elements: Original element is used directly (replacement)
+// - Template elements are automatically skipped during rendering</code></pre>
+                  </div>
+
+                  <!-- Text Interpolation -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">💬 Enhanced Text Interpolation</h3>
+                    <p class="text-gray-600 mb-3">Smart mustache syntax with escape support:</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;!-- Basic interpolation --&gt;
+&lt;p&gt;Hello \{{ name }}!&lt;/p&gt;
+
+&lt;!-- Empty expressions are ignored --&gt;
+&lt;p&gt;\{{ }} This won't cause errors&lt;/p&gt;
+
+&lt;!-- Escape with backslash to render literally --&gt;
+&lt;p&gt;\{{ this will show as literal mustaches }}&lt;/p&gt;
+
+&lt;!-- Complex expressions --&gt;
+&lt;p&gt;\{{ user.name.toUpperCase() }} (\{{ items.length }} items)&lt;/p&gt;</code></pre>
+                  </div>
+
+                  <!-- Performance Optimizations -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">⚡ Performance Optimizations</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <ul class="list-disc pl-6 space-y-2 text-gray-600 text-sm">
+                        <li><strong>Expression Caching:</strong> Compiled expressions cached to avoid recompilation</li>
+                        <li><strong>Context Caching:</strong> Method contexts cached to reduce proxy recreation</li>
+                        <li><strong>Selective Parsing:</strong> Skips parsing inside &lt;pre&gt; and &lt;code&gt; blocks</li>
+                        <li><strong>Component Boundaries:</strong> Respects x-data boundaries to avoid duplicate processing</li>
+                      </ul>
+                      <ul class="list-disc pl-6 space-y-2 text-gray-600 text-sm">
+                        <li><strong>Class Optimization:</strong> Initial class sets cached for efficient class binding</li>
+                        <li><strong>Batched Updates:</strong> Reactive updates batched using microtasks</li>
+                        <li><strong>Equality Checks:</strong> Short-circuits updates when values unchanged</li>
+                        <li><strong>Static Directives:</strong> One-time directive evaluation for static content</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <!-- Memory Management -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">🧹 Automatic Memory Management</h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <ul class="list-disc pl-6 space-y-2 text-gray-600 text-sm">
+                        <li><strong>Cleanup Functions:</strong> Automatic tracking and cleanup of resources</li>
+                        <li><strong>Event Listeners:</strong> All listeners tracked and removed on unmount</li>
+                        <li><strong>Component Hierarchy:</strong> Parent-child relationships for proper cleanup order</li>
+                      </ul>
+                      <ul class="list-disc pl-6 space-y-2 text-gray-600 text-sm">
+                        <li><strong>DOM Observers:</strong> Components destroyed when removed from DOM</li>
+                        <li><strong>Effect Disposal:</strong> Reactive effects properly disposed during cleanup</li>
+                        <li><strong>WeakMap Usage:</strong> Prevents memory leaks in element associations</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <!-- Size & Bundle -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">📦 Remarkably Compact</h3>
+                    <div class="bg-gradient-to-r from-green-50 to-blue-50 p-6 rounded-lg border border-green-200">
+                      <p class="text-gray-800 mb-4 font-medium">
+                        🚀 <strong>Enterprise Features, Minimal Footprint:</strong>
+                      </p>
+                      <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <ul class="list-disc pl-6 space-y-1 text-gray-700">
+                          <li>Complete reactive system with computed properties</li>
+                          <li>Full component architecture with lifecycle hooks</li>
+                          <li>Comprehensive directive system + custom directives</li>
+                          <li>Advanced event handling with 15+ modifier types</li>
+                        </ul>
+                        <ul class="list-disc pl-6 space-y-1 text-gray-700">
+                          <li>Template system with slot support and prop reactivity</li>
+                          <li>Smart text interpolation with escape sequences</li>
+                          <li>Performance optimizations throughout</li>
+                          <li>Automatic memory management and cleanup</li>
+                        </ul>
+                      </div>
+                      <p class="text-gray-800 mt-4 text-sm font-medium">
+                        💎 Delivered as a single optimized JavaScript file.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Optional Extras -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Optional Extras</h2>
+                  <p class="text-sm text-gray-600 mt-2">Extended features available when needed (not part of core API)</p>
+                </div>
+                <div class="p-6 space-y-6">
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">
+                      <code class="bg-orange-100 text-orange-800 px-3 py-1 rounded">XTool.createComponent(definition)</code>
+                    </h3>
+                    <p class="text-gray-600 mb-3">Create and mount component instances programmatically (alternative to registerComponent).</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>const instance = XTool.createComponent({
+  data: { message: 'Hello' },
+  template: '&lt;div x-text="message"&gt;&lt;/div&gt;'
+});
+
+// Mount to DOM
+document.body.appendChild(instance.element);</code></pre>
+                  </div>
+
+                  <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                      <strong>Note:</strong> Optional features like standalone reactive objects, watchers, and computed values 
+                      may be available in future extensions. The core X-Tool API focuses on the three essential methods 
+                      (init, registerComponent, directive) for maximum simplicity and minimal bundle size.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Event Modifiers -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-2xl font-semibold text-gray-900">Event Modifiers</h2>
+                </div>
+                <div class="p-6">
+                  <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 class="font-semibold mb-3">Action Modifiers</h3>
+                      <ul class="space-y-2 text-sm">
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.prevent</code> - preventDefault()</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.stop</code> - stopPropagation()</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.once</code> - Run only once</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.self</code> - Only if event.target is element</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.outside</code> - Trigger when click/touch occurs outside element</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.passive</code> - Adds listener with <code>passive:true</code></li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.capture</code> - Use capture phase</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 class="font-semibold mb-3">Key Modifiers</h3>
+                      <ul class="space-y-2 text-sm">
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.enter</code> - Enter key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.escape</code> - Escape key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.space</code> - Spacebar</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.tab</code> - Tab key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.backspace</code> - Backspace</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.delete</code> - Delete key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.home</code> - Home key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.end</code> - End key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.pageup</code> - PageUp key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.pagedown</code> - PageDown key</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.ctrl</code> - Ctrl key combo</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.shift</code> - Shift key combo</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="mt-4">
+                    <h3 class="font-semibold mb-3">Complete Modifier Reference</h3>
+                    <div class="grid md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <h4 class="font-medium text-gray-800 mb-2">Action Modifiers</h4>
+                        <ul class="space-y-1">
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.prevent</code> - preventDefault()</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.stop</code> - stopPropagation()</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.once</code> - Run only once</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.self</code> - Only if event.target is element</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.outside</code> - Outside element event</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.passive</code> - Passive listener</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.capture</code> - Capture phase</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 class="font-medium text-gray-800 mb-2">Key Modifiers</h4>
+                        <ul class="space-y-1">
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.enter</code> - Enter key</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.escape</code> / <code>.esc</code> - Escape key</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.space</code> - Spacebar</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.tab</code> - Tab key</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.backspace</code> - Backspace</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.delete</code> / <code>.del</code> - Delete</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.home</code> - Home</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.end</code> - End</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.pageup</code> - PageUp</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.pagedown</code> - PageDown</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 class="font-medium text-gray-800 mb-2">Combo Modifiers</h4>
+                        <ul class="space-y-1">
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.ctrl</code> - Ctrl key combo</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.shift</code> - Shift key combo</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.alt</code> - Alt key combo</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.meta</code> - Meta/Cmd key combo</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.alt</code> - Alt key combo</li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="mt-4">
+                      <h4 class="font-medium text-gray-800 mb-2">Arrow Key Aliases</h4>
+                      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.up</code> / <code>.arrowup</code></span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.down</code> / <code>.arrowdown</code></span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.left</code> / <code>.arrowleft</code></span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.right</code> / <code>.arrowright</code></span>
+                      </div>
+                    </div>
+                    <div class="mt-4">
+                      <h4 class="font-medium text-gray-800 mb-2">Mouse Button Modifiers</h4>
+                      <div class="grid grid-cols-3 gap-2 text-sm">
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.left</code> - Left mouse button</span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.middle</code> - Middle mouse button</span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.right</code> - Right mouse button</span>
+                      </div>
+                    </div>
+                    <div class="mt-4">
+                      <h4 class="font-medium text-gray-800 mb-2">Touch Modifiers</h4>
+                      <div class="grid grid-cols-2 gap-2 text-sm">
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.single</code> - Single touch point</span>
+                        <span><code class="bg-gray-100 px-2 py-1 rounded">.multi</code> - Multiple touch points</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mt-6">
+                    <h3 class="font-semibold mb-3">Advanced Examples</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;!-- Combo modifiers --&gt;
+&lt;input x-on:keyup.ctrl.enter="submitForm"&gt;
+&lt;div x-on:keydown.ctrl.shift.s="saveAs"&gt;
+
+&lt;!-- Multiple modifiers --&gt;
+&lt;button x-on:click.prevent.stop.once="handleClick"&gt;
+
+&lt;!-- Arrow key navigation --&gt;
+&lt;div x-on:keydown.up="moveUp" x-on:keydown.down="moveDown"&gt;
+
+&lt;!-- Mouse button specific --&gt;
+&lt;div x-on:mousedown.right.prevent="showContextMenu"&gt;
+
+&lt;!-- Outside click (closes when clicking elsewhere) --&gt;
+&lt;div x-data="{ open: true }" class="relative"&gt;
+  &lt;button x-on:click="open=!open" class="px-2 py-1 bg-gray-200 rounded"&gt;Toggle&lt;/button&gt;
+  &lt;div x-show="open" x-on:click.outside="open=false" class="absolute top-full left-0 mt-1 bg-white border p-2 rounded shadow"&gt;Menu&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Passive/capture example (wheel passive, capture for early keydown) --&gt;
+&lt;div x-on:wheel.passive="handleWheel" x-on:keydown.capture.ctrl.s.prevent="save" tabindex="0" class="p-2 border rounded"&gt;Scrollable Area&lt;/div&gt;
+
+&lt;!-- Touch events --&gt;
+&lt;div x-on:touchstart.single="handleSingleTouch" 
+     x-on:touchstart.multi="handleMultiTouch"&gt;</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- Live Examples Section -->
+        <section data-section="examples" x-show="section==='examples'" class="section-enter">
+          <div class="mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-6">Advanced Live Examples</h1>
+            
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-6 mb-8">
+              <p class="text-indigo-800">
+                <strong>🚀 Pushing X-Tool to its limits!</strong> These advanced examples showcase the full power and flexibility 
+                of X-Tool's reactive system, component architecture, and directive capabilities.
+              </p>
+            </div>
+
+            <!-- Quick Simple Examples -->
+            <div class="grid md:grid-cols-2 gap-6 mb-12">
+              <!-- Simple Counter -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h3 class="font-semibold text-gray-900">Simple Counter</h3>
+                </div>
+                <div class="p-4" x-data="{ count: 0 }">
+                  <div class="text-center">
+                    <div class="text-3xl font-bold text-gray-900 mb-4" x-text="count"></div>
+                    <div class="flex justify-center gap-2">
+                      <button x-on:click="count--" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">-</button>
+                      <button x-on:click="count = 0" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">Reset</button>
+                      <button x-on:click="count++" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dynamic Class Demo -->
+              <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h3 class="font-semibold text-gray-900">Dynamic Classes</h3>
+                </div>
+                <div class="p-4" x-data="{ theme: 'blue', size: 'md' }">
+                  <div 
+                    x:class="{ 
+                      'bg-blue-100 border-blue-300 text-blue-800': theme === 'blue',
+                      'bg-green-100 border-green-300 text-green-800': theme === 'green',
+                      'bg-red-100 border-red-300 text-red-800': theme === 'red',
+                      'p-2 text-sm': size === 'sm',
+                      'p-4 text-base': size === 'md',
+                      'p-6 text-lg': size === 'lg'
+                    }"
+                    class="border-2 rounded-lg text-center font-medium transition-all">
+                    Dynamic styling with x:class
+                  </div>
+                  <div class="mt-4 space-y-2">
+                    <div class="flex gap-2">
+                      <button x-for="color in ['blue', 'green', 'red']" 
+                              x-on:click="theme = color"
+                              x:class="{ 'bg-gray-800 text-white': theme === color, 'bg-gray-200': theme !== color }"
+                              class="px-3 py-1 rounded text-sm transition-colors"
+                              x-text="color">
+                      </button>
+                    </div>
+                    <div class="flex gap-2">
+                      <button x-for="s in ['sm', 'md', 'lg']" 
+                              x-on:click="size = s"
+                              x:class="{ 'bg-gray-800 text-white': size === s, 'bg-gray-200': size !== s }"
+                              class="px-3 py-1 rounded text-sm transition-colors"
+                              x-text="s.toUpperCase()">
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dynamic Component Showcase (New) -->
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-10"
+                 x-data="{
+                   selected: 'advanced-todo',
+                   items: {
+                     'advanced-todo': { title: '🏆 Advanced Todo', desc: 'Local storage, filters, animations', badge:'blue' },
+                     'data-chart': { title: '📊 Data Chart', desc: 'SVG charts & interactions', badge:'green' },
+                     'advanced-form': { title: '📝 Multi-Step Form', desc: 'Validation & UX patterns', badge:'purple' },
+                     'search-demo': { title: '🔍 Realtime Search', desc: 'Debounce & filtering', badge:'yellow' },
+                     'shopping-cart': { title: '🛒 Shopping Cart', desc: 'Dynamic totals & inventory', badge:'red'},
+                     'markdown-editor': { title: '🖋️ Markdown Editor', desc: 'Live preview & formatting', badge:'indigo'},
+                     'kanban-board': { title: '📋 Kanban Board', desc: 'Drag & drop tasks', badge:'teal'},
+                     'advanced-calculator': { title: '🧮 Advanced Calculator', desc: 'Expression parsing', badge:'rose'},
+                     'large-list-demo': { title: '📃 Large List Demo', desc: 'Virtual scrolling', badge:'slate'},
+                     'realtime-dashboard': { title: '📈 Realtime Dashboard', desc: 'WebSocket data updates', badge:'emerald'}
+                   }
+                 }">
+              <div class="bg-gradient-to-r from-indigo-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h2 class="text-xl font-semibold text-gray-900">🔥 Dynamic Component Showcase</h2>
+                    <p class="text-sm text-gray-600">Switch components live via changing the <code>source</code> attribute.</p>
+                  </div>
+                  <span class="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700">Live Swap</span>
+                </div>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <button x-for="(meta, key) in items"
+                          x-on:click="selected = key"
+                          x:class="{ 'bg-indigo-600 text-white shadow': selected===key, 'bg-white text-gray-700 hover:bg-gray-50': selected!==key }"
+                          class="px-3 py-1.5 rounded-lg text-sm border border-gray-200 transition">
+                    <span x-text="meta.title"></span>
+                  </button>
+                </div>
+              </div>
+              <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div class="text-sm text-gray-700" x-text="items[selected].desc"></div>
+              </div>
+              <div class="p-6">
+                <component x:source="selected"></component>
+                <div class="mt-6 text-xs text-gray-600">
+                  <div class="font-mono bg-gray-900 text-green-400 p-3 rounded">&lt;component source="<span class="text-yellow-300" x-text="selected"></span>"&gt;&lt;/component&gt;</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Switcher (New) -->
+            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-12"
+                 x-data="{
+                   sel: 'virtual-log-stream',
+                   demos: {
+                     'virtual-log-stream': { title:'🧪 Virtual Log Stream', note:'Windowed rendering over capped buffer', tag:'blue' },
+                     'order-book-ticker': { title:'💹 Order Book Ticker', note:'Market depth updates', tag:'emerald' },
+                     'json-tree-explorer': { title:'🌲 JSON Tree Explorer', note:'Lazy-expand large JSON', tag:'slate' },
+                     'network-graph-mini': { title:'🕸️ Network Graph Mini', note:'Light force simulation', tag:'indigo' },
+                     'timeseries-resampler': { title:'⏱️ Timeseries Resampler', note:'Downsampling & aggregation', tag:'rose' }
+                   }
+                 }">
+              <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">⚡ High-performance Demos (Dynamic)</h2>
+                <p class="text-sm text-gray-600 mt-1">Stress-test reactivity; swap workloads on the fly.</p>
+                <div class="mt-4 flex flex-wrap gap-2">
+                  <button x-for="(meta, key) in demos"
+                          x-on:click="sel = key"
+                          x:class="{ 'bg-gray-900 text-white': sel===key, 'bg-white text-gray-700 hover:bg-gray-50': sel!==key }"
+                          class="px-3 py-1.5 rounded-lg text-sm border border-gray-200 transition">
+                    <span x-text="meta.title"></span>
+                  </button>
+                </div>
+              </div>
+              <div class="p-6">
+                <component x:source="sel"></component>
+                <div class="mt-4 text-sm text-gray-600" x-text="demos[sel].note"></div>
+              </div>
+            </div>
+
+           
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Mobile Overlay -->
+    <div x-show="mobileMenuOpen" 
+         x-on:click="mobileMenuOpen = false"
+         class="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden">
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12">
+    <div class="container mx-auto px-6 text-center">
+      <div class="mb-8">
+        <h3 class="text-2xl font-bold mb-4">Ready to get started?</h3>
+        <p class="text-gray-300 mb-6">Add reactivity to your HTML in seconds, no build step required.</p>
+        <div class="flex justify-center gap-4">
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+                  x-on:click="navigator.clipboard.writeText('&lt;script src=&quot;https://unpkg.com/x-tool@latest/dist/x-tool.min.js&quot;&gt;&lt;/script&gt;'); alert('Script tag copied!')">
+            Copy Script Tag
+          </button>
+          <a href="https://github.com/Webictbyleo/x-tool" 
+             class="border border-gray-400 text-gray-300 hover:text-white hover:border-white px-6 py-3 rounded-lg font-semibold transition-colors"
+             target="_blank">
+            View on GitHub
+          </a>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 pt-8">
+        <p class="text-gray-400 text-sm">
+          Built with ❤️ for developers who value simplicity. 
+          <a href="https://github.com/Webictbyleo/x-tool" class="text-blue-400 hover:text-blue-300">Open source</a> and MIT licensed.
+        </p>
+      </div>
+    </div>
+  </footer>
+  <script>
+    function downloadStatsComponent() {
+      return {
+        loading: true,
+        error: '',
+        day: 0,
+        week: 0,
+        month: 0,
+        lastUpdated: null,
+        cacheTTL: 5 * 60 * 1000, // 5 minutes
+        formatNumber(n) {
+          if (n > 1_000_000) return (n/1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+          if (n > 1_000) return (n/1_000).toFixed(1).replace(/\.0$/, '') + 'k';
+          return n.toLocaleString();
+        },
+        timeAgo(ts) {
+          const diff = Date.now() - ts;
+          if (diff < 60_000) return 'just now';
+            const mins = Math.floor(diff/60_000); if (mins < 60) return mins + 'm ago';
+            const hrs = Math.floor(mins/60); if (hrs < 24) return hrs + 'h ago';
+            const days = Math.floor(hrs/24); return days + 'd ago';
+        },
+        init() { this.loadCached(); this.fetchAll(); },
+        loadCached() {
+          try {
+            const raw = localStorage.getItem('xtool_dl_stats');
+            if (!raw) return;
+            const data = JSON.parse(raw);
+            if (Date.now() - data.fetched > this.cacheTTL) return; // expired
+            this.day = data.day; this.week = data.week; this.month = data.month; this.lastUpdated = data.fetched; this.loading = false;
+          } catch {}
+        },
+        persist() {
+          try { localStorage.setItem('xtool_dl_stats', JSON.stringify({ day:this.day, week:this.week, month:this.month, fetched: Date.now() })); } catch {}
+        },
+        async fetchAll() {
+          this.loading = true; this.error='';
+          try {
+            const [dayRes, weekRes, monthRes] = await Promise.all([
+              fetch('https://api.npmjs.org/downloads/point/last-day/x-tool'),
+              fetch('https://api.npmjs.org/downloads/point/last-week/x-tool'),
+              fetch('https://api.npmjs.org/downloads/point/last-month/x-tool')
+            ]);
+            if (!dayRes.ok || !weekRes.ok || !monthRes.ok) throw new Error('Failed');
+            const [dayJson, weekJson, monthJson] = await Promise.all([dayRes.json(), weekRes.json(), monthRes.json()]);
+            this.day = dayJson.downloads || 0;
+            this.week = weekJson.downloads || 0;
+            this.month = monthJson.downloads || 0;
+            this.lastUpdated = Date.now();
+            this.persist();
+          } catch (e) {
+            this.error = 'Unable to load stats';
+          } finally {
+            this.loading = false;
+          }
+        },
+        refresh() { this.fetchAll(); }
+      };
+    }
+  </script>
+</body>
+</html>
