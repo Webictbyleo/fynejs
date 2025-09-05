@@ -294,11 +294,6 @@ XTool.registerComponent({ name, data, methods, computed, propEffects, template, 
 XTool.init({ prefix: 'u' }); // use u-data, u-text, u-on:click, ...
 ```
 
-## Using the docs
-
-Open `docs/index.html` directly, or enable GitHub Pages in this repo:
-- Settings → Pages → Build and deployment → Source: `Deploy from a branch` → Branch: `main` → Folder: `/docs`
-- Your site will be served at: `https://<your-username>.github.io/fynejs/`
 
 ## Contributing
 
