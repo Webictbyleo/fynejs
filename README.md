@@ -1,28 +1,21 @@
 # FyneJS
 
-Browser-ready distribution of the X-Tool framework with a simple docs site. This repo only contains:
+Browser-ready distribution of X-Tool. This repo contains only:
 
-- `dist/` – the standalone browser build(s) + type declarations
-- `docs/` – examples you can host via GitHub Pages (enable Pages: branch `main`, folder `/docs`)
+- `dist/` – standalone browser builds and `types.d.ts`
+- `docs/` – examples you can host via GitHub Pages (branch `main`, folder `/docs`)
 
-If you want full source, tests, and development tooling, see the main X-Tool repo.
+## X-Tool at a glance
 
-## What is X-Tool?
-
-X-Tool is a tiny reactive DOM framework in the spirit of Alpine.js/Vue’s template syntax. It gives you:
-
-- Declarative directives: `x-text`, `x-html`, `x-show`, `x-if` (+ `x-else[-if]`), `x-for`, `x-model`, `x-on:*`, `x-bind:*`, `x-style`, `x-transition`
-- Components with props and slots via `<component source="name" x-prop="{...}">`
-- Computed values, effects, and a robust cleanup model
-- Auto-discovery with `x-data` (no explicit mount required)
-
-New in this distribution
-- `$nextTick()` utility for post-render work
-- `x-transition` directive (CSS class-based enter/leave transitions)
-- Fine-grained computed invalidation (fewer unnecessary recomputes)
-- Event delegation option (`init({ delegate: true })`)
-- Configurable expression sandbox (`init({ sandboxExpressions, allowGlobals })`)
-- Async component templates (string, Promise<string>, or () => Promise<string>)
+- Sub‑10KB gzipped, zero dependencies
+- Purpose-built, efficient smart GC with precise cleanup of timers, observers, events, and child components
+- Full-featured directive system: `x-text`, `x-html`, `x-show`, `x-if`/`x-else[-if]`, `x-for`, `x-model`, `x-on:*`, `x-bind:*`, `x-style`, `x-transition`
+- Components with reactive props and slot distribution
+- Computed values with fine‑grained invalidation
+- `$nextTick()` for post-render work
+- Event delegation for large UIs (`init({ delegate: true })`)
+- Optional expression sandbox (`init({ sandboxExpressions, allowGlobals })`)
+- Async component templates (string, Promise, or function returning a Promise)
 
 ## Quick start (CDN)
 
@@ -48,15 +41,13 @@ Or pin to a commit SHA/tag:
 
 ## TypeScript usage
 
-This repo ships `dist/types.d.ts` so your editor can get type information even if you load the runtime from a CDN. Use one of the options:
+`dist/types.d.ts` provides editor types when loading from CDN.
 
-- Copy the file locally and reference it via `tsconfig.json` `typeRoots` or add a project-level reference:
+- Copy the file and reference via `typeRoots` or add a project-level reference:
   ```ts
   /// <reference path="./types/x-tool/types.d.ts" />
   ```
-- Or vendor it directly from this repo into your project (e.g., as part of your build); path: `dist/types.d.ts`.
-
-Note: If you prefer to import via a bundler, use X-Tool’s npm package from the main repo (includes proper `types` field). This repo is CDN-first.
+- Or vendor directly from this repo as part of your build (`dist/types.d.ts`).
 
 ## Core concepts
 
@@ -194,7 +185,7 @@ Open `docs/index.html` directly, or enable GitHub Pages in this repo:
 
 ## Contributing
 
-Issues and improvements are welcome in the main X-Tool repository. This repo intentionally stays minimal (built artifacts + docs).
+This repo is intentionally minimal (built artifacts + docs). For issues and development workflows, use the main X-Tool repository.
 
 ## License
 
