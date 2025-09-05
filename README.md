@@ -1,21 +1,92 @@
 # FyneJS
 
-Browser-ready distribution of X-Tool. This repo contains only:
+Browser-ready distribution of X‑Tool. This repo contains only:
 
 - `dist/` – standalone browser builds and `types.d.ts`
-- `docs/` – examples you can host via GitHub Pages (branch `main`, folder `/docs`)
+- `docs/` – example gallery you can host with GitHub Pages (branch `main`, folder `/docs`)
 
-## X-Tool at a glance
+## Why X‑Tool
 
-- Sub‑10KB gzipped, zero dependencies
-- Purpose-built, efficient smart GC with precise cleanup of timers, observers, events, and child components
-- Full-featured directive system: `x-text`, `x-html`, `x-show`, `x-if`/`x-else[-if]`, `x-for`, `x-model`, `x-on:*`, `x-bind:*`, `x-style`, `x-transition`
-- Components with reactive props and slot distribution
-- Computed values with fine‑grained invalidation
-- `$nextTick()` for post-render work
-- Event delegation for large UIs (`init({ delegate: true })`)
-- Optional expression sandbox (`init({ sandboxExpressions, allowGlobals })`)
-- Async component templates (string, Promise, or function returning a Promise)
+- Tiny & fast: < 10KB gzipped, zero dependencies
+- Engineered reactivity: lean, cached evaluations; fine‑grained computed invalidation
+- Smart GC: precise cleanup for timers, observers, events, and component trees
+- Declarative power: rich directives and component composition without a build step
+
+## Capabilities (with examples)
+
+- Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes, transitions
+
+  ```html
+  <div x-data="{ n: 0, items: [1,2,3], open: true }">
+    <button x-on:click="n++">+1</button>
+    <span x-text="n"></span>
+
+    <template x-if="open"><p>Shown</p></template>
+    <ul>
+      <template x-for="(v,i) in items"><li>#<span x-text="i"></span>: <span x-text="v"></span></li></template>
+    </ul>
+  </div>
+  ```
+
+- Powerful events & modifiers: keys, buttons, touch, outside, once, passive, capture, combos
+
+  ```html
+  <input x-on:keydown.enter.ctrl="save()">
+  <button x-on:click.once="init()">Init once</button>
+  <div x-on:click.outside="open=false">Panel</div>
+  ```
+
+- Model binding: inputs, checkboxes (arrays), radios, selects (multiple)
+
+  ```html
+  <input type="text" x-model="form.name">
+  <input type="checkbox" value="admin" x-model="roles"> <!-- toggles 'admin' in roles -->
+  <select multiple x-model="selected"> ... </select>
+  ```
+
+- Computed & watch: derived state and change observers
+
+  ```html
+  <div x-data="{ a: 2, b: 3 }" x-text="a*b"></div>
+  <!-- via component API, you can also define computed and watch -->
+  ```
+
+- Lifecycle hooks: beforeMount, mounted, updated, beforeUnmount, unmounted
+
+- Slot & props: lightweight component composition
+
+- Transitions: class-based enter/leave for x-show and x-if
+
+  ```html
+  <style>
+  .fade-enter{transition:opacity .15s}.fade-enter-from{opacity:0}.fade-enter-to{opacity:1}
+  .fade-leave{transition:opacity .15s}.fade-leave-from{opacity:1}.fade-leave-to{opacity:0}
+  </style>
+  <div x-data="{ open:false }">
+    <button x-on:click="open=!open">Toggle</button>
+    <div x-transition="{ enter:'fade-enter', enterFrom:'fade-enter-from', enterTo:'fade-enter-to', leave:'fade-leave', leaveFrom:'fade-leave-from', leaveTo:'fade-leave-to' }" x-show="open">Hello</div>
+  </div>
+  ```
+
+- No build required: works directly in the browser; enhanced builds are optional
+
+- `$nextTick()`: run code after DOM updates
+
+  ```js
+  this.$nextTick(()=>{/* DOM updated */})
+  ```
+
+- Event delegation: scale to large UIs
+
+  ```html
+  <script> XTool.init({ delegate: true }); </script>
+  ```
+
+- Security sandbox: restrict globals in expressions
+
+  ```js
+  XTool.init({ sandboxExpressions: true, allowGlobals: ['setTimeout'] })
+  ```
 
 ## Quick start (CDN)
 
@@ -160,6 +231,47 @@ XTool.registerComponent({
 
 Until the Promise resolves, the component element stays empty; when it resolves, the template is applied and directives are parsed.
 
+## Components: registration, props, slots, dynamic mounting
+
+Register once, reuse anywhere:
+
+```html
+<component source="fancy-card" x-prop="{ title: 'Hi' }"></component>
+
+<script>
+XTool.registerComponent({
+  name: 'fancy-card',
+  template: `
+    <div class="card">
+      <h3 x-text="title"></h3>
+      <slot></slot>
+    </div>
+  `,
+  data: { title: '' }
+});
+</script>
+```
+
+Dynamic mounting: change the `source` attribute and the framework mounts the new component and cleans up the old one automatically.
+
+```html
+<div x-data="{ src: 'fancy-card' }">
+  <button x-on:click="src = src==='fancy-card' ? 'simple-card' : 'fancy-card'">Swap</button>
+  <component :source="src"></component>
+</div>
+```
+
+Props are reactive; slots distribute original child nodes to `<slot>`/`<slot name="...">`.
+
+Async templates are supported: `template` can be a string, a Promise, or a function returning a Promise.
+
+```js
+XTool.registerComponent({
+  name: 'delayed-card',
+  template: () => fetch('/fragments/card.html').then(r=>r.text())
+});
+```
+
 ## API surface (global)
 
 ```ts
@@ -175,6 +287,9 @@ XTool.init(config?: {
 
 XTool.directive(name: string, impl: { bind?, update?, unbind? }): void;
 XTool.registerComponent({ name, data, methods, computed, propEffects, template, ... }): void;
+
+// Optional: custom directive prefix (not hardcoded to "x")
+XTool.init({ prefix: 'u' }); // use u-data, u-text, u-on:click, ...
 ```
 
 ## Using the docs
