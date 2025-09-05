@@ -1,11 +1,13 @@
 # FyneJS
 
-Browser-ready distribution of X‑Tool. This repo contains only:
+FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
+
+This package ships:
 
 - `dist/` – standalone browser builds and `types.d.ts`
 - `docs/` – example gallery you can host with GitHub Pages (branch `main`, folder `/docs`)
 
-## Why X‑Tool
+## Why FyneJS
 
 - Tiny & fast: < 10KB gzipped, zero dependencies
 - Engineered reactivity: lean, cached evaluations; fine‑grained computed invalidation
@@ -272,7 +274,7 @@ XTool.registerComponent({
 });
 ```
 
-## API surface (global)
+## Global API (window.XTool)
 
 ```ts
 XTool.init(config?: {
@@ -300,7 +302,12 @@ Open `docs/index.html` directly, or enable GitHub Pages in this repo:
 
 ## Contributing
 
-This repo is intentionally minimal (built artifacts + docs). For issues and development workflows, use the main X-Tool repository.
+This package focuses on distribution (dist) and docs. Please:
+
+- Open issues here for CDN/packaging, documentation, and typing concerns.
+- Open engine/runtime issues and feature PRs in the core repository: https://github.com/Webictbyleo/x-tool
+
+PRs improving docs and package scripts are welcome here.
 
 ## License
 
