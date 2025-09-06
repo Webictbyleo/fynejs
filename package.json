@@ -1,12 +1,12 @@
 {
   "name": "fynejs",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A tiny, fast, zero-dependency reactive UI framework for the browser",
-  "main": "dist/x-tool.js",
+  "main": "dist/x-tool.min.js",
   "types": "dist/types.d.ts",
   "files": [
-    "dist/**/*",
-    "docs/**/*",
+    "dist/x-tool.min.js",
+    "dist/types.d.ts",
     "README.md"
   ],
   "scripts": {
@@ -42,10 +42,9 @@
   "exports": {
     ".": {
       "browser": "./dist/x-tool.min.js",
-      "import": "./dist/x-tool.js",
-      "require": "./dist/x-tool.js",
-      "default": "./dist/x-tool.js"
-    },
-    "./dist/*": "./dist/*"
+      "import": "./dist/x-tool.min.js",
+      "require": "./dist/x-tool.min.js",
+      "default": "./dist/x-tool.min.js"
+    }
   }
 }
