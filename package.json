@@ -1,0 +1,51 @@
+{
+  "name": "fynejs",
+  "version": "1.0.0",
+  "description": "A tiny, fast, zero-dependency reactive UI framework for the browser",
+  "main": "dist/x-tool.js",
+  "types": "dist/types.d.ts",
+  "files": [
+    "dist/**/*",
+    "docs/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Webictbyleo/fynejs.git"
+  },
+  "keywords": [
+    "framework",
+    "reactive",
+    "ui",
+    "javascript",
+    "browser",
+    "zero-dependency",
+    "lightweight",
+    "declarative",
+    "directives",
+    "components"
+  ],
+  "author": "Webictbyleo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Webictbyleo/fynejs/issues"
+  },
+  "homepage": "https://github.com/Webictbyleo/fynejs#readme",
+  "jsdelivr": "dist/x-tool.min.js",
+  "unpkg": "dist/x-tool.min.js",
+  "browser": {
+    ".": "dist/x-tool.min.js"
+  },
+  "exports": {
+    ".": {
+      "browser": "./dist/x-tool.min.js",
+      "import": "./dist/x-tool.js",
+      "require": "./dist/x-tool.js",
+      "default": "./dist/x-tool.js"
+    },
+    "./dist/*": "./dist/*"
+  }
+}
