@@ -13,6 +13,7 @@ This package ships:
 - Engineered reactivity: lean, cached evaluations; fine‑grained computed invalidation
 - Smart GC: precise cleanup for timers, observers, events, and component trees
 - Declarative power: rich directives and component composition without a build step
+- SEO‑friendly by design: progressive enhancement on existing HTML; no client‑side rendering takeover, so your server content remains crawlable
 
 ## Capabilities (with examples)
 
@@ -30,12 +31,13 @@ This package ships:
   </div>
   ```
 
-- Powerful events & modifiers: keys, buttons, touch, outside, once, passive, capture, combos
+- Powerful events & modifiers: keys, buttons, touch, outside, once, passive, capture, combos, defer
 
   ```html
   <input x-on:keydown.enter.ctrl="save()">
   <button x-on:click.once="init()">Init once</button>
   <div x-on:click.outside="open=false">Panel</div>
+  <input x-on:input.defer="recompute()"> <!-- handler runs in a microtask -->
   ```
 
 - Model binding: inputs, checkboxes (arrays), radios, selects (multiple)
@@ -163,7 +165,7 @@ Or pin to a commit SHA/tag:
 
 ### Transitions (x-transition)
 
-Attach once on the element to define class names; defaults are provided.
+Attach once on the element to define class names; sensible defaults are provided and adapt to your configured prefix.
 
 ```html
 <style>
@@ -185,6 +187,22 @@ Attach once on the element to define class names; defaults are provided.
 ```
 
 Works with `x-show` and `x-if`.
+
+Notes:
+- Defaults are prefix‑aware: if you use `XTool.init({ prefix: 'x' })`, default classes are `xt-enter`, `xt-enter-from`, `xt-enter-to`, `xt-leave`, `xt-leave-from`, `xt-leave-to`.
+- Default CSS for those classes is injected automatically. Disable via `XTool.init({ injectTransitionCSS: false })` if you prefer your own styles.
+- The transition configuration expression is evaluated on demand at enter/leave time, so toggling a config flag reconfigures transitions immediately.
+- Multiple class tokens in a single string are supported (e.g. `"opacity-0 -translate-y-2"`).
+
+Example: reconfigurable transitions
+
+```html
+<div x-data="{ open:false, custom:true }">
+  <button x-on:click="open=!open">Toggle</button>
+  <label><input type="checkbox" x-model="custom"> Custom classes</label>
+  <div x-transition="custom ? { enter: 'transition ease-out duration-200', enterFrom: 'opacity-0 -translate-y-2', enterTo: 'opacity-100 translate-y-0', leave: 'transition ease-in duration-150', leaveFrom: 'opacity-100 translate-y-0', leaveTo: 'opacity-0 -translate-y-2' } : {}" x-show="open">Panel</div>
+</div>
+```
 
 ### Next tick
 
@@ -285,6 +303,7 @@ XTool.init(config?: {
   delegate?: boolean; // event delegation
   sandboxExpressions?: boolean;
   allowGlobals?: string[];
+  injectTransitionCSS?: boolean; // default: true
 });
 
 XTool.directive(name: string, impl: { bind?, update?, unbind? }): void;
