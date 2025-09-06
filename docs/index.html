@@ -97,7 +97,7 @@
       });
     });
   </script>
-  <script src="https://cdn.jsdelivr.net/gh/Webictbyleo/fynejs@main/dist/x-tool.min.js"></script>
+  <script src="../dist/x-tool.min.js"></script>
   <!-- Modular demo components loader -->
   <script src="demo-loader.js"></script>
 </head>
@@ -362,16 +362,12 @@
               <h3 class="text-lg font-semibold mb-4">Installation</h3>
               <div class="space-y-4">
                 <div>
+                  <h4 class="font-medium text-gray-700 mb-2">Via CDN</h4>
+                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>&lt;script src="https://unpkg.com/fynejs@latest/dist/x-tool.min.js"&gt;&lt;/script&gt;</code></pre>
+                </div>
+                <div>
                   <h4 class="font-medium text-gray-700 mb-2">Via NPM</h4>
                   <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>npm install fynejs</code></pre>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-700 mb-2">Via CDN (jsDelivr)</h4>
-                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>&lt;script src="https://cdn.jsdelivr.net/npm/fynejs@latest/dist/x-tool.min.js"&gt;&lt;/script&gt;</code></pre>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-700 mb-2">Via CDN (unpkg)</h4>
-                  <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto"><code>&lt;script src="https://unpkg.com/fynejs@latest/dist/x-tool.min.js"&gt;&lt;/script&gt;</code></pre>
                 </div>
               </div>
             </div>
@@ -1088,7 +1084,25 @@ XTool.directive('tooltip', {
   }
 });
 
-// Usage: &lt;div x-tooltip="'Hover message'"&gt;&lt;/div&gt;</code></pre>
+// Usage: &lt;div x-tooltip="'Hover message'"&gt;&lt;/div&gt;
+
+// Advanced directive with modifiers
+XTool.directive('animate', {
+  bind(element, value, expression, component, modifiers) {
+    const duration = modifiers?.duration || 300;
+    const easing = modifiers?.ease || 'ease-in-out';
+    
+    element.style.transition = `all ${duration}ms ${easing}`;
+    if (value) element.classList.add(value);
+  },
+  
+  update(element, value) {
+    // Toggle animation class
+    element.classList.toggle(value, !!value);
+  }
+});
+
+// Usage: &lt;div x-animate.duration.500.ease="'fade-in'"&gt;&lt;/div&gt;</code></pre>
                       <div class="mt-4 p-4 bg-amber-50 rounded-lg">
                         <p class="text-sm text-amber-800">
                           <strong>Note:</strong> Custom directive names must NOT start with <code>x-</code> (reserved for built-ins). 

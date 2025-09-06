@@ -4,7 +4,6 @@ const FT_C = true;
 const FT_TI = typeof __FEAT_TEXT_INTERP__ === 'boolean' ? __FEAT_TEXT_INTERP__ : true;
 const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ === 'boolean' ? __FEAT_DEEP_REACTIVE__ : true;
 const FT_IFB = typeof __FEAT_IF_BRANCHES__ === 'boolean' ? __FEAT_IF_BRANCHES__ : true;
-const FT_TR = typeof __FEAT_TRANSITION__ === 'boolean' ? __FEAT_TRANSITION__ : true;
 const XToolFramework = function () {
     const _Afrom = Array.from;
     const _AisArr = ARRAY_ISARRAY;
@@ -18,8 +17,6 @@ const XToolFramework = function () {
     const STR_LENGTH = 'length';
     let XTOOL_ENABLE_STATIC_DIRECTIVES = true;
     const d = (typeof document !== 'undefined' ? document : null);
-    const STR_TR_END = 'transitionend';
-    const STR_ANIM_END = 'animationend';
     const STR_CONTENTS = 'contents';
     const EV_CLICK = 'click', EV_INPUT = 'input', EV_CHANGE = 'change', EV_KEYDOWN = 'keydown', EV_KEYUP = 'keyup';
     const EV_DELEGATED = [EV_CLICK, EV_INPUT, EV_CHANGE, EV_KEYDOWN, EV_KEYUP];
@@ -583,33 +580,6 @@ const XToolFramework = function () {
         set isMounted(v) { this._isMounted = v; }
         get isDestroyed() { return this._isDestroyed; }
         set isDestroyed(v) { this._isDestroyed = v; }
-        _getDefaultTransitionClasses() {
-            const cfg = this.framework._getConfig();
-            const p = (cfg && cfg.prefix) ? String(cfg.prefix) : 'x';
-            const mk = (s) => `${p}t-${s}`;
-            return { enter: mk('enter'), enterFrom: mk('enter-from'), enterTo: mk('enter-to'), leave: mk('leave'), leaveFrom: mk('leave-from'), leaveTo: mk('leave-to') };
-        }
-        _ensureDefaultTransitionStyles() {
-            try {
-                const cfg = this.framework._getConfig();
-                if (cfg && cfg.injectTransitionCSS === false)
-                    return;
-                if (!d || !d.head)
-                    return;
-                const p = (cfg && cfg.prefix) ? String(cfg.prefix) : 'x';
-                const styleId = `x-tool-transition-css-${p}`;
-                if (d.getElementById(styleId))
-                    return;
-                const cls = (name) => `.${p}t-${name}`;
-                const style = d.createElement('style');
-                style.id = styleId;
-                style.textContent = (`${cls('enter')},${cls('leave')}{transition:opacity 150ms ease,transform 150ms ease}` +
-                    `${cls('enter-from')},${cls('leave-to')}{opacity:0;transform:translateY(-0.5rem)}` +
-                    `${cls('enter-to')},${cls('leave-from')}{opacity:1;transform:translateY(0)}`);
-                d.head.appendChild(style);
-            }
-            catch { }
-        }
         _addDirective(element, directive) {
             const existing = this._directives.get(element) || [];
             existing.push(directive);
@@ -643,8 +613,6 @@ const XToolFramework = function () {
             this._activeEffect = null;
             this._renderScheduled = false;
             this._nextTickQueue = [];
-            this._transitionConfigs = new WeakMap();
-            this._transitionEvaluators = new WeakMap();
             this._initialClassSets = new WeakMap();
             this._propParent = null;
             this._callLifecycleHook = (hookName) => {
@@ -828,7 +796,6 @@ const XToolFramework = function () {
             this._isBound = true;
             this._isMounted = true;
             this._parseDirectives(this._element);
-            this._setupDOMRemovalDetection();
             this._render();
             this._callLifecycleHook('mounted');
         }
@@ -843,7 +810,6 @@ const XToolFramework = function () {
                 this._children.splice(index, 1);
             }
         }
-        _setupDOMRemovalDetection() { }
         _runWithGlobalInterception(fn, args) {
             try {
                 const src = String(fn);
@@ -1101,10 +1067,6 @@ const XToolFramework = function () {
                 element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, type, expression);
             }
-            if (type === 'transition') {
-                element.removeAttribute(directiveName);
-                return self._bindTransitionDirective(element, expression);
-            }
             if (type === 'text' || type === 'html' || type === 'show') {
                 element.removeAttribute(directiveName);
                 return self._bindSimpleDirective(element, expression, type);
@@ -1129,115 +1091,6 @@ const XToolFramework = function () {
                 }
                 element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, suffix, expression);
-            }
-        }
-        _bindTransitionDirective(element, expression) {
-            if (!FT_TR)
-                return;
-            this._ensureDefaultTransitionStyles();
-            const defaults = this._getDefaultTransitionClasses();
-            const expr = (expression || '').trim();
-            if (expr) {
-                try {
-                    const evalFn = this._createElementEvaluator(expr, element);
-                    this._transitionEvaluators.set(element, evalFn);
-                }
-                catch { }
-            }
-            else {
-                this._transitionConfigs.set(element, defaults);
-            }
-            this._addDirective(element, { type: 'transition', expression });
-        }
-        _runTransition(el, mode, done) {
-            if (!FT_TR) {
-                if (done)
-                    done();
-                return;
-            }
-            const defaults = this._getDefaultTransitionClasses();
-            let userConf = null;
-            const evalFn = this._transitionEvaluators.get(el);
-            if (evalFn) {
-                try {
-                    userConf = evalFn();
-                }
-                catch {
-                    userConf = null;
-                }
-            }
-            const staticConf = this._transitionConfigs.get(el) || null;
-            const conf = Object.assign({}, defaults, (userConf && typeof userConf === 'object') ? userConf : (staticConf || {}));
-            const a = mode === 'in' ? conf.enter : conf.leave;
-            const f = mode === 'in' ? conf.enterFrom : conf.leaveFrom;
-            const t = mode === 'in' ? conf.enterTo : conf.leaveTo;
-            const end = () => { try {
-                if (a)
-                    this._classes(el, a, false);
-                if (t)
-                    this._classes(el, t, false);
-            }
-            catch { } ; if (done)
-                done(); };
-            if (a || f || t) {
-                if (a)
-                    this._classes(el, a, true);
-                if (f)
-                    this._classes(el, f, true);
-                void el.offsetWidth;
-                if (f)
-                    this._classes(el, f, false);
-                if (t)
-                    this._classes(el, t, true);
-                this._onTransitionEnd(el, end);
-            }
-            else {
-                end();
-            }
-        }
-        _transitionIn(el, done) { this._runTransition(el, 'in', done); }
-        _transitionOut(el, done) { this._runTransition(el, 'out', done); }
-        _onTransitionEnd(el, cb) {
-            let called = false;
-            const done = () => { if (called)
-                return; called = true; try {
-                el.removeEventListener('transitionend', done);
-                el.removeEventListener('animationend', done);
-            }
-            catch { } ; cb(); };
-            try {
-                el.addEventListener(STR_TR_END, done);
-                el.addEventListener(STR_ANIM_END, done);
-                setTimeout(done, 500);
-            }
-            catch {
-                cb();
-            }
-        }
-        _tokenizeClasses(input) {
-            if (!input)
-                return [];
-            if (Array.isArray(input))
-                return input.map(String).flatMap(s => String(s).split(/\s+/)).filter(Boolean);
-            if (typeof input === 'string')
-                return input.split(/\s+/).filter(Boolean);
-            return [];
-        }
-        _classes(el, classes, add) {
-            const tokens = this._tokenizeClasses(classes);
-            if (!tokens.length)
-                return;
-            const cl = el.classList;
-            try {
-                (add ? cl.add : cl.remove).apply(cl, tokens);
-            }
-            catch {
-                for (const t of tokens) {
-                    try {
-                        add ? cl.add(t) : cl.remove(t);
-                    }
-                    catch { }
-                }
             }
         }
         _createEffect(updateFn, directiveRef) {
@@ -1290,13 +1143,7 @@ const XToolFramework = function () {
                         if (_prevShown === next)
                             return;
                         _prevShown = next;
-                        if (next) {
-                            el.style[STR_DISPLAY] = originalDisplay || '';
-                            this._transitionIn(el);
-                        }
-                        else {
-                            this._transitionOut(el, () => { el.style[STR_DISPLAY] = STR_NONE; });
-                        }
+                        el.style[STR_DISPLAY] = next ? (originalDisplay || '') : STR_NONE;
                         break;
                 }
             };
@@ -1473,7 +1320,6 @@ const XToolFramework = function () {
                 element.__x_if_current?.parentNode?.removeChild(element.__x_if_current);
                 if (!b.el.parentNode) {
                     placeholder.parentNode?.insertBefore(b.el, placeholder.nextSibling);
-                    this._transitionIn(b.el);
                 }
                 element.__x_if_current = b.el;
                 active = idx;
@@ -1486,9 +1332,10 @@ const XToolFramework = function () {
                 }
                 const b = branches[idx];
                 if (b.el.parentNode) {
-                    this._transitionOut(b.el, () => { if (b.el.parentNode)
-                        b.el.parentNode.removeChild(b.el); if (cb)
-                        cb(); });
+                    if (b.el.parentNode)
+                        b.el.parentNode.removeChild(b.el);
+                    if (cb)
+                        cb();
                 }
                 else if (cb)
                     cb();
