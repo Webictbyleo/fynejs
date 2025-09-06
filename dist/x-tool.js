@@ -578,6 +578,33 @@ const XToolFramework = function () {
         set isMounted(v) { this._isMounted = v; }
         get isDestroyed() { return this._isDestroyed; }
         set isDestroyed(v) { this._isDestroyed = v; }
+        _getDefaultTransitionClasses() {
+            const cfg = this.framework._getConfig();
+            const p = (cfg && cfg.prefix) ? String(cfg.prefix) : 'x';
+            const mk = (s) => `${p}t-${s}`;
+            return { enter: mk('enter'), enterFrom: mk('enter-from'), enterTo: mk('enter-to'), leave: mk('leave'), leaveFrom: mk('leave-from'), leaveTo: mk('leave-to') };
+        }
+        _ensureDefaultTransitionStyles() {
+            try {
+                const cfg = this.framework._getConfig();
+                if (cfg && cfg.injectTransitionCSS === false)
+                    return;
+                if (!d || !d.head)
+                    return;
+                const p = (cfg && cfg.prefix) ? String(cfg.prefix) : 'x';
+                const styleId = `x-tool-transition-css-${p}`;
+                if (d.getElementById(styleId))
+                    return;
+                const cls = (name) => `.${p}t-${name}`;
+                const style = d.createElement('style');
+                style.id = styleId;
+                style.textContent = (`${cls('enter')},${cls('leave')}{transition:opacity 150ms ease,transform 150ms ease}` +
+                    `${cls('enter-from')},${cls('leave-to')}{opacity:0;transform:translateY(-0.5rem)}` +
+                    `${cls('enter-to')},${cls('leave-from')}{opacity:1;transform:translateY(0)}`);
+                d.head.appendChild(style);
+            }
+            catch { }
+        }
         _addDirective(element, directive) {
             const existing = this._directives.get(element) || [];
             existing.push(directive);
@@ -672,7 +699,11 @@ const XToolFramework = function () {
             if (this.isBound) {
                 if (FT_C)
                     this._computedCache.clear();
-                const effectsToRun = new Set(this._allEffects);
+                const effectsToRun = new Set();
+                const directDeps = this._propertyDependencies.get(_property);
+                if (directDeps)
+                    for (let i = 0; i < directDeps.length; i++)
+                        effectsToRun.add(directDeps[i]);
                 for (const effect of effectsToRun)
                     this._safeExecute(effect, 'Error in reactive effect');
                 if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
@@ -1099,7 +1130,8 @@ const XToolFramework = function () {
         _bindTransitionDirective(element, expression) {
             if (!FT_TR)
                 return;
-            const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
+            this._ensureDefaultTransitionStyles();
+            const defaults = this._getDefaultTransitionClasses();
             const expr = (expression || '').trim();
             if (expr) {
                 try {
@@ -1119,7 +1151,7 @@ const XToolFramework = function () {
                     done();
                 return;
             }
-            const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
+            const defaults = this._getDefaultTransitionClasses();
             let userConf = null;
             const evalFn = this._transitionEvaluators.get(el);
             if (evalFn) {
@@ -1163,7 +1195,7 @@ const XToolFramework = function () {
                     done();
                 return;
             }
-            const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
+            const defaults = this._getDefaultTransitionClasses();
             let userConf = null;
             const evalFn = this._transitionEvaluators.get(el);
             if (evalFn) {
@@ -1547,6 +1579,8 @@ const XToolFramework = function () {
             const onlySelf = !!modifiers?.self;
             const shouldPrevent = !!modifiers?.prevent;
             const shouldStop = !!modifiers?.stop;
+            const isOutside = !!modifiers?.outside;
+            const deferExec = !!modifiers?.defer;
             const keyAliasMap = {
                 enter: ['enter'],
                 esc: ['escape', 'esc'],
@@ -1591,6 +1625,14 @@ const XToolFramework = function () {
             const needButtonCheck = allowedButtons.length > 0;
             const needTouchCheck = touchSingle || touchMulti;
             const passesFilters = (event) => {
+                const path = event.composedPath ? event.composedPath() : null;
+                const tgt = (path && path.length ? path[0] : event.target);
+                if (isOutside) {
+                    if (!tgt)
+                        return false;
+                    if (element instanceof Node && (element === tgt || element.contains(tgt)))
+                        return false;
+                }
                 if (onlySelf && event.target !== element)
                     return false;
                 if (needTouchCheck) {
@@ -1653,26 +1695,30 @@ const XToolFramework = function () {
                 };
             }
             const createEventHandler = (event) => {
-                self._safeExecute(() => {
-                    if (!passesFilters(event))
-                        return;
-                    if (shouldPrevent && typeof event.preventDefault === 'function')
-                        event.preventDefault();
-                    if (shouldStop && typeof event.stopPropagation === 'function')
-                        event.stopPropagation();
-                    if (!runExpr)
-                        return;
-                    runExpr(event);
-                });
+                if (!passesFilters(event))
+                    return;
+                if (shouldPrevent && typeof event.preventDefault === 'function')
+                    event.preventDefault();
+                if (shouldStop && typeof event.stopPropagation === 'function')
+                    event.stopPropagation();
+                if (!runExpr)
+                    return;
+                if (deferExec && typeof queueMicrotask === 'function') {
+                    const ev = event;
+                    queueMicrotask(() => self._safeExecute(() => runExpr(ev)));
+                    return;
+                }
+                self._safeExecute(() => runExpr(event));
             };
             const cfg = this.framework._getConfig();
             const canDelegate = !!cfg.delegate && ['click', 'input', 'change', 'keydown', 'keyup'].includes(eventName);
-            if (canDelegate) {
+            if (!isOutside && canDelegate) {
                 const remover = this.framework._registerDelegated(element, eventName, { filter: (e) => passesFilters(e), run: (e) => createEventHandler(e), once: !!modifiers?.once, comp: this });
                 this._addCleanupFunction(remover);
             }
             else {
-                self._addEventListenerWithCleanup(element, eventName, createEventHandler, opts);
+                const target = isOutside ? (element?.ownerDocument || d || document) : element;
+                self._addEventListenerWithCleanup(target, eventName, createEventHandler, opts);
             }
         }
         _createEvaluator(expression, isStatement = false) {
@@ -1750,8 +1796,8 @@ const XToolFramework = function () {
                     }
                     return value;
                 },
-                ownKeys: (target) => { self._trackDependency(parentKey); return Reflect.ownKeys(target); },
-                has: (target, key) => { self._trackDependency(parentKey); return Reflect.has(target, key); },
+                ownKeys: (target) => { return Reflect.ownKeys(target); },
+                has: (target, key) => { return Reflect.has(target, key); },
                 set: (target, p, value) => {
                     if (self._isDestroyed)
                         return true;
