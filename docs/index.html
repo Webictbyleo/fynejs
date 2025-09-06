@@ -400,6 +400,8 @@
           </div>
         </section>
 
+        
+
         <!-- Directives Section -->
         <section data-section="directives" x-show="section==='directives'" class="section-enter">
           <div class="mb-12">
@@ -1462,6 +1464,7 @@ document.body.appendChild(instance.element);</code></pre>
                  x-data="{
                    selected: 'advanced-todo',
                    items: {
+                     'x-transition-demo': { title: '✨ x-transition Demo', desc: 'Enter/leave and list transitions', badge:'pink' },
                      'advanced-todo': { title: '🏆 Advanced Todo', desc: 'Local storage, filters, animations', badge:'blue' },
                      'data-chart': { title: '📊 Data Chart', desc: 'SVG charts & interactions', badge:'green' },
                      'advanced-form': { title: '📝 Multi-Step Form', desc: 'Validation & UX patterns', badge:'purple' },

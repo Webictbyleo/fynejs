@@ -1,7 +1,7 @@
 // Virtual Log Stream (high-frequency append + windowed rendering)
 XTool.registerComponent({
   name: 'virtual-log-stream',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto flex flex-col h-[520px]">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-lg font-semibold text-gray-800">Virtual Log Stream</h3>
@@ -107,6 +107,7 @@ XTool.registerComponent({
         this.end = this.filtered.length;
         this.start = Math.max(0, this.end - this.windowSize);
         sc.scrollTop = sc.scrollHeight;
+        this.$nextTick(() => { sc.scrollTop = sc.scrollHeight; });
       } else {
         // derive based on scroll position
         const firstVisible = Math.floor(sc.scrollTop / this.rowHeight);

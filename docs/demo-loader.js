@@ -7,6 +7,7 @@
   // List of advanced example component scripts (Examples section only)
   const componentFiles = [
      'advanced-todo.js',
+  'x-transition-demo.js',
     'data-chart.js',
     'advanced-form.js',
     'search-demo.js',

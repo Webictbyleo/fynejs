@@ -598,9 +598,9 @@ const XToolFramework = function () {
             this._computedCache = new Map();
             this._computedDeps = new Map();
             this._inverseComputedDeps = new Map();
-            this._collectingComputedKey = null;
             this._isInComputedEvaluation = false;
             this._isInMethodExecution = false;
+            this._allEffects = new Set();
             this._hasComputed = false;
             this._directives = new Map();
             this._cleanupFunctions = new Set();
@@ -612,25 +612,13 @@ const XToolFramework = function () {
             this._renderScheduled = false;
             this._nextTickQueue = [];
             this._transitionConfigs = new WeakMap();
+            this._transitionEvaluators = new WeakMap();
             this._initialClassSets = new WeakMap();
             this._propParent = null;
-            this._invalidateComputedCache = (_prop) => {
-                if (!FT_C)
-                    return;
-                if (!_prop) {
-                    this._computedCache.clear();
-                    return;
-                }
-                const affected = this._inverseComputedDeps.get(_prop);
-                if (affected) {
-                    for (const c of affected)
-                        this._computedCache.delete(c);
-                }
-            };
             this._callLifecycleHook = (hookName) => {
                 const hook = this._lifecycle[hookName];
                 if (typeof hook === 'function') {
-                    this._safeExecute(() => hook.call(this._createMethodContext()), `Error in '${String(hookName)}'`);
+                    this._safeExecute(() => this._runWithGlobalInterception(hook, []), `Error in '${String(hookName)}'`);
                 }
             };
             this._addCleanupFunction = (fn) => {
@@ -680,15 +668,11 @@ const XToolFramework = function () {
                 this._beforeMountCalled = true;
             }
         }
-        _onDataChange(property) {
+        _onDataChange(_property) {
             if (this.isBound) {
                 if (FT_C)
-                    this._invalidateComputedCache(property);
-                const effectsToRun = new Set();
-                const directDeps = this._propertyDependencies.get(property);
-                if (directDeps)
-                    for (let i = 0; i < directDeps.length; i++)
-                        effectsToRun.add(directDeps[i]);
+                    this._computedCache.clear();
+                const effectsToRun = new Set(this._allEffects);
                 for (const effect of effectsToRun)
                     this._safeExecute(effect, 'Error in reactive effect');
                 if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
@@ -701,41 +685,11 @@ const XToolFramework = function () {
             const boundMethods = {};
             for (const methodName in this._originalMethods) {
                 const originalMethod = this._originalMethods[methodName];
-                let compiledWrapper = null;
-                try {
-                    const src = String(originalMethod);
-                    if (!/\[native code\]/.test(src)) {
-                        let src = String(originalMethod).trim();
-                        if (!/^function[\s\(]/.test(src) && !/^[\w\$_][\w\d\$_]*\s*=>/.test(src) && !/^\(.*?\)\s*=>/.test(src)) {
-                            src = 'function ' + src;
-                        }
-                        const trySrc = 'with(ctx){ const fn = (' + src + '); return fn.apply(thisArg, argsArray); }';
-                        try {
-                            compiledWrapper = new Function('thisArg', 'argsArray', 'ctx', trySrc);
-                        }
-                        catch (e) {
-                            compiledWrapper = null;
-                        }
-                    }
-                }
-                catch {
-                    compiledWrapper = null;
-                }
                 boundMethods[methodName] = (...args) => {
-                    const currentContext = this._createMethodContext();
                     const prev = this._isInMethodExecution;
                     this._isInMethodExecution = true;
                     try {
-                        const ctx = this._createContextProxy(undefined, undefined);
-                        if (compiledWrapper) {
-                            try {
-                                return this._safeExecute(() => compiledWrapper.call(undefined, currentContext, args, ctx), `Error in method '${methodName}'`);
-                            }
-                            catch (err) {
-                                throw err;
-                            }
-                        }
-                        return this._safeExecute(() => originalMethod.call(currentContext, ...args), `Error in method '${methodName}'`);
+                        return this._safeExecute(() => this._runWithGlobalInterception(originalMethod, args), `Error in method '${methodName}'`);
                     }
                     finally {
                         this._isInMethodExecution = prev;
@@ -753,7 +707,6 @@ const XToolFramework = function () {
             try {
                 const computeFn = this._computed[key];
                 this._isInComputedEvaluation = true;
-                this._collectingComputedKey = key;
                 const prev = this._computedDeps.get(key);
                 if (prev) {
                     for (const dep of prev) {
@@ -765,13 +718,11 @@ const XToolFramework = function () {
                 this._computedDeps.set(key, new Set());
                 const value = computeFn.call(this._createMethodContext());
                 this._isInComputedEvaluation = false;
-                this._collectingComputedKey = null;
                 this._computedCache.set(key, value);
                 return value;
             }
             catch {
                 this._isInComputedEvaluation = false;
-                this._collectingComputedKey = null;
                 return undefined;
             }
         }
@@ -858,6 +809,23 @@ const XToolFramework = function () {
             }
         }
         _setupDOMRemovalDetection() { }
+        _runWithGlobalInterception(fn, args) {
+            try {
+                const src = String(fn);
+                if (!/\[native code\]/.test(src)) {
+                    let body = src.trim();
+                    if (!/^function[\s\(]/.test(body) && !/^[\w\$_][\w\d\$_]*\s*=>/.test(body) && !/^\(.*?\)\s*=>/.test(body)) {
+                        body = 'function ' + body;
+                    }
+                    const trySrc = 'with(ctx){ const f = (' + body + '); return f.apply(thisArg, argsArray); }';
+                    const wrapper = new Function('thisArg', 'argsArray', 'ctx', trySrc);
+                    return wrapper.call(undefined, this._createMethodContext(), args, this._createContextProxy(undefined, undefined));
+                }
+            }
+            catch {
+            }
+            return fn.apply(this._createMethodContext(), args);
+        }
         destroy() {
             const self = this;
             if (self._isDestroyed)
@@ -1131,18 +1099,18 @@ const XToolFramework = function () {
         _bindTransitionDirective(element, expression) {
             if (!FT_TR)
                 return;
-            let conf = null;
-            if (expression && expression.trim()) {
-                try {
-                    conf = this._createElementEvaluator(expression, element)();
-                }
-                catch {
-                    conf = null;
-                }
-            }
             const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
-            const final = Object.assign({}, defaults, (conf && typeof conf === 'object') ? conf : {});
-            this._transitionConfigs.set(element, final);
+            const expr = (expression || '').trim();
+            if (expr) {
+                try {
+                    const evalFn = this._createElementEvaluator(expr, element);
+                    this._transitionEvaluators.set(element, evalFn);
+                }
+                catch { }
+            }
+            else {
+                this._transitionConfigs.set(element, defaults);
+            }
             this._addDirective(element, { type: 'transition', expression });
         }
         _transitionIn(el, done) {
@@ -1151,26 +1119,38 @@ const XToolFramework = function () {
                     done();
                 return;
             }
-            const conf = this._transitionConfigs.get(el) || {};
+            const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
+            let userConf = null;
+            const evalFn = this._transitionEvaluators.get(el);
+            if (evalFn) {
+                try {
+                    userConf = evalFn();
+                }
+                catch {
+                    userConf = null;
+                }
+            }
+            const staticConf = this._transitionConfigs.get(el) || null;
+            const conf = Object.assign({}, defaults, (userConf && typeof userConf === 'object') ? userConf : (staticConf || {}));
             const { enter, enterFrom, enterTo } = conf;
             const end = () => { try {
                 if (enter)
-                    el.classList.remove(enter);
+                    this._removeClasses(el, enter);
                 if (enterTo)
-                    el.classList.remove(enterTo);
+                    this._removeClasses(el, enterTo);
             }
             catch { } ; if (done)
                 done(); };
             if (enter || enterFrom || enterTo) {
                 if (enter)
-                    el.classList.add(enter);
+                    this._addClasses(el, enter);
                 if (enterFrom)
-                    el.classList.add(enterFrom);
+                    this._addClasses(el, enterFrom);
                 void el.offsetWidth;
                 if (enterFrom)
-                    el.classList.remove(enterFrom);
+                    this._removeClasses(el, enterFrom);
                 if (enterTo)
-                    el.classList.add(enterTo);
+                    this._addClasses(el, enterTo);
                 this._onTransitionEnd(el, end);
             }
             else {
@@ -1183,26 +1163,38 @@ const XToolFramework = function () {
                     done();
                 return;
             }
-            const conf = this._transitionConfigs.get(el) || {};
+            const defaults = { enter: 'xt-enter', enterFrom: 'xt-enter-from', enterTo: 'xt-enter-to', leave: 'xt-leave', leaveFrom: 'xt-leave-from', leaveTo: 'xt-leave-to' };
+            let userConf = null;
+            const evalFn = this._transitionEvaluators.get(el);
+            if (evalFn) {
+                try {
+                    userConf = evalFn();
+                }
+                catch {
+                    userConf = null;
+                }
+            }
+            const staticConf = this._transitionConfigs.get(el) || null;
+            const conf = Object.assign({}, defaults, (userConf && typeof userConf === 'object') ? userConf : (staticConf || {}));
             const { leave, leaveFrom, leaveTo } = conf;
             const end = () => { try {
                 if (leave)
-                    el.classList.remove(leave);
+                    this._removeClasses(el, leave);
                 if (leaveTo)
-                    el.classList.remove(leaveTo);
+                    this._removeClasses(el, leaveTo);
             }
             catch { } ; if (done)
                 done(); };
             if (leave || leaveFrom || leaveTo) {
                 if (leave)
-                    el.classList.add(leave);
+                    this._addClasses(el, leave);
                 if (leaveFrom)
-                    el.classList.add(leaveFrom);
+                    this._addClasses(el, leaveFrom);
                 void el.offsetWidth;
                 if (leaveFrom)
-                    el.classList.remove(leaveFrom);
+                    this._removeClasses(el, leaveFrom);
                 if (leaveTo)
-                    el.classList.add(leaveTo);
+                    this._addClasses(el, leaveTo);
                 this._onTransitionEnd(el, end);
             }
             else {
@@ -1226,6 +1218,47 @@ const XToolFramework = function () {
                 cb();
             }
         }
+        _tokenizeClasses(input) {
+            if (!input)
+                return [];
+            if (Array.isArray(input))
+                return input.map(String).flatMap(s => String(s).split(/\s+/)).filter(Boolean);
+            if (typeof input === 'string')
+                return input.split(/\s+/).filter(Boolean);
+            return [];
+        }
+        _addClasses(el, classes) {
+            const tokens = this._tokenizeClasses(classes);
+            if (!tokens.length)
+                return;
+            try {
+                el.classList.add(...tokens);
+            }
+            catch {
+                for (const t of tokens) {
+                    try {
+                        el.classList.add(t);
+                    }
+                    catch { }
+                }
+            }
+        }
+        _removeClasses(el, classes) {
+            const tokens = this._tokenizeClasses(classes);
+            if (!tokens.length)
+                return;
+            try {
+                el.classList.remove(...tokens);
+            }
+            catch {
+                for (const t of tokens) {
+                    try {
+                        el.classList.remove(t);
+                    }
+                    catch { }
+                }
+            }
+        }
         _createEffect(updateFn, directiveRef) {
             const effect = () => {
                 this._activeEffect = effect;
@@ -1237,6 +1270,7 @@ const XToolFramework = function () {
                 }
             };
             effect();
+            this._allEffects.add(effect);
             if (XTOOL_ENABLE_STATIC_DIRECTIVES && directiveRef && directiveRef._static === undefined) {
                 let found = false;
                 for (const deps of this._propertyDependencies.values()) {
@@ -1674,7 +1708,7 @@ const XToolFramework = function () {
             const content = isBlock ? body : 'return ( ' + body + ' );';
             return new Function('ctx', ...params, 'with(ctx){ ' + content + ' }');
         }
-        _wrapData(data, property) {
+        _wrapData(data, parentKey) {
             if (!(Object.getPrototypeOf(data) === Object.prototype || ARRAY_ISARRAY(data)))
                 return data;
             const self = this;
@@ -1686,15 +1720,15 @@ const XToolFramework = function () {
                 get: (target, p, receiver) => {
                     if (ARRAY_ISARRAY(target)) {
                         if (p === Symbol.iterator) {
-                            self._trackDependency(property);
+                            self._trackDependency(parentKey);
                             return Reflect.get(target, p, receiver);
                         }
                         if (p === 'length' || (typeof p === 'string' && /^\d+$/.test(p))) {
-                            self._trackDependency(property);
+                            self._trackDependency(parentKey);
                         }
                     }
                     else {
-                        self._trackDependency(property);
+                        self._trackDependency(parentKey);
                     }
                     const value = Reflect.get(target, p, receiver);
                     if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill'].includes(p)) {
@@ -1705,19 +1739,19 @@ const XToolFramework = function () {
                             const beforeLast = arr[beforeLen - 1];
                             const result = value.apply(target, args);
                             if (arr.length !== beforeLen || arr[0] !== beforeFirst || arr[arr.length - 1] !== beforeLast) {
-                                self._onDataChange(property);
+                                self._onDataChange(parentKey);
                             }
                             return result;
                         };
                     }
                     const type = typeof value;
                     if (value && type === 'object') {
-                        return self._wrapData(value, property);
+                        return self._wrapData(value, parentKey);
                     }
                     return value;
                 },
-                ownKeys: (target) => Reflect.ownKeys(target),
-                has: (target, key) => Reflect.has(target, key),
+                ownKeys: (target) => { self._trackDependency(parentKey); return Reflect.ownKeys(target); },
+                has: (target, key) => { self._trackDependency(parentKey); return Reflect.has(target, key); },
                 set: (target, p, value) => {
                     if (self._isDestroyed)
                         return true;
@@ -1726,7 +1760,7 @@ const XToolFramework = function () {
                     const had = Reflect.has(target, p);
                     const oldValue = had ? Reflect.get(target, p) : undefined;
                     if (value && typeof value === 'object') {
-                        self._wrapData(value, property);
+                        self._wrapData(value, parentKey);
                     }
                     if (!had) {
                         try {
@@ -1740,13 +1774,13 @@ const XToolFramework = function () {
                         catch {
                             Reflect.set(target, p, value);
                         }
-                        self._onDataChange(property);
+                        self._onDataChange(parentKey);
                         return true;
                     }
                     if (oldValue === value)
                         return true;
                     Reflect.set(target, p, value);
-                    self._onDataChange(property);
+                    self._onDataChange(parentKey);
                     return true;
                 },
                 deleteProperty: (target, p) => Reflect.deleteProperty(target, p)
@@ -1876,20 +1910,6 @@ const XToolFramework = function () {
                 get: (target, propStr) => {
                     if (propStr in target) {
                         this._trackDependency(propStr);
-                        if (this._collectingComputedKey) {
-                            let set = this._computedDeps.get(this._collectingComputedKey);
-                            if (!set) {
-                                set = new Set();
-                                this._computedDeps.set(this._collectingComputedKey, set);
-                            }
-                            set.add(propStr);
-                            let inv = this._inverseComputedDeps.get(propStr);
-                            if (!inv) {
-                                inv = new Set();
-                                this._inverseComputedDeps.set(propStr, inv);
-                            }
-                            inv.add(this._collectingComputedKey);
-                        }
                         const v = target[propStr];
                         return v;
                     }
@@ -1996,6 +2016,14 @@ const XToolFramework = function () {
                         if (prop === 'document') {
                             const doc = target.document;
                             return wrapTarget(doc) || doc;
+                        }
+                        if (prop === 'body' && target === gDocument) {
+                            const b = target.body;
+                            return wrapTarget(b) || b;
+                        }
+                        if (prop === 'defaultView' && target === gDocument) {
+                            const w = target.defaultView;
+                            return wrapTarget(w) || w;
                         }
                         return Reflect.get(target, prop, receiver);
                     }
@@ -2436,6 +2464,9 @@ const XToolFramework = function () {
     const xTool = new XToolFramework();
     return xTool;
 }();
-if (typeof window !== 'undefined')
-    window.XTool = XToolFramework;
+if (typeof window !== 'undefined') {
+    const w = window;
+    w.XTool = XToolFramework;
+    w.FyneJS = XToolFramework;
+}
 //# sourceMappingURL=x-tool.js.map
