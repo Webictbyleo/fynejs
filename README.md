@@ -2,11 +2,6 @@
 
 FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
-This package ships:
-
-- `dist/` – standalone browser builds and `types.d.ts`
-- `docs/` – example gallery you can host with GitHub Pages (branch `main`, folder `/docs`)
-
 ## Why FyneJS
 
 - Tiny & fast: < 10KB gzipped, zero dependencies
@@ -313,15 +308,6 @@ XTool.registerComponent({ name, data, methods, computed, propEffects, template, 
 XTool.init({ prefix: 'u' }); // use u-data, u-text, u-on:click, ...
 ```
 
-
-## Contributing
-
-This package focuses on distribution (dist) and docs. Please:
-
-- Open issues here for CDN/packaging, documentation, and typing concerns.
-- Open engine/runtime issues and feature PRs in the core repository: https://github.com/Webictbyleo/x-tool
-
-PRs improving docs and package scripts are welcome here.
 
 ## License
 
