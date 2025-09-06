@@ -18,6 +18,11 @@ const XToolFramework = function () {
     const STR_LENGTH = 'length';
     let XTOOL_ENABLE_STATIC_DIRECTIVES = true;
     const d = (typeof document !== 'undefined' ? document : null);
+    const STR_TR_END = 'transitionend';
+    const STR_ANIM_END = 'animationend';
+    const STR_CONTENTS = 'contents';
+    const EV_CLICK = 'click', EV_INPUT = 'input', EV_CHANGE = 'change', EV_KEYDOWN = 'keydown', EV_KEYUP = 'keyup';
+    const EV_DELEGATED = [EV_CLICK, EV_INPUT, EV_CHANGE, EV_KEYDOWN, EV_KEYUP];
     try {
         if (d && d.head && !d.getElementById('x-tool-initial-css')) {
             const style = d.createElement(STR_STYLE);
@@ -645,7 +650,7 @@ const XToolFramework = function () {
             this._callLifecycleHook = (hookName) => {
                 const hook = this._lifecycle[hookName];
                 if (typeof hook === 'function') {
-                    this._safeExecute(() => this._runWithGlobalInterception(hook, []), `Error in '${String(hookName)}'`);
+                    this._safeExecute(() => this._runWithGlobalInterception(hook, []));
                 }
             };
             this._addCleanupFunction = (fn) => {
@@ -705,7 +710,7 @@ const XToolFramework = function () {
                     for (let i = 0; i < directDeps.length; i++)
                         effectsToRun.add(directDeps[i]);
                 for (const effect of effectsToRun)
-                    this._safeExecute(effect, 'Error in reactive effect');
+                    this._safeExecute(effect);
                 if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
                     this._scheduleRender();
                 }
@@ -720,7 +725,7 @@ const XToolFramework = function () {
                     const prev = this._isInMethodExecution;
                     this._isInMethodExecution = true;
                     try {
-                        return this._safeExecute(() => this._runWithGlobalInterception(originalMethod, args), `Error in method '${methodName}'`);
+                        return this._safeExecute(() => this._runWithGlobalInterception(originalMethod, args));
                     }
                     finally {
                         this._isInMethodExecution = prev;
@@ -786,12 +791,11 @@ const XToolFramework = function () {
                 }
             });
         }
-        _safeExecute(fn, _errorMsg, fallback) {
+        _safeExecute(fn, fallback) {
             try {
                 return fn();
             }
-            catch (e) {
-                console.error(e);
+            catch {
                 return fallback;
             }
         }
@@ -1145,7 +1149,7 @@ const XToolFramework = function () {
             }
             this._addDirective(element, { type: 'transition', expression });
         }
-        _transitionIn(el, done) {
+        _runTransition(el, mode, done) {
             if (!FT_TR) {
                 if (done)
                     done();
@@ -1164,75 +1168,35 @@ const XToolFramework = function () {
             }
             const staticConf = this._transitionConfigs.get(el) || null;
             const conf = Object.assign({}, defaults, (userConf && typeof userConf === 'object') ? userConf : (staticConf || {}));
-            const { enter, enterFrom, enterTo } = conf;
+            const a = mode === 'in' ? conf.enter : conf.leave;
+            const f = mode === 'in' ? conf.enterFrom : conf.leaveFrom;
+            const t = mode === 'in' ? conf.enterTo : conf.leaveTo;
             const end = () => { try {
-                if (enter)
-                    this._removeClasses(el, enter);
-                if (enterTo)
-                    this._removeClasses(el, enterTo);
+                if (a)
+                    this._classes(el, a, false);
+                if (t)
+                    this._classes(el, t, false);
             }
             catch { } ; if (done)
                 done(); };
-            if (enter || enterFrom || enterTo) {
-                if (enter)
-                    this._addClasses(el, enter);
-                if (enterFrom)
-                    this._addClasses(el, enterFrom);
+            if (a || f || t) {
+                if (a)
+                    this._classes(el, a, true);
+                if (f)
+                    this._classes(el, f, true);
                 void el.offsetWidth;
-                if (enterFrom)
-                    this._removeClasses(el, enterFrom);
-                if (enterTo)
-                    this._addClasses(el, enterTo);
+                if (f)
+                    this._classes(el, f, false);
+                if (t)
+                    this._classes(el, t, true);
                 this._onTransitionEnd(el, end);
             }
             else {
                 end();
             }
         }
-        _transitionOut(el, done) {
-            if (!FT_TR) {
-                if (done)
-                    done();
-                return;
-            }
-            const defaults = this._getDefaultTransitionClasses();
-            let userConf = null;
-            const evalFn = this._transitionEvaluators.get(el);
-            if (evalFn) {
-                try {
-                    userConf = evalFn();
-                }
-                catch {
-                    userConf = null;
-                }
-            }
-            const staticConf = this._transitionConfigs.get(el) || null;
-            const conf = Object.assign({}, defaults, (userConf && typeof userConf === 'object') ? userConf : (staticConf || {}));
-            const { leave, leaveFrom, leaveTo } = conf;
-            const end = () => { try {
-                if (leave)
-                    this._removeClasses(el, leave);
-                if (leaveTo)
-                    this._removeClasses(el, leaveTo);
-            }
-            catch { } ; if (done)
-                done(); };
-            if (leave || leaveFrom || leaveTo) {
-                if (leave)
-                    this._addClasses(el, leave);
-                if (leaveFrom)
-                    this._addClasses(el, leaveFrom);
-                void el.offsetWidth;
-                if (leaveFrom)
-                    this._removeClasses(el, leaveFrom);
-                if (leaveTo)
-                    this._addClasses(el, leaveTo);
-                this._onTransitionEnd(el, end);
-            }
-            else {
-                end();
-            }
-        }
+        _transitionIn(el, done) { this._runTransition(el, 'in', done); }
+        _transitionOut(el, done) { this._runTransition(el, 'out', done); }
         _onTransitionEnd(el, cb) {
             let called = false;
             const done = () => { if (called)
@@ -1242,8 +1206,8 @@ const XToolFramework = function () {
             }
             catch { } ; cb(); };
             try {
-                el.addEventListener('transitionend', done);
-                el.addEventListener('animationend', done);
+                el.addEventListener(STR_TR_END, done);
+                el.addEventListener(STR_ANIM_END, done);
                 setTimeout(done, 500);
             }
             catch {
@@ -1259,33 +1223,18 @@ const XToolFramework = function () {
                 return input.split(/\s+/).filter(Boolean);
             return [];
         }
-        _addClasses(el, classes) {
+        _classes(el, classes, add) {
             const tokens = this._tokenizeClasses(classes);
             if (!tokens.length)
                 return;
+            const cl = el.classList;
             try {
-                el.classList.add(...tokens);
+                (add ? cl.add : cl.remove).apply(cl, tokens);
             }
             catch {
                 for (const t of tokens) {
                     try {
-                        el.classList.add(t);
-                    }
-                    catch { }
-                }
-            }
-        }
-        _removeClasses(el, classes) {
-            const tokens = this._tokenizeClasses(classes);
-            if (!tokens.length)
-                return;
-            try {
-                el.classList.remove(...tokens);
-            }
-            catch {
-                for (const t of tokens) {
-                    try {
-                        el.classList.remove(t);
+                        add ? cl.add(t) : cl.remove(t);
                     }
                     catch { }
                 }
@@ -1428,7 +1377,7 @@ const XToolFramework = function () {
             const ctx = this._createContextProxy(undefined, element);
             const updateData = () => {
                 const raw = getInputValue();
-                const currentVal = this._safeExecute(() => getValueEvaluator(), 'model read', undefined);
+                const currentVal = this._safeExecute(() => getValueEvaluator());
                 if (isCheckbox && Array.isArray(currentVal)) {
                     const arr = currentVal;
                     const member = element.hasAttribute('value') ? element.value : checkboxValue;
@@ -1467,7 +1416,7 @@ const XToolFramework = function () {
             const makeActualElement = (el) => {
                 if (el[STR_TAGNAME] === STR_TEMPLATE) {
                     const wrapper = d.createElement('div');
-                    wrapper.style[STR_DISPLAY] = 'contents';
+                    wrapper.style[STR_DISPLAY] = STR_CONTENTS;
                     wrapper.appendChild(el.content.cloneNode(true));
                     return { el: wrapper, isTemplate: true };
                 }
@@ -1711,7 +1660,7 @@ const XToolFramework = function () {
                 self._safeExecute(() => runExpr(event));
             };
             const cfg = this.framework._getConfig();
-            const canDelegate = !!cfg.delegate && ['click', 'input', 'change', 'keydown', 'keyup'].includes(eventName);
+            const canDelegate = !!cfg.delegate && EV_DELEGATED.includes(eventName);
             if (!isOutside && canDelegate) {
                 const remover = this.framework._registerDelegated(element, eventName, { filter: (e) => passesFilters(e), run: (e) => createEventHandler(e), once: !!modifiers?.once, comp: this });
                 this._addCleanupFunction(remover);
@@ -1733,7 +1682,7 @@ const XToolFramework = function () {
         _createElementEvaluator(expression, element) {
             const self = this;
             const compiled = self._createEvaluator(expression);
-            return () => this._safeExecute(() => compiled.call(self._createMethodContext(), self._createContextProxy(undefined, element)), `Error evaluating expression: ${expression}`);
+            return () => this._safeExecute(() => compiled.call(self._createMethodContext(), self._createContextProxy(undefined, element)));
         }
         _extractArrowFunction(expression) {
             let m = expression.match(/^\s*\(\s*([^)]*?)\s*\)\s*=>\s*([\s\S]+)$/);
@@ -2407,7 +2356,7 @@ const XToolFramework = function () {
             let templateToClone;
             if (element[STR_TAGNAME] === STR_TEMPLATE) {
                 templateToClone = d.createElement('div');
-                templateToClone.style[STR_DISPLAY] = 'contents';
+                templateToClone.style[STR_DISPLAY] = STR_CONTENTS;
                 templateToClone.appendChild(element.content.cloneNode(true));
                 element.parentNode?.removeChild(element);
             }
@@ -2444,7 +2393,7 @@ const XToolFramework = function () {
                         return { list, keys };
                     }
                     return { list: [], keys: null };
-                }, 'x-for eval error', { list: [], keys: null });
+                }, { list: [], keys: null });
                 const list = norm.list;
                 const keysArr = norm.keys;
                 if (instances.length > list.length) {
