@@ -1,5 +1,10 @@
 # FyneJS
 
+[![npm version](https://img.shields.io/npm/v/fynejs)](https://www.npmjs.com/package/fynejs)
+[![npm downloads (weekly)](https://img.shields.io/npm/dw/fynejs)](https://www.npmjs.com/package/fynejs)
+[![npm downloads (monthly)](https://img.shields.io/npm/dm/fynejs)](https://www.npmjs.com/package/fynejs)
+[![npm downloads (total)](https://img.shields.io/npm/dt/fynejs)](https://www.npmjs.com/package/fynejs)
+
 FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 ## Why FyneJS
