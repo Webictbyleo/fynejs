@@ -1,6 +1,6 @@
 {
   "name": "fynejs",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A tiny, fast, zero-dependency reactive UI framework for the browser",
   "main": "dist/x-tool.js",
   "types": "dist/types.d.ts",
