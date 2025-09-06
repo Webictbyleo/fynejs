@@ -606,6 +606,15 @@ const XToolFramework = function () {
             this._hasComputed = false;
             this._directives = new Map();
             this._cleanupFunctions = new Set();
+            this._currentInvoker = null;
+            this._lastTimeoutByInvoker = new Map();
+            this._lastIntervalByInvoker = new Map();
+            this._lastRafByInvoker = new Map();
+            this._lastObserverByInvoker = {
+                mutation: new Map(),
+                resize: new Map(),
+                intersection: new Map()
+            };
             this._eventListeners = [];
             this._loopScopes = new WeakMap();
             this._expressionCache = new Map();
@@ -691,12 +700,15 @@ const XToolFramework = function () {
                 const originalMethod = this._originalMethods[methodName];
                 boundMethods[methodName] = (...args) => {
                     const prev = this._isInMethodExecution;
+                    const prevInv = this._currentInvoker;
                     this._isInMethodExecution = true;
+                    this._currentInvoker = methodName;
                     try {
                         return this._safeExecute(() => this._runWithGlobalInterception(originalMethod, args));
                     }
                     finally {
                         this._isInMethodExecution = prev;
+                        this._currentInvoker = prevInv;
                     }
                 };
             }
@@ -1143,6 +1155,7 @@ const XToolFramework = function () {
                         if (_prevShown === next)
                             return;
                         _prevShown = next;
+                        console.error(`x-show: ${next} (was ${!next})`);
                         el.style[STR_DISPLAY] = next ? (originalDisplay || '') : STR_NONE;
                         break;
                 }
@@ -1575,6 +1588,10 @@ const XToolFramework = function () {
                     const value = Reflect.get(target, p, receiver);
                     if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill'].includes(p)) {
                         return function (...args) {
+                            if (self._isInComputedEvaluation) {
+                                const name = String(p);
+                                throw new Error(`[x-tool] Mutation via '${String(parentKey)}.${name}()' is not allowed during computed evaluation.`);
+                            }
                             const arr = target;
                             const beforeLen = arr.length;
                             const beforeFirst = arr[0];
@@ -1597,12 +1614,16 @@ const XToolFramework = function () {
                 set: (target, p, value) => {
                     if (self._isDestroyed)
                         return true;
+                    if (self._isInComputedEvaluation) {
+                        const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
+                        throw new Error(`[x-tool] Mutation of '${key}' is not allowed during computed evaluation.`);
+                    }
                     if (typeof p === 'symbol')
                         return true;
                     const had = Reflect.has(target, p);
                     const oldValue = had ? Reflect.get(target, p) : undefined;
                     if (value && typeof value === 'object') {
-                        self._wrapData(value, parentKey);
+                        value = self._wrapData(value, typeof p === 'symbol' ? parentKey : (String(parentKey) + '.' + String(p)));
                     }
                     if (!had) {
                         try {
@@ -1625,7 +1646,13 @@ const XToolFramework = function () {
                     self._onDataChange(parentKey);
                     return true;
                 },
-                deleteProperty: (target, p) => Reflect.deleteProperty(target, p)
+                deleteProperty: (target, p) => {
+                    if (self._isInComputedEvaluation) {
+                        const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
+                        throw new Error(`[x-tool] Deletion of '${key}' is not allowed during computed evaluation.`);
+                    }
+                    return Reflect.deleteProperty(target, p);
+                }
             });
             this._deepReactiveCache.set(data, proxy);
             return proxy;
@@ -1650,9 +1677,15 @@ const XToolFramework = function () {
                 set: (target, property, value, receiver) => {
                     if (self._isDestroyed)
                         return true;
+                    if (self._isInComputedEvaluation) {
+                        throw new Error(`[x-tool] Mutation of '${String(property)}' is not allowed during computed evaluation.`);
+                    }
                     if (property === Symbol.iterator && ARRAY_ISARRAY(target))
                         return value;
                     const oldValue = Reflect.get(target, property);
+                    if (value && typeof value === 'object') {
+                        value = self._wrapData(value, property);
+                    }
                     if (oldValue === value)
                         return true;
                     const had = Reflect.has(target, property);
@@ -1735,15 +1768,15 @@ const XToolFramework = function () {
                 '$children': this._children,
                 '$mutate': (fn) => {
                     const prevMethod = this._isInMethodExecution;
-                    const prevComputed = this._isInComputedEvaluation;
+                    if (this._isInComputedEvaluation) {
+                        throw new Error('[x-tool] $mutate cannot be used inside computed evaluation; computed getters must be pure.');
+                    }
                     this._isInMethodExecution = false;
-                    this._isInComputedEvaluation = false;
                     try {
                         return typeof fn === 'function' ? fn() : undefined;
                     }
                     finally {
                         this._isInMethodExecution = prevMethod;
-                        this._isInComputedEvaluation = prevComputed;
                         this._scheduleRender();
                     }
                 }
@@ -1763,9 +1796,7 @@ const XToolFramework = function () {
                 },
                 set: (_target, propStr, value) => {
                     if (this._isInComputedEvaluation) {
-                        if (typeof console !== 'undefined' && console.warn)
-                            console.warn(`Ignored mutation of '${String(propStr)}' inside ${this._isInComputedEvaluation ? 'computed' : 'method'}; wrap in $mutate(()=>{ ... }) to apply.`);
-                        return true;
+                        throw new Error(`[x-tool] Mutation of '${String(propStr)}' is not allowed during computed evaluation.`);
                     }
                     this._data[propStr] = value;
                     return true;
@@ -1781,6 +1812,7 @@ const XToolFramework = function () {
             const cfg = this.framework._getConfig();
             const sandbox = !!cfg.sandboxExpressions;
             const allow = new Set((cfg.allowGlobals || []).map(s => String(s)));
+            const _lastListenerByTarget = new WeakMap();
             const wrapTarget = (t) => {
                 if (!t)
                     return t;
@@ -1800,11 +1832,37 @@ const XToolFramework = function () {
                     get(target, prop, receiver) {
                         if (prop === 'addEventListener') {
                             return function (event, handler, options) {
-                                target.addEventListener(event, handler, options);
-                                const remover = component._addCleanupFunction(() => { try {
-                                    target.removeEventListener(event, handler, options);
+                                const inv = component._currentInvoker || '__anonymous__';
+                                const eKey = makeKey(event, options);
+                                let invMap = _lastListenerByTarget.get(target);
+                                if (!invMap) {
+                                    invMap = new Map();
+                                    _lastListenerByTarget.set(target, invMap);
                                 }
-                                catch { } });
+                                let evMap = invMap.get(inv);
+                                if (!evMap) {
+                                    evMap = new Map();
+                                    invMap.set(inv, evMap);
+                                }
+                                const prev = evMap.get(eKey);
+                                if (prev) {
+                                    try {
+                                        target.removeEventListener(event, prev.handler, prev.options);
+                                    }
+                                    catch { }
+                                    try {
+                                        prev.remover && prev.remover();
+                                    }
+                                    catch { }
+                                    evMap.delete(eKey);
+                                }
+                                target.addEventListener(event, handler, options);
+                                const remover = component._addCleanupFunction(() => {
+                                    try {
+                                        target.removeEventListener(event, handler, options);
+                                    }
+                                    catch { }
+                                });
                                 try {
                                     if (typeof handler === 'function' && remover) {
                                         let m = handlerMap.get(handler);
@@ -1812,10 +1870,11 @@ const XToolFramework = function () {
                                             m = new Map();
                                             handlerMap.set(handler, m);
                                         }
-                                        m.set(makeKey(event, options), remover);
+                                        m.set(eKey, remover);
                                     }
                                 }
                                 catch { }
+                                evMap.set(eKey, { handler, options, remover });
                             };
                         }
                         if (prop === 'removeEventListener') {
@@ -1824,11 +1883,11 @@ const XToolFramework = function () {
                                     target.removeEventListener(event, handler, options);
                                 }
                                 catch { }
+                                const key = makeKey(event, options);
                                 try {
                                     if (typeof handler === 'function') {
                                         const m = handlerMap.get(handler);
                                         if (m) {
-                                            const key = makeKey(event, options);
                                             const rem = m.get(key);
                                             if (rem) {
                                                 try {
@@ -1844,6 +1903,22 @@ const XToolFramework = function () {
                                     }
                                 }
                                 catch { }
+                                const invMap = _lastListenerByTarget.get(target);
+                                if (invMap) {
+                                    for (const [invKey, evMap] of invMap) {
+                                        const rec = evMap.get(key);
+                                        if (rec && rec.handler === handler) {
+                                            try {
+                                                rec.remover && rec.remover();
+                                            }
+                                            catch { }
+                                            evMap.delete(key);
+                                            if (evMap.size === 0)
+                                                invMap.delete(invKey);
+                                            break;
+                                        }
+                                    }
+                                }
                             };
                         }
                         if (prop === 'querySelector') {
@@ -1875,6 +1950,19 @@ const XToolFramework = function () {
             const _intervalRemovers = new Map();
             const _rafRemovers = new Map();
             const ctxSetTimeout = (fn, ms, ...args) => {
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastTimeoutByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.clearTimeout?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.setTimeout?.(fn, ms, ...args);
                 if (id != null) {
                     const remover = component._addCleanupFunction(() => { try {
@@ -1882,10 +1970,24 @@ const XToolFramework = function () {
                     }
                     catch { } });
                     _timeoutRemovers.set(id, remover);
+                    component._lastTimeoutByInvoker.set(key, { id, remover });
                 }
                 return id;
             };
             const ctxSetInterval = (fn, ms, ...args) => {
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastIntervalByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.clearInterval?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.setInterval?.(fn, ms, ...args);
                 if (id != null) {
                     const remover = component._addCleanupFunction(() => { try {
@@ -1893,10 +1995,24 @@ const XToolFramework = function () {
                     }
                     catch { } });
                     _intervalRemovers.set(id, remover);
+                    component._lastIntervalByInvoker.set(key, { id, remover });
                 }
                 return id;
             };
             const ctxRequestAnimationFrame = (cb) => {
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastRafByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.cancelAnimationFrame?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.requestAnimationFrame?.(cb);
                 if (id != null) {
                     const remover = component._addCleanupFunction(() => { try {
@@ -1904,18 +2020,34 @@ const XToolFramework = function () {
                     }
                     catch { } });
                     _rafRemovers.set(id, remover);
+                    component._lastRafByInvoker.set(key, { id, remover });
                 }
                 return id;
             };
-            const wrapObserverCtor = (Orig) => {
+            const wrapObserverCtor = (Orig, kind) => {
                 if (!Orig)
                     return undefined;
                 const Wrapped = function (...args) {
                     const inst = new Orig(...args);
-                    component._addCleanupFunction(() => { try {
+                    const key = component._currentInvoker || '__anonymous__';
+                    let store = kind === 'mutation' ? component._lastObserverByInvoker.mutation : kind === 'resize' ? component._lastObserverByInvoker.resize : component._lastObserverByInvoker.intersection;
+                    const prev = store.get(key);
+                    if (prev) {
+                        try {
+                            prev.inst.disconnect();
+                        }
+                        catch { }
+                        ;
+                        try {
+                            prev.remover && prev.remover();
+                        }
+                        catch { }
+                    }
+                    const remover = component._addCleanupFunction(() => { try {
                         inst.disconnect();
                     }
                     catch { } });
+                    store.set(key, { inst, remover });
                     return inst;
                 };
                 Wrapped.prototype = Orig.prototype;
@@ -1969,9 +2101,9 @@ const XToolFramework = function () {
                         }
                         catch { }
                     } } }),
-                ...(sandbox && !allow.has('MutationObserver') ? {} : { 'MutationObserver': wrapObserverCtor(gWindow?.MutationObserver) }),
-                ...(sandbox && !allow.has('ResizeObserver') ? {} : { 'ResizeObserver': wrapObserverCtor(gWindow?.ResizeObserver) }),
-                ...(sandbox && !allow.has('IntersectionObserver') ? {} : { 'IntersectionObserver': wrapObserverCtor(gWindow?.IntersectionObserver) }),
+                ...(sandbox && !allow.has('MutationObserver') ? {} : { 'MutationObserver': wrapObserverCtor(gWindow?.MutationObserver, 'mutation') }),
+                ...(sandbox && !allow.has('ResizeObserver') ? {} : { 'ResizeObserver': wrapObserverCtor(gWindow?.ResizeObserver, 'resize') }),
+                ...(sandbox && !allow.has('IntersectionObserver') ? {} : { 'IntersectionObserver': wrapObserverCtor(gWindow?.IntersectionObserver, 'intersection') }),
                 ...(sandbox && !allow.has('window') ? {} : { 'window': wrapTarget(gWindow) }),
                 ...(sandbox && !allow.has('document') ? {} : { 'document': wrapTarget(gDocument) })
             };

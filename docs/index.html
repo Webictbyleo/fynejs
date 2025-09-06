@@ -106,17 +106,21 @@
   <div class="flex min-h-screen" x-data="{ 
     section: (location.hash && location.hash.slice(1)) || 'intro',
     mobileMenuOpen: false,
-    scrollToSection(id) { 
+    methods:{
+      scrollToSection(id) { 
       if (this.section !== id) this.section = id; 
       this.mobileMenuOpen = false;
       if (location.hash.slice(1) !== id) {
         // Use pushState so back/forward navigates sections
         history.pushState(null, '', '#' + id);
       }
-      requestAnimationFrame(() => {
-        const el = document.querySelector(`[data-section='${id}']`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+        this.$nextTick(()=>{
+          console.log('That is it')
+          const el = document.querySelector(`[data-section='${id}']`);
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        })
+      
+    }
     }
   }">
     
