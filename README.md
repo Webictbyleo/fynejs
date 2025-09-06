@@ -17,7 +17,7 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 ## Capabilities (with examples)
 
-- Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes, transitions
+- Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes
 
   ```html
   <div x-data="{ n: 0, items: [1,2,3], open: true }">
@@ -94,10 +94,12 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 ## Quick start (CDN)
 
-Include the minified build from jsDelivr (GitHub CDN):
+Include the minified build from jsDelivr or unpkg:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/Webictbyleo/fynejs@main/dist/x-tool.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fynejs@latest/dist/x-tool.min.js"></script>
+<!-- or -->
+<script src="https://unpkg.com/fynejs@latest/dist/x-tool.min.js"></script>
 <script>
   XTool.init({ debug: false });
 </script>
@@ -106,12 +108,6 @@ Include the minified build from jsDelivr (GitHub CDN):
   <button x-on:click="count++">+1</button>
   <span x-text="count"></span>
 </div>
-```
-
-Or pin to a commit SHA/tag:
-
-```html
-<script src="https://cdn.jsdelivr.net/gh/Webictbyleo/fynejs@<tag-or-sha>/dist/x-tool.min.js"></script>
 ```
 
 ## TypeScript usage
@@ -161,47 +157,6 @@ Or pin to a commit SHA/tag:
     </li>
   </template>
 </ul>
-```
-
-### Transitions (x-transition)
-
-Attach once on the element to define class names; sensible defaults are provided and adapt to your configured prefix.
-
-```html
-<style>
-/* example classes */
-.fade-enter { transition: opacity .15s ease; }
-.fade-enter-from { opacity: 0 }
-.fade-enter-to   { opacity: 1 }
-.fade-leave { transition: opacity .15s ease; }
-.fade-leave-from { opacity: 1 }
-.fade-leave-to   { opacity: 0 }
-</style>
-
-<div x-data="{ open: false }">
-  <button x-on:click="open = !open">Toggle</button>
-  <div x-transition="{ enter: 'fade-enter', enterFrom: 'fade-enter-from', enterTo: 'fade-enter-to', leave: 'fade-leave', leaveFrom: 'fade-leave-from', leaveTo: 'fade-leave-to' }" x-show="open">
-    I fade in/out
-  </div>
-</div>
-```
-
-Works with `x-show` and `x-if`.
-
-Notes:
-- Defaults are prefix‑aware: if you use `XTool.init({ prefix: 'x' })`, default classes are `xt-enter`, `xt-enter-from`, `xt-enter-to`, `xt-leave`, `xt-leave-from`, `xt-leave-to`.
-- Default CSS for those classes is injected automatically. Disable via `XTool.init({ injectTransitionCSS: false })` if you prefer your own styles.
-- The transition configuration expression is evaluated on demand at enter/leave time, so toggling a config flag reconfigures transitions immediately.
-- Multiple class tokens in a single string are supported (e.g. `"opacity-0 -translate-y-2"`).
-
-Example: reconfigurable transitions
-
-```html
-<div x-data="{ open:false, custom:true }">
-  <button x-on:click="open=!open">Toggle</button>
-  <label><input type="checkbox" x-model="custom"> Custom classes</label>
-  <div x-transition="custom ? { enter: 'transition ease-out duration-200', enterFrom: 'opacity-0 -translate-y-2', enterTo: 'opacity-100 translate-y-0', leave: 'transition ease-in duration-150', leaveFrom: 'opacity-100 translate-y-0', leaveTo: 'opacity-0 -translate-y-2' } : {}" x-show="open">Panel</div>
-</div>
 ```
 
 ### Next tick
