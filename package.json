@@ -47,5 +47,9 @@
       "default": "./dist/x-tool.js"
     },
     "./dist/*": "./dist/*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "terser": "^5.44.0"
   }
 }
