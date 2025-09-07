@@ -1,5 +1,6 @@
 "use strict";
 const ARRAY_ISARRAY = Array.isArray;
+const WkMap = WeakMap;
 const FT_C = true;
 const FT_TI = typeof __FEAT_TEXT_INTERP__ === 'boolean' ? __FEAT_TEXT_INTERP__ : true;
 const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ === 'boolean' ? __FEAT_DEEP_REACTIVE__ : true;
@@ -34,12 +35,12 @@ const XToolFramework = function () {
     class XToolFramework {
         constructor() {
             this._components = new Map();
-            this._byEl = new WeakMap();
+            this._byEl = new WkMap();
             this._pending = [];
             this._config = {};
             this._customDirectives = new Map();
             this._namedComponentDefs = new Map();
-            this._delegated = new WeakMap();
+            this._delegated = new WkMap();
             this._delegatedRootBound = false;
             this.directive = (name, directive) => {
                 if (name.startsWith(PFX + '-')) {
@@ -616,13 +617,13 @@ const XToolFramework = function () {
                 intersection: new Map()
             };
             this._eventListeners = [];
-            this._loopScopes = new WeakMap();
+            this._loopScopes = new WkMap();
             this._expressionCache = new Map();
             this._propertyDependencies = new Map();
             this._activeEffect = null;
             this._renderScheduled = false;
             this._nextTickQueue = [];
-            this._initialClassSets = new WeakMap();
+            this._initialClassSets = new WkMap();
             this._propParent = null;
             this._callLifecycleHook = (hookName) => {
                 const hook = this._lifecycle[hookName];
@@ -775,7 +776,8 @@ const XToolFramework = function () {
             try {
                 return fn();
             }
-            catch {
+            catch (error) {
+                console.error(error);
                 return fallback;
             }
         }
@@ -895,7 +897,7 @@ const XToolFramework = function () {
             self._isBound = false;
             self._children = [];
             self._parent = null;
-            this._deepReactiveCache = new WeakMap;
+            this._deepReactiveCache = new WkMap;
             self._element = null;
             queueMicrotask(() => self._framework._unregisterComponent(self._id));
         }
@@ -1155,7 +1157,6 @@ const XToolFramework = function () {
                         if (_prevShown === next)
                             return;
                         _prevShown = next;
-                        console.error(`x-show: ${next} (was ${!next})`);
                         el.style[STR_DISPLAY] = next ? (originalDisplay || '') : STR_NONE;
                         break;
                 }
@@ -1568,7 +1569,7 @@ const XToolFramework = function () {
                 return data;
             const self = this;
             if (!this._deepReactiveCache)
-                this._deepReactiveCache = new WeakMap();
+                this._deepReactiveCache = new WkMap();
             if (this._deepReactiveCache.has(data))
                 return this._deepReactiveCache.get(data);
             const proxy = new Proxy(data, {
@@ -1667,7 +1668,7 @@ const XToolFramework = function () {
                     if (typeof property !== 'symbol') {
                         self._trackDependency(property);
                     }
-                    if (value && typeof value == 'object') {
+                    if (value && typeof value === 'object') {
                         return self._wrapData(value, property);
                     }
                     return value;
@@ -1735,10 +1736,7 @@ const XToolFramework = function () {
                                 if (!this._renderScheduled && this._nextTickQueue.length) {
                                     const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
                                     for (const fn of q) {
-                                        try {
-                                            fn();
-                                        }
-                                        catch { }
+                                        this._safeExecute(() => fn());
                                     }
                                 }
                             });
@@ -1751,10 +1749,7 @@ const XToolFramework = function () {
                                 if (!this._renderScheduled && this._nextTickQueue.length) {
                                     const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
                                     for (const fn of q) {
-                                        try {
-                                            fn();
-                                        }
-                                        catch { }
+                                        this._safeExecute(() => fn());
                                     }
                                 }
                             });
@@ -1812,14 +1807,14 @@ const XToolFramework = function () {
             const cfg = this.framework._getConfig();
             const sandbox = !!cfg.sandboxExpressions;
             const allow = new Set((cfg.allowGlobals || []).map(s => String(s)));
-            const _lastListenerByTarget = new WeakMap();
+            const _lastListenerByTarget = new WkMap();
             const wrapTarget = (t) => {
                 if (!t)
                     return t;
                 const hasAdd = typeof t.addEventListener === 'function';
                 if (!hasAdd)
                     return t;
-                const handlerMap = new WeakMap();
+                const handlerMap = new WkMap();
                 const makeKey = (event, options) => {
                     try {
                         return event + '|' + (options === undefined ? '' : (typeof options === 'object' ? JSON.stringify(options) : String(options)));
@@ -1829,7 +1824,7 @@ const XToolFramework = function () {
                     }
                 };
                 return new Proxy(t, {
-                    get(target, prop, receiver) {
+                    get(target, prop, _receiver) {
                         if (prop === 'addEventListener') {
                             return function (event, handler, options) {
                                 const inv = component._currentInvoker || '__anonymous__';
@@ -1942,7 +1937,14 @@ const XToolFramework = function () {
                             const w = target.defaultView;
                             return wrapTarget(w) || w;
                         }
-                        return Reflect.get(target, prop, receiver);
+                        const val = target[prop];
+                        if (typeof val === 'function') {
+                            try {
+                                return val.bind(target);
+                            }
+                            catch { }
+                        }
+                        return val;
                     }
                 });
             };
