@@ -76,6 +76,10 @@ export type ComponentContext<
     readonly $isMounted: boolean;
     /** Whether component is destroyed */
     readonly $isDestroyed: boolean;
+    /** Whether component blocks renders/effects/globals */
+    readonly $isSealed: boolean;
+    /** Whether component is fully read-only */
+    readonly $isFrozen: boolean;
     /** Parent component reference */
     readonly $parent: ComponentReference | null;
     /** Child components */
@@ -92,6 +96,8 @@ export type ComponentContext<
     $nextTick(callback?: () => void): Promise<void> | void;
     /** Escape hatch to intentionally mutate reactive data */
     $mutate<T>(fn: () => T): T;
+    /** Toggle sealed mode (no renders/effects/globals). Components cannot freeze themselves. */
+    $seal(on?: boolean): void;
     /** Debug logging */
     $log(...args: any[]): void;
 };

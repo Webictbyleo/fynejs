@@ -59,6 +59,20 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 - Slot & props: lightweight component composition
 
+- Seal and freeze: temporarily pause interactivity or lock state
+
+  ```html
+  <!-- Freeze via readonly attribute (no state changes, timers/listeners/observers paused, no renders) -->
+  <component source="stats-card" readonly></component>
+
+  <!-- Seal programmatically: allow internal state but suppress renders and side-effects -->
+  <div x-data="{ paused:false, toggle(){ this.$seal(!(this.$isSealed)); this.paused = this.$isSealed; } }">
+    <button x-on:click="toggle()" x-text="$isSealed ? 'Resume' : 'Pause'"></button>
+  </div>
+  ```
+
+  Freeze is fully read‑only (no state changes, no renders). Remove the readonly attribute (or call $seal(false) for sealed) to resume interactivity when appropriate.
+
 
 - No build required: works directly in the browser; enhanced builds are optional
 
