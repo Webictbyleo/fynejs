@@ -23,51 +23,11 @@
   <!-- Favicon & App Icons -->
   <link rel="icon" type="image/png" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/logo-small.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./styles.generated.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Inter', sans-serif; }
-    code, pre { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .code-bg { background: #1a1b26; }
-    .prose pre { background: #1a1b26; border-radius: 8px; }
-    .prose code:not(pre code) { 
-      background: #f1f5f9; 
-      color: #334155; 
-      padding: 2px 6px; 
-      border-radius: 4px; 
-      font-size: 0.875em;
-    }
-    /* Enhanced code blocks */
-    pre[class*='bg-gray-900'] { position: relative; }
-    .code-block { position: relative; background:#1a1b26; color:#cbd5e1; padding:1rem 1rem 1.25rem; border-radius:0.75rem; overflow:auto; box-shadow:0 1px 2px rgba(0,0,0,0.4) inset,0 0 0 1px #0f172a; }
-    .code-block::-webkit-scrollbar { height:10px; }
-    .code-block::-webkit-scrollbar-track { background:#0f172a; }
-    .code-block::-webkit-scrollbar-thumb { background:#334155; border-radius:6px; }
-    .code-block[data-lang]::before { content: attr(data-lang); position:absolute; top:0; right:0; font-size:10px; letter-spacing:.05em; background:#0f172a; color:#64748b; padding:4px 6px; border-bottom-left-radius:6px; font-weight:600; text-transform:uppercase; }
-    .copy-btn { position:absolute; top:6px; right:6px; background:rgba(255,255,255,0.06); color:#e2e8f0; font-size:11px; padding:4px 8px; border:1px solid #334155; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:4px; backdrop-filter:blur(4px); transition:all .15s ease; }
-    .copy-btn:hover { background:#1e293b; color:#fff; }
-    .copy-btn.copied { background:#059669; border-color:#047857; color:#fff; }
-    .copy-btn svg { width:14px; height:14px; }
-    @media (max-width:640px){ .code-block { font-size:13px; padding:0.75rem 0.75rem 1rem; } }
-    .code-fade { position:absolute; pointer-events:none; bottom:0; left:0; right:0; height:32px; background:linear-gradient(to bottom,rgba(26,27,38,0),#1a1b26); }
-    .code-line-numbers { counter-reset: line; }
-    .code-line-numbers code { display:block; }
-    .code-line-numbers code span { display:block; counter-increment: line; padding-left: var(--ln-pad, 0); }
-    .code-line-numbers code span::before { content: counter(line); display:inline-block; width:2ch; margin-right:12px; color:#465269; text-align:right; }
-    .dark .code-block { background:#0f172a; }
-    .dark .copy-btn { background:rgba(255,255,255,0.08); }
-    .dark .copy-btn:hover { background:#1e293b; }
-  /* Unified code block style */
-  .xt-code { background:#0f172a !important; color:#cdd6f4 !important; font-size:0.825rem; line-height:1.4; }
-  .xt-code code { color:inherit; }
-  .xt-code .copy-btn { font-size:10px; }
-    .nav-item { transition: all 0.2s ease; }
-    .nav-item:hover { transform: translateX(4px); }
-    .section-enter { animation: slideIn 0.4s ease-out; }
-    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-  </style>
+  
   <script>
     // Enhance code blocks: wrap, add copy button, optional language detection
     document.addEventListener('DOMContentLoaded', () => {
@@ -245,38 +205,22 @@
                 Add reactivity to any HTML page with simple attributes. No compilation, no complex setup—just drop the script and start building. It ships with <strong>zero runtime dependencies</strong> (no external libraries required) so you can use it anywhere.
               </p>
 
-              <!-- Download Stats -->
-              <div x-data="downloadStatsComponent()" x-init="init()" class="mb-12">
-                <div class="flex items-center gap-4 flex-wrap">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-gray-500">NPM Downloads:</span>
-                    <template x-if="loading">
-                      <span class="animate-pulse text-gray-400 text-sm">Loading…</span>
-                    </template>
-                    <template x-if="!loading">
-                      <div class="flex gap-3">
-                        <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(day)"></div>
-                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Day</div>
-                        </div>
-                        <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(week)"></div>
-                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Week</div>
-                        </div>
-                        <div class="text-center">
-                          <div class="text-lg font-semibold text-gray-900" x-text="formatNumber(month)"></div>
-                          <div class="text-[10px] uppercase tracking-wide text-gray-500">Month</div>
-                        </div>
-                      </div>
-                    </template>
-                    <template x-if="error">
-                      <span class="text-xs text-red-600" x-text="error"></span>
-                    </template>
-                  </div>
-                  <button x-on:click="refresh()" class="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100 transition disabled:opacity-40" :disabled="loading">
-                    Refresh
-                  </button>
-                  <span class="text-[10px] text-gray-400" x-text="lastUpdated ? 'Updated ' + timeAgo(lastUpdated) : ''"></span>
+              <!-- Download Stats (badges, like README) -->
+              <div class="mb-12">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="text-sm font-medium text-gray-500">NPM:</span>
+                  <a href="https://www.npmjs.com/package/fynejs" target="_blank" rel="noreferrer" aria-label="npm version">
+                    <img class="h-6" src="https://img.shields.io/npm/v/fynejs" alt="npm version badge" />
+                  </a>
+                  <a href="https://www.npmjs.com/package/fynejs" target="_blank" rel="noreferrer" aria-label="weekly downloads">
+                    <img class="h-6" src="https://img.shields.io/npm/dw/fynejs" alt="npm weekly downloads badge" />
+                  </a>
+                  <a href="https://www.npmjs.com/package/fynejs" target="_blank" rel="noreferrer" aria-label="monthly downloads">
+                    <img class="h-6" src="https://img.shields.io/npm/dm/fynejs" alt="npm monthly downloads badge" />
+                  </a>
+                  <a href="https://www.npmjs.com/package/fynejs" target="_blank" rel="noreferrer" aria-label="total downloads">
+                    <img class="h-6" src="https://img.shields.io/npm/dt/fynejs" alt="npm total downloads badge" />
+                  </a>
                 </div>
               </div>
 
@@ -1616,65 +1560,6 @@ document.body.appendChild(instance.element);</code></pre>
       </div>
     </div>
   </footer>
-  <script>
-    function downloadStatsComponent() {
-      return {
-        loading: true,
-        error: '',
-        day: 0,
-        week: 0,
-        month: 0,
-        lastUpdated: null,
-        cacheTTL: 5 * 60 * 1000, // 5 minutes
-        formatNumber(n) {
-          if (n > 1_000_000) return (n/1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-          if (n > 1_000) return (n/1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-          return n.toLocaleString();
-        },
-        timeAgo(ts) {
-          const diff = Date.now() - ts;
-          if (diff < 60_000) return 'just now';
-            const mins = Math.floor(diff/60_000); if (mins < 60) return mins + 'm ago';
-            const hrs = Math.floor(mins/60); if (hrs < 24) return hrs + 'h ago';
-            const days = Math.floor(hrs/24); return days + 'd ago';
-        },
-        init() { this.loadCached(); this.fetchAll(); },
-        loadCached() {
-          try {
-            const raw = localStorage.getItem('xtool_dl_stats');
-            if (!raw) return;
-            const data = JSON.parse(raw);
-            if (Date.now() - data.fetched > this.cacheTTL) return; // expired
-            this.day = data.day; this.week = data.week; this.month = data.month; this.lastUpdated = data.fetched; this.loading = false;
-          } catch {}
-        },
-        persist() {
-          try { localStorage.setItem('xtool_dl_stats', JSON.stringify({ day:this.day, week:this.week, month:this.month, fetched: Date.now() })); } catch {}
-        },
-        async fetchAll() {
-          this.loading = true; this.error='';
-          try {
-            const [dayRes, weekRes, monthRes] = await Promise.all([
-              fetch('https://api.npmjs.org/downloads/point/last-day/fynejs'),
-              fetch('https://api.npmjs.org/downloads/point/last-week/fynejs'),
-              fetch('https://api.npmjs.org/downloads/point/last-month/fynejs')
-            ]);
-            if (!dayRes.ok || !weekRes.ok || !monthRes.ok) throw new Error('Failed');
-            const [dayJson, weekJson, monthJson] = await Promise.all([dayRes.json(), weekRes.json(), monthRes.json()]);
-            this.day = dayJson.downloads || 0;
-            this.week = weekJson.downloads || 0;
-            this.month = monthJson.downloads || 0;
-            this.lastUpdated = Date.now();
-            this.persist();
-          } catch (e) {
-            this.error = 'Unable to load stats';
-          } finally {
-            this.loading = false;
-          }
-        },
-        refresh() { this.fetchAll(); }
-      };
-    }
-  </script>
+  
 </body>
 </html>
