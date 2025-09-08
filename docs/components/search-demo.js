@@ -1,7 +1,7 @@
 // Real-time Search with Debouncing (extracted)
 XTool.registerComponent({
   name: 'search-demo',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Real-time Search</h3>
       <div class="relative mb-4">
@@ -70,7 +70,7 @@ XTool.registerComponent({
     handleSearch() {
       this.isSearching = true;
       if (this.searchTimeout) clearTimeout(this.searchTimeout);
-      this.searchTimeout = setTimeout(() => { this.performSearch(); this.isSearching = false; }, 300);
+      this.searchTimeout = setTimeout(() => {this.performSearch(); this.isSearching = false; }, 300);
     },
     performSearch() {
       const query = this.searchQuery.trim().toLowerCase();
@@ -79,6 +79,7 @@ XTool.registerComponent({
         country.name.toLowerCase().includes(query) ||
         country.capital.toLowerCase().includes(query)
       );
+      console.log(`Search for "${this.searchQuery}" returned ${this.filteredResults.length} results`);
     }
   },
   mounted() { this.filteredResults = [...this.countries]; }

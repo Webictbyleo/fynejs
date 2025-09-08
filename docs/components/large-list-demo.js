@@ -1,7 +1,13 @@
 // Large List Performance Demo (extracted)
 XTool.registerComponent({
   name: 'large-list-demo',
-  template: `
+  template: html`
+    <style>
+      [x-ref=listContainer] > div{
+        content-visibility: auto;
+        contain-intrinsic-size: 24rem;
+      }
+    </style>
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Large List Performance Demo</h3>
       <!-- Controls -->

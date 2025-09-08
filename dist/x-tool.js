@@ -641,7 +641,6 @@ const XToolFramework = function () {
             this._propEffects = {};
             this._computedCache = new Map();
             this._computedDeps = new Map();
-            this._inverseComputedDeps = new Map();
             this._isInComputedEvaluation = false;
             this._isInMethodExecution = false;
             this._allEffects = new Set();
@@ -668,6 +667,7 @@ const XToolFramework = function () {
             this._renderScheduled = false;
             this._nextTickQueue = [];
             this._initialClassSets = new WkMap();
+            this._rawData = {};
             this._propParent = null;
             this._callLifecycleHook = (hookName) => {
                 const hook = this._lifecycle[hookName];
@@ -713,7 +713,8 @@ const XToolFramework = function () {
                 beforeMount: def.beforeMount,
                 beforeUnmount: def.beforeUnmount || def.beforeDestroy
             };
-            this._data = this._createReactiveData(def.data || {});
+            this._rawData = def.data || {};
+            this._data = this._createReactiveData(this._rawData || {});
             this._methods = this._bindMethods();
         }
         callBeforeMount() {
@@ -724,27 +725,27 @@ const XToolFramework = function () {
         }
         _onDataChange(_property) {
             if (this.isBound) {
-                if (FT_C)
-                    this._computedCache.clear();
-                const effectsToRun = new Set();
                 const self = this;
                 if (self.LastBatchId) {
                     cancelAnimationFrame(self.LastBatchId);
                 }
                 self.LastBatchId = requestAnimationFrame(() => {
+                    if (FT_C)
+                        self._computedCache.clear();
+                    const effectsToRun = new Set();
                     self.LastBatchId = null;
                     if (self.isDestroyed)
                         return;
-                    const directDeps = this._propertyDependencies.get(_property);
+                    const directDeps = self._propertyDependencies.get(_property);
                     if (directDeps)
                         for (let i = 0; i < directDeps.length; i++)
                             effectsToRun.add(directDeps[i]);
                     for (const effect of effectsToRun)
-                        this._safeExecute(effect);
-                    if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
-                        this._scheduleRender();
+                        self._safeExecute(effect);
+                    if (self._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
+                        self._scheduleRender();
                     }
-                    this._callLifecycleHook('updated');
+                    self._callLifecycleHook('updated');
                 });
             }
         }
@@ -777,21 +778,13 @@ const XToolFramework = function () {
             try {
                 const computeFn = this._computed[key];
                 this._isInComputedEvaluation = true;
-                const prev = this._computedDeps.get(key);
-                if (prev) {
-                    for (const dep of prev) {
-                        const set = this._inverseComputedDeps.get(dep);
-                        if (set)
-                            set.delete(key);
-                    }
-                }
                 this._computedDeps.set(key, new Set());
                 const value = computeFn.call(this._createMethodContext());
                 this._isInComputedEvaluation = false;
                 this._computedCache.set(key, value);
                 return value;
             }
-            catch {
+            catch (e) {
                 this._isInComputedEvaluation = false;
                 return undefined;
             }
@@ -1642,7 +1635,7 @@ const XToolFramework = function () {
                         self._trackDependency(parentKey);
                     }
                     const value = Reflect.get(target, p, receiver);
-                    if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'copyWithin', 'fill'].includes(p)) {
+                    if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'reverse', 'copyWithin', 'fill'].includes(p)) {
                         return function (...args) {
                             if (self._isInComputedEvaluation) {
                                 const name = String(p);
@@ -1757,11 +1750,6 @@ const XToolFramework = function () {
                     if (property === Symbol.iterator && ARRAY_ISARRAY(target))
                         return value;
                     const oldValue = Reflect.get(target, property);
-                    if (value && typeof value === 'object') {
-                        value = self._wrapData(value, property);
-                    }
-                    if (oldValue === value)
-                        return true;
                     const had = Reflect.has(target, property);
                     if (!had) {
                         try {
@@ -1853,15 +1841,20 @@ const XToolFramework = function () {
                     }
                 }
             };
-            return new Proxy(this._data, {
+            let data = this._data;
+            if (this._isInComputedEvaluation) {
+                data = this._rawData;
+            }
+            return new Proxy(data, {
                 get: (target, propStr) => {
                     if (propStr in target) {
                         this._trackDependency(propStr);
                         const v = target[propStr];
                         return v;
                     }
-                    if (FT_C && (propStr in this._computed))
+                    if (FT_C && (propStr in this._computed)) {
                         return this._getComputedValue(propStr);
+                    }
                     if (propStr in specials)
                         return specials[propStr];
                     return this._methods[propStr];
