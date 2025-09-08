@@ -1843,6 +1843,9 @@ const XToolFramework = function () {
                 }
             };
             let data = this._data;
+            if (this._isInComputedEvaluation) {
+                data = this._rawData;
+            }
             return new Proxy(data, {
                 get: (target, propStr) => {
                     if (propStr in target) {
