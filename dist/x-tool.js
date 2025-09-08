@@ -1751,6 +1751,7 @@ const XToolFramework = function () {
                         return value;
                     const oldValue = Reflect.get(target, property);
                     const had = Reflect.has(target, property);
+                    console.error('SET', property);
                     if (!had) {
                         try {
                             Reflect.defineProperty(target, property, {
