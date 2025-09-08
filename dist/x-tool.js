@@ -650,6 +650,7 @@ const XToolFramework = function () {
             this._isSealed = false;
             this._isFrozen = false;
             this._userResourceCleanups = new Set();
+            this._effectsToRun = new Set();
             this._currentInvoker = null;
             this._lastTimeoutByInvoker = new Map();
             this._lastIntervalByInvoker = new Map();
@@ -726,22 +727,23 @@ const XToolFramework = function () {
         _onDataChange(_property) {
             if (this.isBound) {
                 const self = this;
+                const effectsToRun = self._effectsToRun;
+                const directDeps = self._propertyDependencies.get(_property);
+                if (directDeps)
+                    for (let i = 0; i < directDeps.length; i++)
+                        effectsToRun.add(directDeps[i]);
                 if (self.LastBatchId) {
                     cancelAnimationFrame(self.LastBatchId);
                 }
                 self.LastBatchId = requestAnimationFrame(() => {
                     if (FT_C)
                         self._computedCache.clear();
-                    const effectsToRun = new Set();
                     self.LastBatchId = null;
                     if (self.isDestroyed)
                         return;
-                    const directDeps = self._propertyDependencies.get(_property);
-                    if (directDeps)
-                        for (let i = 0; i < directDeps.length; i++)
-                            effectsToRun.add(directDeps[i]);
                     for (const effect of effectsToRun)
                         self._safeExecute(effect);
+                    effectsToRun.clear();
                     if (self._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
                         self._scheduleRender();
                     }
@@ -946,6 +948,7 @@ const XToolFramework = function () {
             self._children = [];
             self._parent = null;
             this._deepReactiveCache = new WkMap;
+            this._effectsToRun.clear();
             self._element = null;
             quMct(() => self._framework._unregisterComponent(self._id));
         }
