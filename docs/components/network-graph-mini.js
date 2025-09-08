@@ -1,7 +1,7 @@
 // Network Graph Mini (simulated positions streaming)
 XTool.registerComponent({
   name: 'network-graph-mini',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto">
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-lg font-semibold text-gray-800">Network Graph Mini</h3>
@@ -75,7 +75,7 @@ XTool.registerComponent({
         if(n.x<0) n.x=0; if(n.x>1000) n.x=1000; if(n.y<0) n.y=0; if(n.y>1000) n.y=1000;
       }
     },
-    loop(){ if(!this.running) return; this.$mutate(()=> this.tick()); this.timer = setTimeout(()=>this.loop(), 120); },
+    loop(){return; if(!this.running) return; this.tick(); this.timer = setTimeout(()=>this.loop(), 120); },
     toggle(){ this.running = !this.running; if(this.running) this.loop(); },
   },
   mounted(){ this.initGraph(); this.loop(); }

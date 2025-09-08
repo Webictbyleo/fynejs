@@ -727,16 +727,25 @@ const XToolFramework = function () {
                 if (FT_C)
                     this._computedCache.clear();
                 const effectsToRun = new Set();
-                const directDeps = this._propertyDependencies.get(_property);
-                if (directDeps)
-                    for (let i = 0; i < directDeps.length; i++)
-                        effectsToRun.add(directDeps[i]);
-                for (const effect of effectsToRun)
-                    this._safeExecute(effect);
-                if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
-                    this._scheduleRender();
+                const self = this;
+                if (self.LastBatchId) {
+                    cancelAnimationFrame(self.LastBatchId);
                 }
-                this._callLifecycleHook('updated');
+                self.LastBatchId = requestAnimationFrame(() => {
+                    self.LastBatchId = null;
+                    if (self.isDestroyed)
+                        return;
+                    const directDeps = this._propertyDependencies.get(_property);
+                    if (directDeps)
+                        for (let i = 0; i < directDeps.length; i++)
+                            effectsToRun.add(directDeps[i]);
+                    for (const effect of effectsToRun)
+                        this._safeExecute(effect);
+                    if (this._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES) {
+                        this._scheduleRender();
+                    }
+                    this._callLifecycleHook('updated');
+                });
             }
         }
         _bindMethods() {

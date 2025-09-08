@@ -18,10 +18,9 @@
     'realtime-dashboard.js',
     // New advanced performance components
     'virtual-log-stream.js',
-/*     'order-book-ticker.js',
-    'json-tree-explorer.js',
+    'order-book-ticker.js',
     'network-graph-mini.js',
-    'timeseries-resampler.js' */
+    'timeseries-resampler.js'
   ];
   const basePath = 'components/';
 
