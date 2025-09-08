@@ -1753,8 +1753,9 @@ const XToolFramework = function () {
                     if (property === Symbol.iterator && ARRAY_ISARRAY(target))
                         return value;
                     const oldValue = Reflect.get(target, property);
+                    if (oldValue === value)
+                        return true;
                     const had = Reflect.has(target, property);
-                    console.error('SET', property);
                     if (!had) {
                         try {
                             Reflect.defineProperty(target, property, {
