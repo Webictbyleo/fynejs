@@ -8,7 +8,7 @@ XTool.registerComponent({
         contain-intrinsic-size: 24rem;
       }
     </style>
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-4xl mx-auto">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Large List Performance Demo</h3>
       <!-- Controls -->
       <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -57,7 +57,7 @@ XTool.registerComponent({
         </div>
       </div>
       <!-- Bulk Actions -->
-      <div class="mb-4 flex flex-wrap gap-2">
+  <div class="mb-4 flex flex-wrap gap-2">
         <button x-on:click="generateItems" 
                 class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
           Add 1000 Items

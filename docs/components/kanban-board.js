@@ -2,11 +2,11 @@
 XTool.registerComponent({
   name: 'kanban-board',
   template: `
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex items-start justify-between mb-4 flex-wrap gap-4">
         <h3 class="text-lg font-semibold text-gray-800">Kanban Board</h3>
-        <form x-on:submit.prevent="addCard" class="flex gap-2 items-center">
-          <input x-model="newTitle" type="text" placeholder="New task title" class="px-3 py-2 border rounded text-sm w-48" />
+        <form x-on:submit.prevent="addCard" class="flex gap-2 items-center flex-wrap">
+          <input x-model="newTitle" type="text" placeholder="New task title" class="px-3 py-2 border rounded text-sm w-full sm:w-48" />
           <select x-model="newColumn" class="px-2 py-2 border rounded text-sm">
             <option x-for="col in columns" x-bind:value="col.key" x-text="col.label"></option>
           </select>

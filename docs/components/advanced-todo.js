@@ -2,7 +2,7 @@
 XTool.registerComponent({
   name: 'advanced-todo',
   template: `
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-md mx-auto">
       <div class="flex items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-800 flex-1">Advanced Todo</h2>
         <span class="text-sm text-gray-500" x-text="'(' + todos.filter(t => !t.completed).length + ' active)'"></span>
@@ -10,7 +10,7 @@ XTool.registerComponent({
       
       <!-- Add Todo -->
       <form x-on:submit.prevent="addTodo" class="mb-4">
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
           <input 
             type="text" 
             x-model="newTodo" 
@@ -27,7 +27,7 @@ XTool.registerComponent({
       </form>
 
       <!-- Filters -->
-      <div class="flex gap-1 mb-4 p-1 bg-gray-100 rounded-lg">
+  <div class="flex gap-1 mb-4 p-1 bg-gray-100 rounded-lg flex-wrap">
         <button 
           x-for="filter in filters"
           x-on:click="currentFilter = filter.key"

@@ -2,8 +2,8 @@
 XTool.registerComponent({
   name: 'virtual-log-stream',
   template: html`
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto flex flex-col h-[520px]">
-      <div class="flex items-center justify-between mb-3">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto flex flex-col h-[70vh] md:h-[520px]">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 class="text-lg font-semibold text-gray-800">Virtual Log Stream</h3>
         <div class="flex gap-2 text-xs">
           <button x-on:click="toggle" class="px-2 py-1 rounded border" x:class="{ 'bg-green-500 text-white border-green-500': running, 'bg-gray-200': !running }" x-text="running ? 'Pause' : 'Resume'"></button>
@@ -11,7 +11,7 @@ XTool.registerComponent({
           <button x-on:click="jumpBottom" class="px-2 py-1 rounded border bg-gray-100 hover:bg-gray-200">Bottom</button>
         </div>
       </div>
-      <div class="grid grid-cols-4 gap-3 text-center mb-3">
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-3">
         <div class="bg-blue-50 p-2 rounded"><div class="text-sm font-mono" x-text="totalLines.toLocaleString()"></div><div class="text-[10px] text-blue-600">Total</div></div>
         <div class="bg-green-50 p-2 rounded"><div class="text-sm font-mono" x-text="visible.length"></div><div class="text-[10px] text-green-600">Visible</div></div>
         <div class="bg-purple-50 p-2 rounded"><div class="text-sm font-mono" x-text="linesPerSec"></div><div class="text-[10px] text-purple-600">Lines/s</div></div>

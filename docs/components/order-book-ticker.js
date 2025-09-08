@@ -11,7 +11,7 @@ XTool.registerComponent({
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2 grid grid-cols-2 gap-4">
+        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Bids</h4>
             <div class="border rounded overflow-hidden divide-y text-xs font-mono">
@@ -33,7 +33,7 @@ XTool.registerComponent({
             </div>
           </div>
         </div>
-        <div class="flex flex-col gap-2">
+  <div class="flex flex-col gap-2 order-first md:order-last">
           <div class="p-3 border rounded bg-gray-50 space-y-1">
             <div class="flex justify-between text-xs"><span>Mid</span><span class="font-mono" x-text="mid.toFixed(2)"></span></div>
             <div class="flex justify-between text-xs"><span>Spread</span><span class="font-mono" x-text="spread.toFixed(2)"></span></div>

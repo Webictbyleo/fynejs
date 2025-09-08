@@ -2,7 +2,7 @@
 XTool.registerComponent({
   name: 'realtime-dashboard',
   template: `
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto space-y-6">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-800">Realtime Dashboard</h3>
         <div class="flex gap-2">
@@ -10,7 +10,7 @@ XTool.registerComponent({
           <button x-on:click="reset" class="px-3 py-1 rounded text-sm bg-gray-200 hover:bg-gray-300">Reset</button>
         </div>
       </div>
-      <div class="grid md:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <div x-for="metric in metrics" class="p-4 rounded border bg-gray-50 flex flex-col gap-2">
           <div class="flex justify-between items-center">
             <span class="text-xs uppercase tracking-wide text-gray-500" x-text="metric.label"></span>
@@ -27,7 +27,7 @@ XTool.registerComponent({
           </div>
         </div>
       </div>
-      <div class="grid md:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="p-4 rounded border bg-gray-50 space-y-2">
           <h4 class="text-sm font-medium text-gray-700">System Load</h4>
           <div class="flex items-center gap-2">

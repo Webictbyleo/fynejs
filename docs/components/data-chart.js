@@ -56,8 +56,8 @@ XTool.registerComponent({
         </div>
       </div>
 
-      <!-- Data Controls -->
-      <div class="grid grid-cols-2 gap-4 mb-4">
+  <!-- Data Controls -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Add Data Point</label>
           <div class="flex gap-2">

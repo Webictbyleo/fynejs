@@ -2,8 +2,8 @@
 XTool.registerComponent({
   name: 'network-graph-mini',
   template: html`
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto">
-      <div class="flex items-center justify-between mb-3">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto">
+  <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
         <h3 class="text-lg font-semibold text-gray-800">Network Graph Mini</h3>
         <div class="flex gap-2 text-xs">
           <label class="flex items-center gap-1">Nodes <input type="range" min="100" max="1200" step="100" x-model="nodeCount" class="w-32"/></label>
@@ -11,7 +11,7 @@ XTool.registerComponent({
           <button x-on:click="toggle" class="px-2 py-1 border rounded" x:class="{ 'bg-green-500 text-white': running, 'bg-gray-200': !running }" x-text="running? 'Pause':'Resume'"></button>
         </div>
       </div>
-      <div class="relative border rounded bg-gray-50 overflow-hidden h-[400px]" x-ref="stage">
+  <div class="relative border rounded bg-gray-50 overflow-hidden h-[50vh] md:h-[400px]" x-ref="stage">
         <svg class="absolute inset-0 w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">
           <g>
             <line x-for="e in visibleEdges" x:stroke="e.h? '#f59e0b' : '#94a3b8'" stroke-width="1" x:x1="e.x1" x:y1="e.y1" x:x2="e.x2" x:y2="e.y2" stroke-linecap="round" />

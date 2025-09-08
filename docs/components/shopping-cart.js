@@ -48,11 +48,11 @@ XTool.registerComponent({
       </div>
       <!-- Discount Code -->
       <div x-if="cartItems.length > 0" class="mb-4">
-        <div class="flex space-x-2">
+        <div class="flex flex-wrap gap-2">
           <input x-model="discountCode" 
                  type="text" 
                  placeholder="Discount code"
-                 class="flex-1 border rounded px-3 py-2">
+                 class="min-w-[160px] flex-1 border rounded px-3 py-2">
           <button x-on:click="applyDiscount" 
                   class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">
             Apply
@@ -92,9 +92,9 @@ XTool.registerComponent({
             <span x-text="formatCurrency(totalAmount)"></span>
           </div>
         </div>
-        <div class="mt-4 space-x-2">
-          <button x-on:click="checkout" 
-                  class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded">
+  <div class="mt-4 flex flex-wrap gap-2">
+    <button x-on:click="checkout" 
+      class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded">
             Checkout
           </button>
           <button x-on:click="clearCart" 

@@ -2,8 +2,8 @@
 XTool.registerComponent({
   name: 'markdown-editor',
   template: `
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl mx-auto grid gap-6">
-      <div class="flex items-center justify-between">
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-3xl mx-auto grid gap-6">
+  <div class="flex items-center justify-between flex-wrap gap-2">
         <h3 class="text-lg font-semibold text-gray-800">Markdown Editor</h3>
         <div class="flex gap-2 text-xs text-gray-500">
           <span>Words: {{ wordCount }}</span>
@@ -12,7 +12,7 @@ XTool.registerComponent({
           <span x-if="savedAt">| Saved: {{ timeSinceSave }}</span>
         </div>
       </div>
-      <div class="grid md:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="flex flex-col">
           <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-gray-600">Markdown</label>
