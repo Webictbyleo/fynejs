@@ -9,7 +9,7 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 ## Why FyneJS
 
-- Tiny & fast: < 10KB gzipped, zero dependencies
+- Tiny & fast: zero dependencies and optimized for performance
 - Engineered reactivity: lean, cached evaluations; fine‑grained computed invalidation
 - Smart GC: precise cleanup for timers, observers, events, and component trees
 - Declarative power: rich directives and component composition without a build step
