@@ -1,6 +1,7 @@
 "use strict";
 const ARRAY_ISARRAY = Array.isArray;
 const WkMap = WeakMap;
+const quMct = queueMicrotask;
 const FT_C = true;
 const FT_TI = typeof __FEAT_TEXT_INTERP__ === 'boolean' ? __FEAT_TEXT_INTERP__ : true;
 const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ === 'boolean' ? __FEAT_DEEP_REACTIVE__ : true;
@@ -192,7 +193,7 @@ const XToolFramework = function () {
                             catch { }
                         }
                         const evaluator = new Function('ctx', 'with(ctx){' + initExpr + '} ');
-                        queueMicrotask(() => {
+                        quMct(() => {
                             if (comp.isDestroyed || !comp.element || !comp.element.isConnected)
                                 return;
                             try {
@@ -264,7 +265,7 @@ const XToolFramework = function () {
                             if (n.nodeType !== 1)
                                 continue;
                             const el = n;
-                            queueMicrotask(() => {
+                            quMct(() => {
                                 if (el.isConnected)
                                     return;
                                 const stack = [el];
@@ -288,14 +289,26 @@ const XToolFramework = function () {
                     }
                     else if (r.type === 'attributes') {
                         const target = r.target;
-                        if (target && target[STR_TAGNAME] === 'COMPONENT' && r.attributeName === 'source') {
-                            this._onComponentSourceChanged(target);
+                        if (target && target[STR_TAGNAME] === 'COMPONENT') {
+                            if (r.attributeName === 'source') {
+                                this._onComponentSourceChanged(target);
+                            }
+                            else if (r.attributeName === 'readonly') {
+                                const comp = this._getComponentByElement(target);
+                                if (comp) {
+                                    try {
+                                        const ro = target.hasAttribute('readonly');
+                                        comp.setFrozen(!!ro);
+                                    }
+                                    catch { }
+                                }
+                            }
                         }
                     }
                 }
                 this._processPending();
             });
-            this._rootObserver.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['source'] });
+            this._rootObserver.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ['source', 'readonly'] });
         }
         _onComponentSourceChanged(el) {
             const src = (el.getAttribute('source') || '').trim();
@@ -581,6 +594,34 @@ const XToolFramework = function () {
         set isMounted(v) { this._isMounted = v; }
         get isDestroyed() { return this._isDestroyed; }
         set isDestroyed(v) { this._isDestroyed = v; }
+        _cancelUserResources() {
+            for (const fn of Array.from(this._userResourceCleanups)) {
+                try {
+                    fn();
+                }
+                catch { }
+                this._userResourceCleanups.delete(fn);
+            }
+        }
+        setFrozen(on) {
+            if (on === this._isFrozen)
+                return;
+            this._isFrozen = on;
+            if (on) {
+                this._isSealed = true;
+                this._cancelUserResources();
+            }
+            else {
+            }
+        }
+        _setSealed(on) {
+            if (on === this._isSealed)
+                return;
+            this._isSealed = on;
+            if (on) {
+                this._cancelUserResources();
+            }
+        }
         _addDirective(element, directive) {
             const existing = this._directives.get(element) || [];
             existing.push(directive);
@@ -607,6 +648,9 @@ const XToolFramework = function () {
             this._hasComputed = false;
             this._directives = new Map();
             this._cleanupFunctions = new Set();
+            this._isSealed = false;
+            this._isFrozen = false;
+            this._userResourceCleanups = new Set();
             this._currentInvoker = null;
             this._lastTimeoutByInvoker = new Map();
             this._lastIntervalByInvoker = new Map();
@@ -755,6 +799,8 @@ const XToolFramework = function () {
                 deps.push(this._activeEffect);
         }
         _scheduleRender() {
+            if (this._isSealed || this._isFrozen)
+                return;
             if (this._renderScheduled)
                 return;
             this._renderScheduled = true;
@@ -899,7 +945,7 @@ const XToolFramework = function () {
             self._parent = null;
             this._deepReactiveCache = new WkMap;
             self._element = null;
-            queueMicrotask(() => self._framework._unregisterComponent(self._id));
+            quMct(() => self._framework._unregisterComponent(self._id));
         }
         _initReactiveProps(expr, parent) {
             if (!expr || !parent)
@@ -1513,9 +1559,9 @@ const XToolFramework = function () {
                     event.stopPropagation();
                 if (!runExpr)
                     return;
-                if (deferExec && typeof queueMicrotask === 'function') {
+                if (deferExec && typeof quMct === 'function') {
                     const ev = event;
-                    queueMicrotask(() => self._safeExecute(() => runExpr(ev)));
+                    quMct(() => self._safeExecute(() => runExpr(ev)));
                     return;
                 }
                 self._safeExecute(() => runExpr(event));
@@ -1593,12 +1639,16 @@ const XToolFramework = function () {
                                 const name = String(p);
                                 throw new Error(`[x-tool] Mutation via '${String(parentKey)}.${name}()' is not allowed during computed evaluation.`);
                             }
+                            if (self._isFrozen) {
+                                const name = String(p);
+                                throw new Error(`[x-tool] Mutation via '${String(parentKey)}.${name}()' is not allowed while component is frozen.`);
+                            }
                             const arr = target;
                             const beforeLen = arr.length;
                             const beforeFirst = arr[0];
                             const beforeLast = arr[beforeLen - 1];
                             const result = value.apply(target, args);
-                            if (arr.length !== beforeLen || arr[0] !== beforeFirst || arr[arr.length - 1] !== beforeLast) {
+                            if (!self._isSealed && (arr.length !== beforeLen || arr[0] !== beforeFirst || arr[arr.length - 1] !== beforeLast)) {
                                 self._onDataChange(parentKey);
                             }
                             return result;
@@ -1618,6 +1668,10 @@ const XToolFramework = function () {
                     if (self._isInComputedEvaluation) {
                         const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
                         throw new Error(`[x-tool] Mutation of '${key}' is not allowed during computed evaluation.`);
+                    }
+                    if (self._isFrozen) {
+                        const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
+                        throw new Error(`[x-tool] Mutation of '${key}' is not allowed while component is frozen.`);
                     }
                     if (typeof p === 'symbol')
                         return true;
@@ -1644,7 +1698,8 @@ const XToolFramework = function () {
                     if (oldValue === value)
                         return true;
                     Reflect.set(target, p, value);
-                    self._onDataChange(parentKey);
+                    if (!self._isSealed)
+                        self._onDataChange(parentKey);
                     return true;
                 },
                 deleteProperty: (target, p) => {
@@ -1652,7 +1707,14 @@ const XToolFramework = function () {
                         const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
                         throw new Error(`[x-tool] Deletion of '${key}' is not allowed during computed evaluation.`);
                     }
-                    return Reflect.deleteProperty(target, p);
+                    if (self._isFrozen) {
+                        const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
+                        throw new Error(`[x-tool] Deletion of '${key}' is not allowed while component is frozen.`);
+                    }
+                    const ok = Reflect.deleteProperty(target, p);
+                    if (ok && !self._isSealed)
+                        self._onDataChange(parentKey);
+                    return ok;
                 }
             });
             this._deepReactiveCache.set(data, proxy);
@@ -1677,6 +1739,8 @@ const XToolFramework = function () {
                 has: (target, key) => Reflect.has(target, key),
                 set: (target, property, value, receiver) => {
                     if (self._isDestroyed)
+                        return true;
+                    if (self._isFrozen)
                         return true;
                     if (self._isInComputedEvaluation) {
                         throw new Error(`[x-tool] Mutation of '${String(property)}' is not allowed during computed evaluation.`);
@@ -1706,13 +1770,14 @@ const XToolFramework = function () {
                     else {
                         Reflect.set(target, property, value, receiver);
                     }
-                    this._onDataChange(property);
+                    if (!this._isSealed)
+                        this._onDataChange(property);
                     if (this._propUpdateActive && property !== '$props') {
                         const pc = target.$props;
                         if (pc)
                             pc[property] = value;
                         const eff = this._propEffects[property];
-                        if (eff && !this._runningPropEffect) {
+                        if (eff && !this._runningPropEffect && !this._isSealed) {
                             this._runningPropEffect = true;
                             this._safeExecute(() => eff.call(this._createMethodContext(), value, oldValue));
                             this._runningPropEffect = false;
@@ -1732,7 +1797,7 @@ const XToolFramework = function () {
                     if (cb) {
                         this._nextTickQueue.push(cb);
                         if (!this._renderScheduled)
-                            queueMicrotask(() => {
+                            quMct(() => {
                                 if (!this._renderScheduled && this._nextTickQueue.length) {
                                     const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
                                     for (const fn of q) {
@@ -1745,7 +1810,7 @@ const XToolFramework = function () {
                     return new Promise(resolve => {
                         this._nextTickQueue.push(() => resolve());
                         if (!this._renderScheduled)
-                            queueMicrotask(() => {
+                            quMct(() => {
                                 if (!this._renderScheduled && this._nextTickQueue.length) {
                                     const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
                                     for (const fn of q) {
@@ -1759,8 +1824,11 @@ const XToolFramework = function () {
                 '$id': this._id,
                 '$isMounted': this._isMounted,
                 '$isDestroyed': this._isDestroyed,
+                '$isSealed': this._isSealed,
+                '$isFrozen': this._isFrozen,
                 '$parent': this._parent,
                 '$children': this._children,
+                '$seal': (on = true) => { this._setSealed(!!on); },
                 '$mutate': (fn) => {
                     const prevMethod = this._isInMethodExecution;
                     if (this._isInComputedEvaluation) {
@@ -1792,6 +1860,9 @@ const XToolFramework = function () {
                 set: (_target, propStr, value) => {
                     if (this._isInComputedEvaluation) {
                         throw new Error(`[x-tool] Mutation of '${String(propStr)}' is not allowed during computed evaluation.`);
+                    }
+                    if (this._isFrozen) {
+                        throw new Error(`[x-tool] Mutation of '${String(propStr)}' is not allowed while component is frozen.`);
                     }
                     this._data[propStr] = value;
                     return true;
@@ -1827,6 +1898,8 @@ const XToolFramework = function () {
                     get(target, prop, _receiver) {
                         if (prop === 'addEventListener') {
                             return function (event, handler, options) {
+                                if (component._isSealed || component._isFrozen)
+                                    return;
                                 const inv = component._currentInvoker || '__anonymous__';
                                 const eKey = makeKey(event, options);
                                 let invMap = _lastListenerByTarget.get(target);
@@ -1858,6 +1931,8 @@ const XToolFramework = function () {
                                     }
                                     catch { }
                                 });
+                                if (remover)
+                                    component._userResourceCleanups.add(remover);
                                 try {
                                     if (typeof handler === 'function' && remover) {
                                         let m = handlerMap.get(handler);
@@ -1952,6 +2027,8 @@ const XToolFramework = function () {
             const _intervalRemovers = new Map();
             const _rafRemovers = new Map();
             const ctxSetTimeout = (fn, ms, ...args) => {
+                if (component._isSealed || component._isFrozen)
+                    return undefined;
                 const key = component._currentInvoker || '__anonymous__';
                 const prev = component._lastTimeoutByInvoker.get(key);
                 if (prev) {
@@ -1971,12 +2048,16 @@ const XToolFramework = function () {
                         gWindow?.clearTimeout?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
                     _timeoutRemovers.set(id, remover);
                     component._lastTimeoutByInvoker.set(key, { id, remover });
                 }
                 return id;
             };
             const ctxSetInterval = (fn, ms, ...args) => {
+                if (component._isSealed || component._isFrozen)
+                    return undefined;
                 const key = component._currentInvoker || '__anonymous__';
                 const prev = component._lastIntervalByInvoker.get(key);
                 if (prev) {
@@ -1996,12 +2077,16 @@ const XToolFramework = function () {
                         gWindow?.clearInterval?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
                     _intervalRemovers.set(id, remover);
                     component._lastIntervalByInvoker.set(key, { id, remover });
                 }
                 return id;
             };
             const ctxRequestAnimationFrame = (cb) => {
+                if (component._isSealed || component._isFrozen)
+                    return undefined;
                 const key = component._currentInvoker || '__anonymous__';
                 const prev = component._lastRafByInvoker.get(key);
                 if (prev) {
@@ -2021,6 +2106,8 @@ const XToolFramework = function () {
                         gWindow?.cancelAnimationFrame?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
                     _rafRemovers.set(id, remover);
                     component._lastRafByInvoker.set(key, { id, remover });
                 }
@@ -2030,6 +2117,8 @@ const XToolFramework = function () {
                 if (!Orig)
                     return undefined;
                 const Wrapped = function (...args) {
+                    if (component._isSealed || component._isFrozen)
+                        return { observe() { }, disconnect() { }, unobserve() { } };
                     const inst = new Orig(...args);
                     const key = component._currentInvoker || '__anonymous__';
                     let store = kind === 'mutation' ? component._lastObserverByInvoker.mutation : kind === 'resize' ? component._lastObserverByInvoker.resize : component._lastObserverByInvoker.intersection;
@@ -2049,6 +2138,8 @@ const XToolFramework = function () {
                         inst.disconnect();
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
                     store.set(key, { inst, remover });
                     return inst;
                 };

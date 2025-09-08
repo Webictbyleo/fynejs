@@ -279,7 +279,7 @@
                   <ul class="space-y-2 text-sm text-gray-700">
                     <li><strong>Tiny & Fast:</strong> Minimal runtime with efficient reactivity caching.</li>
                     <li><strong>Declarative Directives:</strong> Text, HTML, show/hide, if/else, loops, model binding, events, styles, classes.</li>
-                    <li><strong>Powerful Events:</strong> Rich modifier system (keys, buttons, touch, outside, once, passive, capture, combos).</li>
+                    <li><strong>Powerful Events:</strong> Rich modifier system (keys, buttons, touch, outside, once, passive, capture, combos, defer).</li>
                     <li><strong>Computed:</strong> Fast, pure derived state with cache-aware getters.</li>
                     <li><strong>Smart GC & Auto‑clean:</strong> Per‑invocation cleanup for timers, listeners, and observers to prevent leaks.</li>
                     <li><strong>Lifecycle Hooks:</strong> beforeMount, mounted, updated, beforeUnmount, unmounted.</li>
@@ -1193,6 +1193,19 @@ template: '.template-class'    // Uses first element with class
                     </div>
                   </div>
 
+                  <!-- Seal & Freeze -->
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">🧊 Seal & Freeze Controls</h3>
+                    <p class="text-gray-600 mb-3">Temporarily pause interactivity or lock state when needed. <strong>Seal</strong> allows internal state but suppresses renders and external side‑effects (timers, listeners, observers). <strong>Freeze</strong> is fully read‑only—no state changes and no renders. Useful for previews, embed modes, audits, and page builders. Remove <code>readonly</code> (or call <code>$seal(false)</code>) to resume interactivity.</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;!-- Freeze via attribute: no state changes, timers/listeners/observers paused, no renders --&gt;
+&lt;component source="stats-card" readonly&gt;&lt;/component&gt;
+
+&lt;!-- Seal programmatically: internal state can change, but no renders/effects/globals --&gt;
+&lt;div x-data="{ paused:false, toggle(){ this.$seal(!(this.$isSealed)); this.paused = this.$isSealed; } }"&gt;
+  &lt;button x-on:click="toggle()" x-text="$isSealed ? 'Resume' : 'Pause'"&gt;&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+                  </div>
+
                   <!-- Size & Bundle -->
                   <div>
                     <h3 class="text-lg font-semibold mb-3">📦 Remarkably Compact</h3>
@@ -1270,6 +1283,7 @@ document.body.appendChild(instance.element);</code></pre>
                         <li><code class="bg-gray-100 px-2 py-1 rounded">.outside</code> - Trigger when click/touch occurs outside element</li>
                         <li><code class="bg-gray-100 px-2 py-1 rounded">.passive</code> - Adds listener with <code>passive:true</code></li>
                         <li><code class="bg-gray-100 px-2 py-1 rounded">.capture</code> - Use capture phase</li>
+                        <li><code class="bg-gray-100 px-2 py-1 rounded">.defer</code> - Run handler in a microtask after current tick
                       </ul>
                     </div>
                     <div>
@@ -1303,6 +1317,7 @@ document.body.appendChild(instance.element);</code></pre>
                           <li><code class="bg-gray-100 px-2 py-1 rounded">.outside</code> - Outside element event</li>
                           <li><code class="bg-gray-100 px-2 py-1 rounded">.passive</code> - Passive listener</li>
                           <li><code class="bg-gray-100 px-2 py-1 rounded">.capture</code> - Capture phase</li>
+                          <li><code class="bg-gray-100 px-2 py-1 rounded">.defer</code> - Defer handler via microtask</li>
                         </ul>
                       </div>
                       <div>
@@ -1355,6 +1370,10 @@ document.body.appendChild(instance.element);</code></pre>
                         <span><code class="bg-gray-100 px-2 py-1 rounded">.multi</code> - Multiple touch points</span>
                       </div>
                     </div>
+                  </div>
+                  <div class="mt-6">
+                    <h3 class="font-semibold mb-3">.defer Example</h3>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto"><code>&lt;input x-on:input.defer="recompute()" placeholder="Type to recompute after microtask" /&gt;</code></pre>
                   </div>
                   <div class="mt-6">
                     <h3 class="font-semibold mb-3">Advanced Examples</h3>
@@ -1553,7 +1572,7 @@ document.body.appendChild(instance.element);</code></pre>
   </div>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-white py-12">
+  <footer class="bg-gray-900 text-white py-12" x-data="{}">
     <div class="container mx-auto px-6 text-center">
       <div class="mb-8">
         <h3 class="text-2xl font-bold mb-4">Ready to get started?</h3>
