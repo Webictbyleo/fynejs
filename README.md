@@ -59,18 +59,6 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 - Slot & props: lightweight component composition
 
-- Transitions: class-based enter/leave for x-show and x-if
-
-  ```html
-  <style>
-  .fade-enter{transition:opacity .15s}.fade-enter-from{opacity:0}.fade-enter-to{opacity:1}
-  .fade-leave{transition:opacity .15s}.fade-leave-from{opacity:1}.fade-leave-to{opacity:0}
-  </style>
-  <div x-data="{ open:false }">
-    <button x-on:click="open=!open">Toggle</button>
-    <div x-transition="{ enter:'fade-enter', enterFrom:'fade-enter-from', enterTo:'fade-enter-to', leave:'fade-leave', leaveFrom:'fade-leave-from', leaveTo:'fade-leave-to' }" x-show="open">Hello</div>
-  </div>
-  ```
 
 - No build required: works directly in the browser; enhanced builds are optional
 
@@ -258,7 +246,6 @@ XTool.init(config?: {
   delegate?: boolean; // event delegation
   sandboxExpressions?: boolean;
   allowGlobals?: string[];
-  injectTransitionCSS?: boolean; // default: true
 });
 
 XTool.directive(name: string, impl: { bind?, update?, unbind? }): void;
