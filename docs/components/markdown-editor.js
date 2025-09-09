@@ -21,14 +21,18 @@ XTool.registerComponent({
               <button x-on:click="clearAll" class="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300">Clear</button>
             </div>
           </div>
-          <textarea x-model="content" x-on:input="debouncedPersist" class="flex-1 border rounded p-3 font-mono text-sm h-64 focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="# Start writing..."></textarea>
+          <textarea 
+            x-model="content" 
+            x-on:input="debouncedPersist" 
+            class="w-full border rounded p-3 font-mono text-sm min-h-[14rem] sm:min-h-[16rem] md:min-h-[18rem] resize-y overflow-auto focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+            placeholder="# Start writing..."></textarea>
         </div>
         <div class="flex flex-col">
           <div class="flex items-center justify-between mb-2">
             <label class="text-sm font-medium text-gray-600">Preview</label>
             <button x-on:click="copyHtml" class="px-2 py-1 bg-gray-200 rounded text-xs hover:bg-gray-300" x:disabled="!content.trim()">Copy HTML</button>
           </div>
-          <div class="prose prose-sm max-w-none border rounded p-4 overflow-auto bg-gray-50 min-h-64" x-html="rendered"></div>
+          <div class="prose prose-sm max-w-none border rounded p-4 overflow-auto bg-gray-50 min-h-[14rem] sm:min-h-[16rem] md:min-h-[18rem]" x-html="rendered"></div>
         </div>
       </div>
       <div class="flex flex-wrap gap-2 text-xs">

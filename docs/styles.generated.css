@@ -882,6 +882,10 @@ video {
   min-height: 100vh;
 }
 
+.min-h-\[14rem\] {
+  min-height: 14rem;
+}
+
 .w-12 {
   width: 3rem;
 }
@@ -1008,6 +1012,10 @@ video {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.resize-y {
+  resize: vertical;
 }
 
 .resize {
@@ -2584,6 +2592,10 @@ pre[class*='bg-gray-900'] {
 }
 
 @media (min-width: 640px) {
+  .sm\:min-h-\[16rem\] {
+    min-height: 16rem;
+  }
+
   .sm\:w-48 {
     width: 12rem;
   }
@@ -2620,6 +2632,10 @@ pre[class*='bg-gray-900'] {
 
   .md\:h-\[520px\] {
     height: 520px;
+  }
+
+  .md\:min-h-\[18rem\] {
+    min-height: 18rem;
   }
 
   .md\:translate-x-0 {
