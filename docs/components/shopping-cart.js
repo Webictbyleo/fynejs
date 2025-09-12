@@ -1,7 +1,7 @@
 // Advanced Shopping Cart (extracted)
 XTool.registerComponent({
   name: 'shopping-cart',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Shopping Cart</h3>
       <!-- Product Catalog -->

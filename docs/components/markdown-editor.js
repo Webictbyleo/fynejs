@@ -1,7 +1,7 @@
 // Markdown Editor with Live Preview, Persistence, and Stats
 XTool.registerComponent({
   name: 'markdown-editor',
-  template: `
+  template: html`
   <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-3xl mx-auto grid gap-6">
   <div class="flex items-center justify-between flex-wrap gap-2">
         <h3 class="text-lg font-semibold text-gray-800">Markdown Editor</h3>

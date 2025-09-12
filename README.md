@@ -234,7 +234,7 @@ Dynamic mounting: change the `source` attribute and the framework mounts the new
 ```html
 <div x-data="{ src: 'fancy-card' }">
   <button x-on:click="src = src==='fancy-card' ? 'simple-card' : 'fancy-card'">Swap</button>
-  <component :source="src"></component>
+  <component x:source="src"></component>
 </div>
 ```
 
