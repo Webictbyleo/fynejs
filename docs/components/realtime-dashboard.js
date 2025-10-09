@@ -1,7 +1,7 @@
 // Realtime Dashboard with Simulated Metrics & Sparklines
 XTool.registerComponent({
   name: 'realtime-dashboard',
-  template: html`
+  template: `
   <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto space-y-6">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-800">Realtime Dashboard</h3>

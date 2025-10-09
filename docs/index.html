@@ -1220,6 +1220,38 @@ template: '.template-class'    // Uses first element with class
 document.body.appendChild(instance.element);</code></pre>
                   </div>
 
+                  <div>
+                    <h3 class="text-lg font-semibold mb-3">
+                      <code class="bg-purple-100 text-purple-800 px-3 py-1 rounded">XTool.loadComponents(list)</code>
+                    </h3>
+                    <p class="text-gray-600 mb-3">Fetch external component scripts with flexible load strategies.</p>
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto"><code>// Preload immediately
+XTool.loadComponents([
+  'components/stats-card.js',
+  { path: 'components/chart.js', mode: 'preload' }
+]);
+
+// Defer until before first discovery
+XTool.loadComponents([
+  { path: 'components/large-dashboard.js', mode: 'defer' }
+]);
+
+// Lazy (on first usage)
+XTool.loadComponents([
+  { path: 'components/order-book.js', mode: 'lazy', name: 'order-book' },
+  { path: 'components/advanced-calculator.js', mode: 'lazy' } // name inferred from filename
+]);
+
+// Later somewhere in HTML triggers lazy fetch:
+// &lt;component source="order-book"&gt;&lt;/component&gt;</code></pre>
+                    <ul class="list-disc pl-5 mt-3 text-xs text-gray-600 space-y-1">
+                      <li><code>preload</code>: fetch & eval now.</li>
+                      <li><code>defer</code>: fetched before initial component scan.</li>
+                      <li><code>lazy</code>: fetched only when referenced (idle if already present).</li>
+                      <li>Promise resolves with counts for immediate loads only.</li>
+                    </ul>
+                  </div>
+
                   <div class="mt-6 p-4 bg-blue-50 rounded-lg">
                     <p class="text-sm text-blue-800">
                       <strong>Note:</strong> Optional features like standalone reactive objects, watchers, and computed values 

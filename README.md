@@ -158,6 +158,44 @@ Include the minified build from jsDelivr or unpkg:
       <span x-text="todo.title"></span>
     </li>
   </template>
+
+### Dynamic component file loading
+
+Use `loadComponents` to register external component definition scripts with flexible loading strategies:
+
+```js
+// Preload immediately (default for string entries)
+XTool.loadComponents([
+  'components/stats-card.js',
+  { path: 'components/chat-panel.js', mode: 'preload' }
+]);
+
+// Defer: ensure file loads before initial auto-discovery (blocks first scan)
+XTool.loadComponents([
+  { path: 'components/large-dashboard.js', mode: 'defer' }
+]);
+
+// Lazy: only fetch when a <component source="name"> appears in the DOM
+XTool.loadComponents([
+  { path: 'components/order-book.js', mode: 'lazy', name: 'order-book' },
+  // name can be omitted; filename (without extension) is used
+  { path: 'components/advanced-calculator.js', mode: 'lazy' }
+]);
+
+// Later in HTML (triggers lazy fetch on first encounter)
+// <component source="order-book"></component>
+```
+
+Lazy mode details:
+- Registration does not fetch the file until the component is actually used.
+- If a matching `<component source="...">` already exists at registration time, the file is fetched in an idle callback.
+- After load, auto-discovery re-runs so the component mounts automatically.
+
+Defer mode details:
+- Files are fetched before the framework performs the initial DOM scan, guaranteeing definitions are available when components are first discovered.
+
+Return value:
+`loadComponents` resolves with `{ settled, failed }` counting only immediate (preload + defer) operations; lazy entries are not counted until they actually load.
 </ul>
 ```
 

@@ -67,7 +67,7 @@ XTool.registerComponent({
           <span x-text="selectedItems.length === filteredItems.length ? 'Deselect All' : 'Select All'"></span>
         </button>
         <button x-on:click="removeSelected" 
-                x-bind:disabled="selectedItems.length === 0"
+                x:disabled="selectedItems.length === 0"
                 class="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded">
           Remove Selected (<span x-text="selectedItems.length"></span>)
         </button>

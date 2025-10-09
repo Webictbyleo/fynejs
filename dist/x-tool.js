@@ -62,6 +62,7 @@ const XToolFramework = function () {
             this._getRegisteredComponentDef = (name) => this._namedComponentDefs.get(name.toLowerCase());
             this._getCustomDirective = (name) => this._customDirectives.get(name);
             this._getConfig = () => this._config;
+            this._preDiscoveryTasks = [];
             this.init = (config = {}) => {
                 this._config = { container: 'body', debug: false, staticDirectives: true, ...config };
                 if (typeof this._config.staticDirectives === 'boolean') {
@@ -74,15 +75,14 @@ const XToolFramework = function () {
                 else {
                     PFX = 'x';
                 }
-                if (d && d.readyState === 'loading') {
-                    d.addEventListener('DOMContentLoaded', () => { this._applyPrefixInitialCSS(); this._autoDiscoverComponents(); const c = d?.querySelector(this._config.container); if (c) {
-                        this._ensureRootObserver(c);
-                        if (this._config.delegate)
-                            this._ensureDelegation(c);
-                    } });
-                }
-                else if (!d || d.readyState === 'complete' || d.readyState === 'interactive') {
+                const start = async () => {
                     this._applyPrefixInitialCSS();
+                    if (this._preDiscoveryTasks.length) {
+                        try {
+                            await Promise.allSettled(this._preDiscoveryTasks);
+                        }
+                        catch { }
+                    }
                     this._autoDiscoverComponents();
                     const c = d?.querySelector(this._config.container);
                     if (c) {
@@ -90,8 +90,67 @@ const XToolFramework = function () {
                         if (this._config.delegate)
                             this._ensureDelegation(c);
                     }
+                };
+                if (d && d.readyState === 'loading') {
+                    d.addEventListener('DOMContentLoaded', () => { void start(); });
+                }
+                else if (!d || d.readyState === 'complete' || d.readyState === 'interactive') {
+                    void start();
                 }
                 return this;
+            };
+            this._inflightComponentLoads = new Map();
+            this._lazyComponentSources = new Map();
+            this.loadComponents = (sources) => {
+                const items = sources.map(s => typeof s === 'string' ? { path: s, mode: 'preload', name: undefined } : { path: s.path, mode: (s.mode || 'preload'), name: s.name });
+                const tasks = [];
+                for (const it of items) {
+                    if (it.mode === 'defer') {
+                        const p = this._fetchAndEvalComponent(it.path).catch(() => { throw new Error('load failed'); });
+                        this._preDiscoveryTasks.push(p);
+                        tasks.push(p.then(() => { }));
+                    }
+                    else if (it.mode === 'lazy') {
+                        const inferredName = (it.name || it.path.split('/').pop() || '').replace(/\.(mjs|js|ts)(\?.*)?$/i, '').toLowerCase();
+                        if (inferredName && !this._lazyComponentSources.has(inferredName)) {
+                            this._lazyComponentSources.set(inferredName, { path: it.path, status: 'pending' });
+                            if (d && d.querySelector(`component[source="${inferredName}"]`)) {
+                                const entry = this._lazyComponentSources.get(inferredName);
+                                const trigger = () => {
+                                    if (entry.status !== 'pending')
+                                        return;
+                                    entry.status = 'loading';
+                                    entry.promise = this._fetchAndEvalComponent(entry.path)
+                                        .then(() => { entry.status = 'loaded'; })
+                                        .catch(() => { entry.status = 'error'; })
+                                        .finally(() => { try {
+                                        this._autoDiscoverComponents();
+                                    }
+                                    catch { } });
+                                };
+                                try {
+                                    window.requestIdleCallback ? window.requestIdleCallback(trigger, { timeout: 2000 }) : setTimeout(trigger, 50);
+                                }
+                                catch {
+                                    setTimeout(trigger, 50);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        const p = this._fetchAndEvalComponent(it.path).catch(() => { throw new Error('load failed'); });
+                        tasks.push(p);
+                    }
+                }
+                return Promise.allSettled(tasks).then(results => {
+                    try {
+                        this._autoDiscoverComponents();
+                    }
+                    catch { }
+                    const settled = results.length;
+                    const failed = results.filter(r => r.status === 'rejected').length;
+                    return { settled, failed };
+                });
             };
             this.createComponent = (definition) => {
                 const component = new ReactiveComponent(this._generateComponentId(), definition, this);
@@ -230,6 +289,31 @@ const XToolFramework = function () {
             }
             catch { } };
         }
+        _fetchAndEvalComponent(path, retries = 2, baseDelay = 300) {
+            const existing = this._inflightComponentLoads.get(path);
+            if (existing)
+                return existing;
+            const self = this;
+            const html = (strings, ...values) => strings.reduce((acc, str, i) => acc + str + (i < values.length ? values[i] : ''), '');
+            const attempt = (n) => {
+                return fetch(path, { cache: 'no-cache' }).then(res => {
+                    if (!res.ok)
+                        throw new Error(res.status + ' ' + res.statusText);
+                    return res.text();
+                }).then(code => {
+                    const wrapped = code + `\n//# sourceURL=${path}`;
+                    new Function('XTool', 'html', wrapped)(self, html);
+                }).catch(err => {
+                    if (n >= retries)
+                        throw err;
+                    const delay = baseDelay * Math.pow(2, n);
+                    return new Promise(resolve => setTimeout(resolve, delay)).then(() => attempt(n + 1));
+                });
+            };
+            const p = attempt(0).finally(() => { this._inflightComponentLoads.delete(path); });
+            this._inflightComponentLoads.set(path, p);
+            return p;
+        }
         _applyPrefixInitialCSS() {
             if (!d)
                 return;
@@ -336,8 +420,28 @@ const XToolFramework = function () {
             const source = el.getAttribute('source');
             if (!source)
                 return;
-            const def = this._getRegisteredComponentDef(source);
+            let def = this._getRegisteredComponentDef(source);
             if (!def) {
+                const name = source.toLowerCase();
+                const lazy = this._lazyComponentSources?.get(name);
+                if (lazy) {
+                    if (lazy.status === 'pending') {
+                        lazy.status = 'loading';
+                        lazy.promise = this._fetchAndEvalComponent(lazy.path)
+                            .then(() => { lazy.status = 'loaded'; })
+                            .catch(() => { lazy.status = 'error'; })
+                            .finally(() => { try {
+                            this._autoDiscoverComponents();
+                        }
+                        catch { } });
+                    }
+                    lazy.promise?.then(() => { try {
+                        const again = this._getRegisteredComponentDef(source);
+                        if (again)
+                            this._instantiateNamedComponent(el);
+                    }
+                    catch { } });
+                }
                 return;
             }
             let parentComp;
@@ -608,10 +712,22 @@ const XToolFramework = function () {
                 return;
             this._isFrozen = on;
             if (on) {
+                this._sealedBeforeFreeze = this._isSealed;
                 this._isSealed = true;
                 this._cancelUserResources();
             }
             else {
+                if (this._sealedBeforeFreeze !== null) {
+                    this._isSealed = this._sealedBeforeFreeze;
+                }
+                else {
+                    this._isSealed = false;
+                }
+                this._sealedBeforeFreeze = null;
+                try {
+                    this._scheduleRender();
+                }
+                catch { }
             }
         }
         _setSealed(on) {
@@ -649,6 +765,7 @@ const XToolFramework = function () {
             this._cleanupFunctions = new Set();
             this._isSealed = false;
             this._isFrozen = false;
+            this._sealedBeforeFreeze = null;
             this._userResourceCleanups = new Set();
             this._effectsToRun = new Set();
             this._currentInvoker = null;
@@ -1846,7 +1963,7 @@ const XToolFramework = function () {
             };
             let data = this._data;
             if (this._isInComputedEvaluation) {
-                data = this._rawData;
+                data = (this._rawData);
             }
             return new Proxy(data, {
                 get: (target, propStr) => {

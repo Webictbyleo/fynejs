@@ -1,7 +1,7 @@
 // Advanced Calculator (extracted)
 XTool.registerComponent({
   name: 'advanced-calculator',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Advanced Calculator</h3>
       <div class="bg-gray-900 text-white p-4 rounded-lg mb-4">
