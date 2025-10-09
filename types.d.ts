@@ -221,6 +221,16 @@ export interface XToolFramework {
         TComputed extends ComputedMap = {}
     >(definition: RegisteredComponentDefinition<TData, TMethods, TComputed>): XToolFramework;
 
+    /**
+     * Load and evaluate external component definition files.
+     * Modes:
+     *  - 'preload': fetch & eval immediately (default for plain string paths)
+     *  - 'defer': fetch before automatic component discovery (blocks initial scan until resolved)
+     *  - 'lazy': register path only; fetch occurs on first <component source="name"> usage. If such a tag already exists when registering, an idle load is scheduled.
+     * Each source entry can provide an explicit name; otherwise the filename (without extension) is used.
+     * Returns counts for settled (preload + defer) and failed immediate loads. Lazy registrations are not counted until triggered.
+     */
+    loadComponents(sources: Array<string | { path: string; mode?: 'preload' | 'defer' | 'lazy'; name?: string }>): Promise<{ settled: number; failed: number }>;
 }
 
 // Global declarations for browser usage
