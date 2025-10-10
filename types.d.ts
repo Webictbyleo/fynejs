@@ -241,4 +241,10 @@ declare global {
     }
 }
 
-export {};
+// Module-style exports for bundlers (ESM/CJS)
+declare const XTool: XToolFramework;
+declare const FyneJS: XToolFramework;
+export type HtmlTag = (strings: TemplateStringsArray, ...values: any[]) => string;
+declare const html: HtmlTag;
+export default XTool;
+export { XTool, FyneJS, html };

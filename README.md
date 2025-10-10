@@ -114,13 +114,42 @@ Include the minified build from jsDelivr or unpkg:
 
 ## TypeScript usage
 
-`dist/types.d.ts` provides editor types when loading from CDN.
+There are two easy ways to use FyneJS with TypeScript:
 
-- Copy the file and reference via `typeRoots` or add a project-level reference:
-  ```ts
-  /// <reference path="./types/x-tool/types.d.ts" />
-  ```
-- Or vendor directly from this repo as part of your build (`dist/types.d.ts`).
+### 1) Bundlers (recommended)
+
+Install the package and import the API. The package exposes clean ESM/CJS entry points and ships its own types.
+
+```ts
+// main.ts
+import XTool, { html } from 'fynejs';
+
+XTool.init({ debug: false, delegate: true });
+
+XTool.registerComponent({
+  name: 'hello-world',
+  data: { msg: 'Hello FyneJS' },
+  // Use the tagged template for editor highlighting in TS
+  template: html`<div x-text="msg"></div>`
+});
+
+// Somewhere in your HTML template or via DOM APIs:
+// <component source="hello-world"></component>
+```
+
+- Works with Vite/Rollup/Webpack/ts-node/tsx without extra config.
+- Types are resolved automatically via the package `exports` (no triple-slash needed).
+- Tip: Import the `html` helper from `fynejs` for tagged template literals without TS errors and with IDE HTML highlighting.
+
+### 2) CDN + types
+
+If you’re using the CDN build in the browser and still want editor types, reference the declarations manually:
+
+```ts
+/// <reference path="./types/x-tool/types.d.ts" />
+```
+
+You can copy the file into your repo and point `typeRoots` to it, or vendor the shipped `types.d.ts`.
 
 ## Core concepts
 
