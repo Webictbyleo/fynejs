@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Components - FyneJS</title>
+  <meta name="description" content="Master FyneJS component system: lifecycle hooks, reactive props, slots, and composition patterns. Build modular, maintainable reactive UIs with zero dependencies." />
+  <link rel="canonical" href="https://fynejs.com/components.html" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://fynejs.com/components.html" />
+  <meta property="og:title" content="FyneJS Components - Build Reusable Reactive UI Components" />
+  <meta property="og:description" content="Complete guide to FyneJS components: lifecycle hooks, reactive props, slots, and composition patterns for building modular UIs." />
+  <meta property="og:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta property="og:site_name" content="FyneJS Documentation" />
+  <meta property="article:section" content="Documentation" />
+  <meta property="article:tag" content="Components" />
+  <meta property="article:tag" content="Reactive UI" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://fynejs.com/components.html" />
+  <meta name="twitter:title" content="FyneJS Components - Build Reusable Reactive UI Components" />
+  <meta name="twitter:description" content="Master component lifecycle hooks, reactive props, slots, and composition patterns in FyneJS." />
+  <meta name="twitter:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta name="twitter:creator" content="@fynejs" />
+
+  <!-- Enhanced SEO -->
+  <meta name="keywords" content="fynejs components, reactive components, component lifecycle, lifecycle hooks, props, reactive props, slots, component composition, javascript components, zero dependency components, reactive ui framework" />
+  <meta name="author" content="FyneJS Documentation Team" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <link rel="apple-touch-icon" href="./assets/logo-small.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.generated.css" />
+  
+  <!-- Scripts -->
+  <script src="../dist/x-tool.min.js" defer></script>
+  <script src="./shared/navigation.js" defer></script>
+  <script src="./shared/footer.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "FyneJS Components - Build Reusable Reactive UI Components",
+    "description": "Complete guide to FyneJS components: lifecycle hooks, reactive props, slots, and composition patterns for building modular UIs.",
+    "author": {
+      "@type": "Organization",
+      "name": "FyneJS Documentation Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FyneJS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://fynejs.com/assets/logo-small.png"
+      }
+    },
+    "datePublished": "2025-01-01",
+    "dateModified": "2025-01-11",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://fynejs.com/components.html"
+    },
+    "keywords": ["fynejs", "components", "reactive components", "lifecycle hooks", "props", "slots", "component composition"],
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+
+<body class="bg-white text-gray-900 font-sans" x-data="{ activePage: 'components' }">
+  <!-- Navigation -->
+  <component source="docs-nav" x-prop="{ page: 'components' }"></component>
+
+  <!-- Hero Section -->
+  <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+    <div class="container mx-auto max-w-5xl">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-sm font-medium mb-8">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+          </svg>
+          Component System
+        </div>
+        
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+          FyneJS
+          <span class="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">Components</span>
+        </h1>
+        
+        <p class="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+          Build modular, reusable UI components with lifecycle hooks, reactive props, and flexible composition patterns.
+        </p>
+        
+        <!-- Quick stats -->
+        <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Lifecycle Hooks</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Reactive Props</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+            </svg>
+            <span class="font-medium">Flexible Slots</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="bg-white">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+      <div class="max-w-6xl mx-auto">
+
+        <!-- Component Registration -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Component Registration
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Define reusable components that can be used throughout your application with a simple registration API.
+            </p>
+          </div>
+
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 class="text-2xl font-black mb-6">Component Workflow</h3>
+                <div class="space-y-4">
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Register Once</h4>
+                      <p class="text-gray-300 text-sm">Define component with template, data, and methods</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Use Anywhere</h4>
+                      <p class="text-gray-300 text-sm">Insert with &lt;component&gt; tag throughout your app</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Independent Instances</h4>
+                      <p class="text-gray-300 text-sm">Each component has its own reactive state</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="relative">
+                <div class="bg-gray-900 rounded-xl p-6 font-mono text-sm" x-data="{ activeTab: 'register' }">
+                  <!-- Tab Headers -->
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div class="ml-auto flex gap-1">
+                      <button x-on:click="activeTab = 'register'" 
+                              x:class="{ 'bg-blue-500 text-white': activeTab === 'register', 'bg-gray-700 text-gray-300': activeTab !== 'register' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Register
+                      </button>
+                      <button x-on:click="activeTab = 'use'" 
+                              x:class="{ 'bg-green-500 text-white': activeTab === 'use', 'bg-gray-700 text-gray-300': activeTab !== 'use' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Use
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Tab Content -->
+                  <div x-show="activeTab === 'register'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Register a reusable counter component
+XTool.registerComponent({
+  name: 'counter',
+  template: `&lt;div class="counter"&gt;
+    &lt;h3&gt;Count: \{{ count }}&lt;/h3&gt;
+    &lt;button x-on:click="increment"&gt;
+      +1
+    &lt;/button&gt;
+    &lt;button x-on:click="reset"&gt;
+      Reset
+    &lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: (props) => ({
+    count: Number(props.start || 0)
+  }),
+  
+  methods: {
+    increment() {
+      this.count++;
+    },
+    reset() {
+      this.count = 0;
+    }
+  }
+});</code></pre>
+                  </div>
+                  
+                  <div x-show="activeTab === 'use'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>&lt;!-- Use the component multiple times --&gt;
+&lt;div x-data="{ message: 'Hello Components!' }"&gt;
+  &lt;h1 x-text="message"&gt;&lt;/h1&gt;
+  
+  &lt;!-- Counter starting at 0 --&gt;
+  &lt;component source="counter"&gt;&lt;/component&gt;
+  
+  &lt;!-- Counter starting at 10 --&gt;
+  &lt;component source="counter" 
+             x-prop="{ start: 10 }"&gt;
+  &lt;/component&gt;
+  
+  &lt;!-- Counter starting at 100 --&gt;
+  &lt;component source="counter" 
+             x-prop="{ start: 100 }"&gt;
+  &lt;/component&gt;
+&lt;/div&gt;</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
+        <!-- Dynamic Component Switching -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">Dynamic Component Switching</h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">Swap components on the fly by binding the source attribute—just like changing an image src.</p>
+          </div>
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <div class="grid lg:grid-cols-2 gap-6 items-start">
+              <div>
+                <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>&lt;div x-data="{ selected: 'mini-counter' }"&gt;
+  &lt;select x-model="selected"&gt;
+    &lt;option value="mini-counter"&gt;Counter&lt;/option&gt;
+    &lt;option value="mini-quote"&gt;Quote&lt;/option&gt;
+  &lt;/select&gt;
+  &lt;component x:source="selected"&gt;&lt;/component&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+              <div class="text-sm text-gray-200">
+                <ul class="list-disc ml-5 space-y-2 *:mb-4 *:last:mb-0 *:text-lg">
+                  <li>Supports lazy loading via XTool.loadComponents({ mode: 'lazy' }).</li>
+                  <li>Keeps instances isolated; switching remounts the chosen component.</li>
+                  <li>Great for tabs, previewers, and dashboards.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Readonly Freeze Mode -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">Readonly Freeze Mode</h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">Freeze a component to disable state changes and renders—perfect for previews, embeds, and audits.</p>
+          </div>
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="grid lg:grid-cols-2 gap-6 items-start">
+              <div>
+                <h3 class="font-bold text-gray-900 mb-2">Attribute & Binding</h3>
+                <pre class="code-block overflow-x-auto text-sm"><code>&lt;!-- Static freeze --&gt;
+&lt;component source="stats-card" readonly&gt;&lt;/component&gt;
+
+&lt;!-- Reactive toggle --&gt;
+&lt;component source="mini-counter" x-bind:readonly="isFrozen"&gt;&lt;/component&gt;</code></pre>
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900 mb-2">Behavior</h3>
+                <ul class="list-disc ml-5 text-gray-700 text-sm space-y-2  *:text-lg">
+                  <li>Blocks updates and event effects; state is preserved while frozen.</li>
+                  <li>Remove readonly to resume interactivity seamlessly.</li>
+                  <li>Pairs nicely with dynamic switching for safe previews.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Lifecycle Hooks -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Lifecycle Hooks
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Control component behavior at key moments with 7 lifecycle hooks for complete lifecycle management.
+            </p>
+          </div>
+
+          <!-- Lifecycle Flow Grid -->
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <!-- Mount Phase -->
+            <div class="bg-white rounded-lg border-2 border-green-200 p-6 text-center">
+              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-green-800 mb-2">Mount Phase</h3>
+              <div class="space-y-2 text-sm">
+                <div class="bg-green-50 rounded px-3 py-2">
+                  <code class="text-green-700 font-mono text-xs">beforeMount</code>
+                  <p class="text-green-600 text-xs mt-1">Setup before DOM</p>
+                </div>
+                <div class="bg-green-50 rounded px-3 py-2">
+                  <code class="text-green-700 font-mono text-xs">mounted</code>
+                  <p class="text-green-600 text-xs mt-1">Component ready</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Update Phase -->
+            <div class="bg-white rounded-lg border-2 border-blue-200 p-6 text-center">
+              <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-blue-800 mb-2">Update Phase</h3>
+              <div class="space-y-2 text-sm">
+                <div class="bg-blue-50 rounded px-3 py-2">
+                  <code class="text-blue-700 font-mono text-xs">updated</code>
+                  <p class="text-blue-600 text-xs mt-1">Data changed</p>
+                </div>
+                <div class="bg-blue-50 rounded px-3 py-2">
+                  <span class="text-blue-600 text-xs">↻ Repeatable</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Unmount Phase -->
+            <div class="bg-white rounded-lg border-2 border-orange-200 p-6 text-center">
+              <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" transform="rotate(45 10 10)"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-orange-800 mb-2">Unmount Phase</h3>
+              <div class="space-y-2 text-sm">
+                <div class="bg-orange-50 rounded px-3 py-2">
+                  <code class="text-orange-700 font-mono text-xs">beforeUnmount</code>
+                  <p class="text-orange-600 text-xs mt-1">Cleanup prep</p>
+                </div>
+                <div class="bg-orange-50 rounded px-3 py-2">
+                  <code class="text-orange-700 font-mono text-xs">unmounted</code>
+                  <p class="text-orange-600 text-xs mt-1">Removed from DOM</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Destroy Phase -->
+            <div class="bg-white rounded-lg border-2 border-red-200 p-6 text-center">
+              <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-red-800 mb-2">Destroy Phase</h3>
+              <div class="space-y-2 text-sm">
+                <div class="bg-red-50 rounded px-3 py-2">
+                  <code class="text-red-700 font-mono text-xs">beforeDestroy</code>
+                  <p class="text-red-600 text-xs mt-1">Final cleanup</p>
+                </div>
+                <div class="bg-red-50 rounded px-3 py-2">
+                  <code class="text-red-700 font-mono text-xs">destroyed</code>
+                  <p class="text-red-600 text-xs mt-1">Fully destroyed</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lifecycle Flow Diagram -->
+          <div class="bg-gray-50 rounded-xl p-8 mb-12">
+            <h3 class="text-xl font-bold text-center mb-8 text-gray-900">Lifecycle Execution Flow</h3>
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
+              <!-- Flow Steps -->
+              <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+                  <span class="text-sm font-mono">beforeMount</span>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 rotate-90 md:rotate-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">2</div>
+                  <span class="text-sm font-mono">mounted</span>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 rotate-90 md:rotate-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">↻</div>
+                  <span class="text-sm font-mono">updated</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-center mt-6">
+              <div class="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">3</div>
+                  <span class="text-sm font-mono">beforeUnmount</span>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 rotate-90 md:rotate-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm">4</div>
+                  <span class="text-sm font-mono">unmounted</span>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 rotate-90 md:rotate-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm">5</div>
+                  <span class="text-sm font-mono">beforeDestroy</span>
+                </div>
+                <svg class="w-6 h-6 text-gray-400 rotate-90 md:rotate-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">6</div>
+                  <span class="text-sm font-mono">destroyed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 class="text-2xl font-black mb-6">Interactive Examples</h3>
+                <div class="space-y-3">
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-base font-bold mb-1">Timer Component</h4>
+                      <p class="text-gray-300 text-sm">Basic lifecycle with interval management</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-base font-bold mb-1">Data Fetcher</h4>
+                      <p class="text-gray-300 text-sm">Advanced async operations with cleanup</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-3">
+                    <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-base font-bold mb-1">Complete Reference</h4>
+                      <p class="text-gray-300 text-sm">All 7 lifecycle hooks demonstrated</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="relative">
+                <div class="bg-gray-900 rounded-xl p-6 font-mono text-sm" x-data="{ activeTab: 'timer' }">
+                  <!-- Tab Headers -->
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div class="ml-auto flex gap-1">
+                      <button x-on:click="activeTab = 'timer'" 
+                              x:class="{ 'bg-green-500 text-white': activeTab === 'timer', 'bg-gray-700 text-gray-300': activeTab !== 'timer' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Timer
+                      </button>
+                      <button x-on:click="activeTab = 'data'" 
+                              x:class="{ 'bg-blue-500 text-white': activeTab === 'data', 'bg-gray-700 text-gray-300': activeTab !== 'data' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Data Fetcher
+                      </button>
+                      <button x-on:click="activeTab = 'all'" 
+                              x:class="{ 'bg-purple-500 text-white': activeTab === 'all', 'bg-gray-700 text-gray-300': activeTab !== 'all' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        All Hooks
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Tab Content -->
+                  <div x-show="activeTab === 'timer'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Timer component with lifecycle management
+XTool.registerComponent({
+  name: 'timer',
+  template: `&lt;div&gt;
+    &lt;p&gt;Seconds: \{{ seconds }}&lt;/p&gt;
+    &lt;button x-on:click="toggle"&gt;
+      \{{ isRunning ? 'Pause' : 'Start' }}
+    &lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () => ({
+    seconds: 0,
+    interval: null,
+    isRunning: false
+  }),
+  
+  beforeMount() {
+    console.log('Timer initializing...');
+  },
+  
+  mounted() {
+    console.log('Timer ready!');
+    this.start();
+  },
+  
+  updated() {
+    console.log('Timer updated:', this.seconds);
+  },
+  
+  beforeUnmount() {
+    this.stop();
+    console.log('Timer cleanup complete');
+  },
+  
+  methods: {
+    start() {
+      if (!this.interval) {
+        this.interval = setInterval(() => {
+          this.seconds++;
+        }, 1000);
+        this.isRunning = true;
+      }
+    },
+    stop() {
+      if (this.interval) {
+        clearInterval(this.interval);
+        this.interval = null;
+        this.isRunning = false;
+      }
+    },
+    toggle() {
+      this.isRunning ? this.stop() : this.start();
+    }
+  }
+});</code></pre>
+                  </div>
+                  
+                  <div x-show="activeTab === 'data'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Data fetcher with complete lifecycle
+XTool.registerComponent({
+  name: 'data-fetcher',
+  template: `&lt;div&gt;
+    &lt;div x-show="loading"&gt;Loading...&lt;/div&gt;
+    &lt;div x-show="error" x-text="error"&gt;&lt;/div&gt;
+    &lt;div x-show="data" x-text="data"&gt;&lt;/div&gt;
+  &lt;/div&gt;`,
+  
+  makeData: (props) => ({
+    data: null,
+    loading: false,
+    error: null,
+    controller: null
+  }),
+  
+  beforeMount() {
+    // Initialize AbortController
+    this.controller = new AbortController();
+  },
+  
+  mounted() {
+    // Start data fetching
+    this.fetchData();
+  },
+  
+  updated() {
+    // Log state changes
+    if (this.error) console.error('Fetch error:', this.error);
+    if (this.data) console.log('Data received:', this.data);
+  },
+  
+  beforeUnmount() {
+    // Cancel any pending requests
+    if (this.controller) {
+      this.controller.abort();
+    }
+  },
+  
+  unmounted() {
+    console.log('Data fetcher cleaned up');
+  },
+  
+  methods: {
+    async fetchData() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const response = await fetch('/api/data', {
+          signal: this.controller.signal
+        });
+        this.data = await response.json();
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          this.error = err.message;
+        }
+      } finally {
+        this.loading = false;
+      }
+    }
+  }
+});</code></pre>
+                  </div>
+                  
+                  <div x-show="activeTab === 'all'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Component with all 7 lifecycle hooks
+XTool.registerComponent({
+  name: 'full-lifecycle',
+  template: `&lt;div&gt;&lt;p&gt;Check console for lifecycle logs&lt;/p&gt;&lt;/div&gt;`,
+  
+  makeData: () => ({ value: 'Hello' }),
+  
+  // 1. Before component is mounted to DOM
+  beforeMount() {
+    console.log('1. beforeMount: Component created, not in DOM yet');
+  },
+  
+  // 2. After component is mounted to DOM
+  mounted() {
+    console.log('2. mounted: Component in DOM, directives active');
+  },
+  
+  // 3. After reactive data changes (can happen multiple times)
+  updated() {
+    console.log('3. updated: Data changed, DOM updated');
+  },
+  
+  // 4. Before component is removed from DOM
+  beforeUnmount() {
+    console.log('4. beforeUnmount: About to remove from DOM');
+  },
+  
+  // 5. After component is removed from DOM
+  unmounted() {
+    console.log('5. unmounted: Removed from DOM');
+  },
+  
+  // 6. Before component is completely destroyed
+  beforeDestroy() {
+    console.log('6. beforeDestroy: About to destroy component');
+  },
+  
+  // 7. After component is completely destroyed
+  destroyed() {
+    console.log('7. destroyed: Component fully destroyed');
+  }
+});</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Props -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Reactive Props
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Pass reactive data between components. Props automatically update when parent data changes.
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-gray-900">Parent to Child</h3>
+                  <p class="text-sm text-gray-600">Data flows down via x-prop</p>
+                </div>
+              </div>
+              <code class="text-xs bg-gray-100 p-2 rounded block">x-prop="{ name: userName, count: userCount }"</code>
+            </div>
+
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-gray-900">Auto Updates</h3>
+                  <p class="text-sm text-gray-600">Child rerenders when props change</p>
+                </div>
+              </div>
+              <code class="text-xs bg-gray-100 p-2 rounded block">this.name // Always current value</code>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-black">Usage Pattern</h3>
+              <span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-mono rounded">User Card Example</span>
+            </div>
+            <p class="text-gray-600 mb-4">Props are passed as an object and automatically become available in the component.</p>
+            
+            <details class="group">
+              <summary class="cursor-pointer text-gray-600 hover:text-black transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span class="font-medium">See Complete Example</span>
+              </summary>
+              
+              <div class="mt-4 code-example bg-gray-50 rounded-lg p-4">
+                <pre class="code-block overflow-x-auto text-sm"><code>// Component receives props automatically
+XTool.registerComponent({
+  name: 'user-card',
+  template: `&lt;div&gt;&lt;h3&gt;\{{ name }}&lt;/h3&gt;&lt;span&gt;\{{ count }}&lt;/span&gt;&lt;/div&gt;`
+});
+
+// Parent passes data via x-prop
+&lt;component source="user-card" x-prop="{ name: userName, count: userCount }"&gt;&lt;/component&gt;</code></pre>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- Prop Effects -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Prop Effects
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              React to specific prop changes with custom logic and side effects.
+            </p>
+          </div>
+
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 class="text-2xl font-black mb-6">Reactive Side Effects</h3>
+                <div class="space-y-4">
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Message Changes</h4>
+                      <p class="text-gray-300 text-sm">Show notifications when new messages arrive</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">User ID Updates</h4>
+                      <p class="text-gray-300 text-sm">Fetch fresh user data when ID changes</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Theme Changes</h4>
+                      <p class="text-gray-300 text-sm">Update styles and animations dynamically</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="relative">
+                <div class="bg-gray-900 rounded-xl p-6 font-mono text-sm" x-data="{ activeTab: 'notification' }">
+                  <!-- Tab Headers -->
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div class="ml-auto flex gap-1">
+                      <button x-on:click="activeTab = 'notification'" 
+                              x:class="{ 'bg-green-500 text-white': activeTab === 'notification', 'bg-gray-700 text-gray-300': activeTab !== 'notification' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Notification
+                      </button>
+                      <button x-on:click="activeTab = 'user'" 
+                              x:class="{ 'bg-blue-500 text-white': activeTab === 'user', 'bg-gray-700 text-gray-300': activeTab !== 'user' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        User Data
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Tab Content -->
+                  <div x-show="activeTab === 'notification'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Notification component with auto-hide
+XTool.registerComponent({
+  name: 'notification',
+  template: `&lt;div x-show="visible" 
+              class="notification"&gt;
+    &lt;span x-text="message"&gt;&lt;/span&gt;
+    &lt;button x-on:click="hide"&gt;✕&lt;/button&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () => ({
+    visible: false,
+    timeout: null
+  }),
+  
+  propEffects: {
+    message(newMessage, oldMessage) {
+      if (newMessage && newMessage !== oldMessage) {
+        this.visible = true;
+        this.autoHide();
+      }
+    }
+  },
+  
+  methods: {
+    hide() {
+      this.visible = false;
+    },
+    autoHide() {
+      clearTimeout(this.timeout);
+      this.timeout = setTimeout(() => {
+        this.visible = false;
+      }, 3000);
+    }
+  }
+});</code></pre>
+                  </div>
+                  
+                  <div x-show="activeTab === 'user'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// User profile with data fetching
+XTool.registerComponent({
+  name: 'user-profile',
+  template: `&lt;div&gt;
+    &lt;div x-show="loading"&gt;Loading...&lt;/div&gt;
+    &lt;div x-show="!loading && user"&gt;
+      &lt;h3 x-text="user.name"&gt;&lt;/h3&gt;
+      &lt;p x-text="user.email"&gt;&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () => ({
+    user: null,
+    loading: false
+  }),
+  
+  propEffects: {
+    userId(newUserId, oldUserId) {
+      if (newUserId && newUserId !== oldUserId) {
+        this.fetchUser(newUserId);
+      }
+    }
+  },
+  
+  methods: {
+    async fetchUser(id) {
+      this.loading = true;
+      try {
+        const response = await fetch(`/api/users/${id}`);
+        this.user = await response.json();
+      } finally {
+        this.loading = false;
+      }
+    }
+  }
+});</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Slots -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Slots & Content Projection
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Create flexible, reusable components by allowing custom content insertion.
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg border border-gray-200 p-6 text-center">
+              <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Default Slot</h3>
+              <p class="text-sm text-gray-600">Main content area</p>
+              <code class="text-xs bg-gray-100 p-1 rounded mt-2 block">&lt;slot&gt;&lt;/slot&gt;</code>
+            </div>
+            <div class="bg-white rounded-lg border border-gray-200 p-6 text-center">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Named Slots</h3>
+              <p class="text-sm text-gray-600">Specific content areas</p>
+              <code class="text-xs bg-gray-100 p-1 rounded mt-2 block">slot="header"</code>
+            </div>
+            <div class="bg-white rounded-lg border border-gray-200 p-6 text-center">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="font-bold text-gray-900 mb-2">Flexible</h3>
+              <p class="text-sm text-gray-600">Any HTML content</p>
+              <code class="text-xs bg-gray-100 p-1 rounded mt-2 block">Components, text, etc.</code>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-black">Card Component Pattern</h3>
+              <span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-mono rounded">Header + Body + Footer</span>
+            </div>
+            <p class="text-gray-600 mb-4">Common pattern: define slots for header, body, and footer content areas.</p>
+            
+            <details class="group">
+              <summary class="cursor-pointer text-gray-600 hover:text-black transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <span class="font-medium">See Card Implementation</span>
+              </summary>
+              
+              <div class="mt-4 code-example bg-gray-50 rounded-lg p-4">
+                <pre class="code-block overflow-x-auto text-sm"><code>// Define slots in template
+template: `&lt;div&gt;&lt;header&gt;&lt;slot name="header"&gt;&lt;/slot&gt;&lt;/header&gt;&lt;main&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/main&gt;&lt;/div&gt;`
+
+// Use with custom content
+&lt;component source="card"&gt;
+  &lt;h2 slot="header"&gt;Title&lt;/h2&gt;
+  &lt;p&gt;Body content goes here&lt;/p&gt;
+&lt;/component&gt;</code></pre>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <!-- Methods & Computed -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Methods & Computed Properties
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Add interactive behavior and smart calculated values to your components.
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-gray-900">Methods</h3>
+                  <p class="text-sm text-gray-600">Event handlers & actions</p>
+                </div>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span>Button click handlers</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span>Form submission logic</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span>Data manipulation</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-gray-900">Computed</h3>
+                  <p class="text-sm text-gray-600">Smart cached values</p>
+                </div>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-teal-400 rounded-full"></div>
+                  <span>Calculated totals</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-teal-400 rounded-full"></div>
+                  <span>Filtered/sorted lists</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-2 h-2 bg-teal-400 rounded-full"></div>
+                  <span>Formatted values</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <div class="grid lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 class="text-2xl font-black mb-6">Component Logic</h3>
+                <div class="space-y-4">
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Methods</h4>
+                      <p class="text-gray-300 text-sm">Handle user interactions, form submissions, and data manipulation</p>
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-4">
+                    <div class="w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-lg font-bold mb-2">Computed Properties</h4>
+                      <p class="text-gray-300 text-sm">Smart cached values that update automatically when dependencies change</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="relative">
+                <div class="bg-gray-900 rounded-xl p-6 font-mono text-sm" x-data="{ activeTab: 'methods' }">
+                  <!-- Tab Headers -->
+                  <div class="flex items-center gap-2 mb-4">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <div class="ml-auto flex gap-1">
+                      <button x-on:click="activeTab = 'methods'" 
+                              x:class="{ 'bg-orange-500 text-white': activeTab === 'methods', 'bg-gray-700 text-gray-300': activeTab !== 'methods' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Methods
+                      </button>
+                      <button x-on:click="activeTab = 'computed'" 
+                              x:class="{ 'bg-teal-500 text-white': activeTab === 'computed', 'bg-gray-700 text-gray-300': activeTab !== 'computed' }"
+                              class="px-2 py-1 rounded text-xs transition-colors">
+                        Computed
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Tab Content -->
+                  <div x-show="activeTab === 'methods'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Todo List Component
+XTool.registerComponent({
+  name: 'todo-list',
+  template: `&lt;div&gt;
+    &lt;input x-model="newTodo" x-on:keyup.enter="addTodo"&gt;
+    &lt;button x-on:click="addTodo"&gt;Add&lt;/button&gt;
+    &lt;ul&gt;
+      &lt;li x-for="todo in todos" x-text="todo"&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () => ({
+    todos: [],
+    newTodo: ''
+  }),
+  
+  methods: {
+    addTodo() {
+      if (this.newTodo.trim()) {
+        this.todos.push(this.newTodo);
+        this.newTodo = '';
+      }
+    },
+    removeTodo(index) {
+      this.todos.splice(index, 1);
+    }
+  }
+});</code></pre>
+                  </div>
+                  
+                  <div x-show="activeTab === 'computed'" class="transition-opacity duration-200">
+                    <pre class="text-green-400 leading-relaxed overflow-auto max-h-64"><code>// Shopping Cart Component
+XTool.registerComponent({
+  name: 'shopping-cart',
+  template: `&lt;div&gt;
+    &lt;div x-for="item in items"&gt;
+      \{{ item.name }}: $\{{ item.price }}
+    &lt;/div&gt;
+    &lt;p&gt;Total: $\{{ total }}&lt;/p&gt;
+    &lt;p&gt;Tax: $\{{ tax }}&lt;/p&gt;
+    &lt;p&gt;Grand Total: $\{{ grandTotal }}&lt;/p&gt;
+  &lt;/div&gt;`,
+  
+  makeData: () => ({
+    items: [
+      { name: 'Apple', price: 1.50 },
+      { name: 'Banana', price: 0.75 }
+    ],
+    taxRate: 0.08
+  }),
+  
+  computed: {
+    total() {
+      return this.items.reduce((sum, item) => 
+        sum + item.price, 0);
+    },
+    tax() {
+      return this.total * this.taxRate;
+    },
+    grandTotal() {
+      return this.total + this.tax;
+    }
+  }
+});</code></pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Next Steps -->
+        <section class="text-center py-8 border-t border-gray-200">
+          <h3 class="text-xl font-bold mb-4 text-black">What's Next?</h3>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="examples.html" 
+               class="inline-flex items-center px-4 py-2 text-black hover:text-gray-600 transition-colors font-medium underline">
+              View Examples →
+            </a>
+            <a href="api.html" 
+               class="inline-flex items-center px-4 py-2 text-black hover:text-gray-600 transition-colors font-medium underline">
+              API Reference →
+            </a>
+          </div>
+        </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <component source="docs-footer"></component>
+
+</body>
+</html>

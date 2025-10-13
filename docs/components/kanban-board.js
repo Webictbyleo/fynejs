@@ -1,7 +1,7 @@
 // Kanban Board with Drag-and-Drop and Persistence
 XTool.registerComponent({
   name: 'kanban-board',
-  template: `
+  template: html`
   <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-5xl mx-auto">
       <div class="flex items-start justify-between mb-4 flex-wrap gap-4">
         <h3 class="text-lg font-semibold text-gray-800">Kanban Board</h3>

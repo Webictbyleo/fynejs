@@ -2,7 +2,9 @@
 (function(){
   // List of advanced example component scripts (Examples section only)
   const componentFiles = [
+    'interactive-showcase.js',
      'advanced-todo.js',
+     'timer-demo.js',
     'data-chart.js',
     'advanced-form.js',
     'search-demo.js',
@@ -21,6 +23,49 @@
   const basePath = 'components/';
 
   function immediateInit(){
+          const guessLang = (code) => {
+        const txt = code.trim();
+        if (/^</.test(txt) && /<\/?(div|span|script|component|button)/i.test(txt)) return 'html';
+        if (/\b(XTool|function|=>|const|let|var)\b/.test(txt)) return 'js';
+        if (/npm install|yarn add|pnpm add/.test(txt)) return 'bash';
+        return '';
+      };
+      document.querySelectorAll('pre > code').forEach(codeEl => {
+        const pre = codeEl.parentElement;
+        if (pre.classList.contains('enhanced')) return;
+        // Normalize classes for consistency
+        pre.classList.add('enhanced','code-block','xt-code','scrollbar-hide');
+        // Remove tailwind color background modifiers to avoid inconsistency
+        pre.className = pre.className
+          .split(/\s+/)
+          .filter(c => !/^text-green|^text-blue|^text-gray-\d+$|^bg-gray-900$|^bg-slate|^text-slate/.test(c))
+          .join(' ');
+        const raw = codeEl.textContent;
+        const lang = guessLang(raw);
+        if (lang) pre.dataset.lang = lang;
+        // Line numbers if multiline & longer than 3 lines
+        const lines = raw.split(/\n/);
+        if (lines.length > 3) {
+          codeEl.innerHTML = lines.map(l => `<span>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>`).join('\n');
+          pre.classList.add('code-line-numbers');
+          pre.style.setProperty('--ln-pad', '8px');
+        }
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'copy-btn';
+        btn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16h8M8 12h8m-6 8h4a2 2 0 002-2V6a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2zm10 0h1a2 2 0 002-2V8m-6-6h-2"/></svg><span>Copy</span>';
+        btn.addEventListener('click', () => {
+          navigator.clipboard.writeText(raw).then(() => {
+            btn.classList.add('copied');
+            btn.querySelector('span').textContent = 'Copied';
+            setTimeout(() => { btn.classList.remove('copied'); btn.querySelector('span').textContent = 'Copy'; }, 1600);
+          });
+        });
+        pre.prepend(btn);
+        const fade = document.createElement('div');
+        fade.className = 'code-fade';
+        pre.appendChild(fade);
+      });
     // Perform the core page init ASAP (without waiting for example components)
     if (!window.__XTOOL_INITIALIZED__){
       window.__XTOOL_INITIALIZED__ = true;

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Examples - FyneJS</title>
+  <meta name="description" content="Explore interactive live examples showcasing FyneJS capabilities. See advanced todo lists, data charts, forms, real-time dashboards, and more in action." />
+  <link rel="canonical" href="https://fynejs.com/examples.html" />
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fynejs.com/examples.html" />
+  <meta property="og:title" content="Examples - FyneJS Documentation" />
+  <meta property="og:description" content="Interactive live examples demonstrating FyneJS's reactive capabilities and component system." />
+  <meta property="og:image" content="https://fynejs.com/assets/og-image.jpg" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Examples - FyneJS Documentation" />
+  <meta name="twitter:description" content="Interactive live examples showcasing FyneJS in action." />
+  <meta name="twitter:image" content="https://fynejs.com/assets/og-image.jpg" />
+
+  <!-- SEO -->
+  <meta name="keywords" content="fynejs examples, live demos, interactive examples, reactive ui examples, component examples" />
+  <meta name="robots" content="index, follow" />
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <link rel="apple-touch-icon" href="./assets/logo-small.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.generated.css" />
+  
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .scale-102 {
+      transform: scale(1.02);
+    }
+    
+    .scale-101 {
+      transform: scale(1.01);
+    }
+    
+    /* Animation for component loading */
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+  </style>
+  
+  <!-- Scripts -->
+  <script src="../dist/x-tool.min.js" defer></script>
+  <script src="./shared/navigation.js" defer></script>
+  <script src="./shared/footer.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "FyneJS Examples - Interactive Component Gallery",
+    "description": "Explore interactive live examples showcasing FyneJS capabilities. See advanced todo lists, data charts, forms, real-time dashboards, and more in action.",
+    "url": "https://fynejs.com/examples.html",
+    "mainEntity": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "programmingLanguage": ["JavaScript", "TypeScript"],
+      "description": "Lightweight reactive framework for building dynamic web applications"
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://fynejs.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Examples",
+          "item": "https://fynejs.com/examples.html"
+        }
+      ]
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FyneJS",
+      "url": "https://fynejs.com"
+    },
+    "potentialAction": {
+      "@type": "InteractAction",
+      "target": "https://fynejs.com/examples.html",
+      "description": "Explore interactive FyneJS component examples"
+    },
+    "keywords": ["fynejs", "examples", "interactive demos", "reactive components", "javascript framework", "live examples"],
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+  
+  <!-- Navigation -->
+  <component source="docs-nav" x-prop="{page:'examples'}"></component>
+
+  <!-- Main Content -->
+  <main class="pt-24 pb-12 sm:pb-16 lg:pb-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <!-- Page Header -->
+      <div class="mb-8 sm:mb-12 text-center max-w-4xl mx-auto">
+        
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-black mb-4 leading-tight">
+          Interactive
+          <span class="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">Component Gallery</span>
+        </h1>
+        <p class="text-lg text-gray-600 leading-relaxed mb-6">
+          Explore FyneJS in action with interactive demos showcasing real-world patterns.
+        </p>
+      </div>
+
+      <!-- Component Showcase -->
+      <section class="mb-8 sm:mb-12">
+
+        <!-- Dynamic Component Switcher -->
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-lg"
+             x-data="{
+               selected: 'advanced-todo',
+               showSidebar: true,
+               components: {
+                 'advanced-todo': { 
+                   title: '🏆 Advanced Todo', 
+                   desc: 'Local storage persistence, filters, animations, and full CRUD operations'
+                 },
+                 'shopping-cart': { 
+                   title: '🛒 Shopping Cart', 
+                   desc: 'Dynamic totals, inventory management, and reactive calculations'
+                 },
+                 'data-chart': { 
+                   title: '📊 Data Visualization', 
+                   desc: 'SVG charts with interactive tooltips and real-time updates'
+                 },
+                 'advanced-form': { 
+                   title: '📝 Multi-Step Form', 
+                   desc: 'Validation, progress tracking, and advanced UX patterns'
+                 },
+                 'search-demo': { 
+                   title: '🔍 Real-time Search', 
+                   desc: 'Debounced filtering, highlighting, and instant results'
+                 },
+                 'advanced-calculator': { 
+                   title: '🧮 Calculator', 
+                   desc: 'Expression parsing, history, and keyboard support'
+                 },
+                 'large-list-demo': { 
+                   title: '📋 Large List', 
+                   desc: 'Efficient rendering of thousands of items with filtering'
+                 },
+                 'markdown-editor': { 
+                   title: '✍️ Markdown Editor', 
+                   desc: 'Live preview, syntax support, and export functionality'
+                 },
+                 'kanban-board': { 
+                   title: '📌 Kanban Board', 
+                   desc: 'Drag & drop task management with column organization'
+                 },
+                 'realtime-dashboard': { 
+                   title: '📈 Real-time Dashboard', 
+                   desc: 'Live metrics, charts, and auto-updating statistics'
+                 },
+                 'virtual-log-stream': { 
+                   title: '⚡ Virtual Log Stream', 
+                   desc: 'High-performance log viewer with virtualization'
+                 },
+                 'order-book-ticker': { 
+                   title: '💹 Order Book', 
+                   desc: 'Real-time trading data with live price updates'
+                 },
+                 'network-graph-mini': { 
+                   title: '🌐 Network Graph', 
+                   desc: 'Interactive node visualization with physics simulation'
+                 },
+                 'timeseries-resampler': { 
+                   title: '⏱️ Time Series', 
+                   desc: 'Data resampling and aggregation with charts'
+                 }
+               }
+             }">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-gray-900 to-black px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-white/10 rounded-xl">
+                  <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold text-white">Component Examples</h3>
+                  <p class="text-gray-300 text-sm">Interactive demos</p>
+                </div>
+              </div>
+              
+              <!-- Sidebar Toggle -->
+              <button x-on:click="showSidebar = !showSidebar" 
+                      class="lg:hidden flex items-center gap-2 px-3 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+                </svg>
+                <span class="text-sm">Menu</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sidebar Layout -->
+          <div class="flex">
+            <!-- Sidebar -->
+            <div x:class="showSidebar ? 'block' : 'hidden'"
+                 class="w-full lg:w-80 lg:block bg-gray-50 border-r border-gray-200 flex flex-col">
+              <div class="p-4 border-b border-gray-200 bg-white">
+                <h5 class="text-sm font-bold text-gray-900 mb-1">Components</h5>
+                <p class="text-xs text-gray-500"><span x-text="Object.keys(components).length"></span> examples available</p>
+              </div>
+              
+              <div class="flex-1 overflow-y-auto max-h-[600px] p-4">
+                <!-- Component List -->
+                <div class="space-y-2">
+                  <template x-for="(meta, key) in components" :key="key">
+                    <button x-on:click="selected = key; showSidebar = false"
+                            x:class="{ 
+                              'bg-black text-white shadow-md': selected === key,
+                              'bg-white text-gray-700 hover:bg-gray-100': selected !== key
+                            }"
+                            class="w-full p-3 rounded-lg text-left border border-gray-200 transition-all group">
+                      <div class="flex items-center gap-3">
+                        <div x:class="selected === key ? 'bg-white/20' : 'bg-gray-200'"
+                             class="w-2 h-2 rounded-full flex-shrink-0 transition-colors"></div>
+                        <div class="flex-1 min-w-0">
+                          <div x-text="meta.title" class="text-sm font-medium mb-1 truncate"></div>
+                          <div x-text="meta.desc" 
+                               x:class="selected === key ? 'text-gray-300' : 'text-gray-500'"
+                               class="text-xs line-clamp-2"></div>
+                        </div>
+                      </div>
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 p-6">
+              <!-- Current Component Display -->
+              <div class="mb-4">
+                <div class="flex items-center gap-3 mb-4">
+                  <h4 class="text-lg font-bold text-black" x-text="components[selected].title"></h4>
+                  <div class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span x-text="Object.keys(components).findIndex(k => k === selected) + 1"></span> of <span x-text="Object.keys(components).length"></span>
+                  </div>
+                </div>
+                <p class="text-gray-600 text-sm mb-6" x-text="components[selected].desc"></p>
+              </div>
+
+              <!-- Component Frame -->
+              <div class="bg-white rounded-xl border border-gray-200 min-h-[500px] shadow-sm relative overflow-hidden">
+                <div class="p-6">
+                  <component x:source="selected"></component>
+                </div>
+              </div>
+              
+              <!-- Code Reference -->
+              <div class="mt-4 p-4 bg-gray-900 rounded-lg">
+                <div class="flex items-center gap-2 mb-3">
+                  <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="text-xs text-gray-300 font-medium">Usage</span>
+                </div>
+                <pre class="bg-black/50 rounded p-3 overflow-x-auto"><code class="text-xs font-mono text-gray-300"><span class="text-blue-400">&lt;component</span> <span class="text-green-400">source</span>=<span class="text-yellow-400">"<span class="text-white" x-text="selected"></span>"</span><span class="text-blue-400">&gt;&lt;/component&gt;</span></code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <component source="docs-footer"></component>
+
+</body>
+</html>
+    

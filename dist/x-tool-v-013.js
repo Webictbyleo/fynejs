@@ -22,7 +22,6 @@ const XToolFramework = function () {
     const STR_CONTENTS = 'contents';
     const EV_CLICK = 'click', EV_INPUT = 'input', EV_CHANGE = 'change', EV_KEYDOWN = 'keydown', EV_KEYUP = 'keyup';
     const EV_DELEGATED = [EV_CLICK, EV_INPUT, EV_CHANGE, EV_KEYDOWN, EV_KEYUP];
-    const LS_PENDING = 0, LS_LOADING = 1, LS_LOADED = 2, LS_ERROR = 3;
     try {
         if (d && d.head && !d.getElementById('x-tool-initial-css')) {
             const style = d.createElement(STR_STYLE);
@@ -33,15 +32,7 @@ const XToolFramework = function () {
     }
     catch { }
     let PFX = 'x';
-    let attrCache = new Map();
-    const attrName = (name) => {
-        const cached = attrCache.get(name);
-        if (cached)
-            return cached;
-        const value = `${PFX}-${name}`;
-        attrCache.set(name, value);
-        return value;
-    };
+    const attrName = (name) => `${PFX}-${name}`;
     class XToolFramework {
         constructor() {
             this._components = new Map();
@@ -84,7 +75,6 @@ const XToolFramework = function () {
                 else {
                     PFX = 'x';
                 }
-                attrCache.clear();
                 const start = async () => {
                     this._applyPrefixInitialCSS();
                     if (this._preDiscoveryTasks.length) {
@@ -123,7 +113,28 @@ const XToolFramework = function () {
                     else if (it.mode === 'lazy') {
                         const inferredName = (it.name || it.path.split('/').pop() || '').replace(/\.(mjs|js|ts)(\?.*)?$/i, '').toLowerCase();
                         if (inferredName && !this._lazyComponentSources.has(inferredName)) {
-                            this._lazyComponentSources.set(inferredName, { path: it.path, status: LS_PENDING });
+                            this._lazyComponentSources.set(inferredName, { path: it.path, status: 'pending' });
+                            if (d && d.querySelector(`component[source="${inferredName}"]`)) {
+                                const entry = this._lazyComponentSources.get(inferredName);
+                                const trigger = () => {
+                                    if (entry.status !== 'pending')
+                                        return;
+                                    entry.status = 'loading';
+                                    entry.promise = this._fetchAndEvalComponent(entry.path)
+                                        .then(() => { entry.status = 'loaded'; })
+                                        .catch(() => { entry.status = 'error'; })
+                                        .finally(() => { try {
+                                        this._autoDiscoverComponents();
+                                    }
+                                    catch { } });
+                                };
+                                try {
+                                    window.requestIdleCallback ? window.requestIdleCallback(trigger, { timeout: 2000 }) : setTimeout(trigger, 50);
+                                }
+                                catch {
+                                    setTimeout(trigger, 50);
+                                }
+                            }
                         }
                     }
                     else {
@@ -259,12 +270,7 @@ const XToolFramework = function () {
                     };
                 }
             };
-            this._generateComponentId = () => {
-                const now = Date.now();
-                const random = Math.random().toString(36).substring(2, 15);
-                const counter = (this._components.size + 1).toString(36);
-                return `component_${now}_${counter}_${random}`;
-            };
+            this._generateComponentId = () => 'component_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             this._parseDataExpression = (expression) => {
                 try {
                     return new Function('return ' + expression.trim())();
@@ -419,11 +425,15 @@ const XToolFramework = function () {
                 const name = source.toLowerCase();
                 const lazy = this._lazyComponentSources?.get(name);
                 if (lazy) {
-                    if (lazy.status === LS_PENDING) {
-                        lazy.status = LS_LOADING;
+                    if (lazy.status === 'pending') {
+                        lazy.status = 'loading';
                         lazy.promise = this._fetchAndEvalComponent(lazy.path)
-                            .then(() => { lazy.status = LS_LOADED; })
-                            .catch(() => { lazy.status = LS_ERROR; });
+                            .then(() => { lazy.status = 'loaded'; })
+                            .catch(() => { lazy.status = 'error'; })
+                            .finally(() => { try {
+                            this._autoDiscoverComponents();
+                        }
+                        catch { } });
                     }
                     lazy.promise?.then(() => { try {
                         const again = this._getRegisteredComponentDef(source);
@@ -519,9 +529,12 @@ const XToolFramework = function () {
             };
             const comp = this.createComponent(compDef);
             comp.element = el;
-            const originalChildren = Array.from(el.childNodes);
-            if (originalChildren.length)
-                el.replaceChildren();
+            const originalChildren = [];
+            while (el.firstChild) {
+                const n = el.firstChild;
+                originalChildren.push(n);
+                el.removeChild(n);
+            }
             if (def.template) {
                 const applyTemplate = (tpl) => {
                     el.innerHTML = tpl;
@@ -529,11 +542,19 @@ const XToolFramework = function () {
                     if (slots.length) {
                         for (const slotEl of slots) {
                             const name = slotEl.getAttribute('name');
-                            const matched = name
-                                ? originalChildren.filter(n => n.nodeType === 1 && n.getAttribute('slot') === name)
-                                : originalChildren.filter(n => n.nodeType !== 1 || !n.hasAttribute('slot'));
-                            if (matched.length)
-                                slotEl.replaceWith(...matched);
+                            let matched = [];
+                            if (name) {
+                                matched = originalChildren.filter(n => n.nodeType === 1 && n.getAttribute('slot') === name);
+                            }
+                            else {
+                                matched = originalChildren.filter(n => n.nodeType !== 1 || !n.hasAttribute('slot'));
+                            }
+                            if (matched.length) {
+                                const frag = d.createDocumentFragment();
+                                for (const n of matched)
+                                    frag.appendChild(n);
+                                slotEl.parentNode?.replaceChild(frag, slotEl);
+                            }
                         }
                     }
                 };
@@ -568,8 +589,8 @@ const XToolFramework = function () {
                 }
             }
             else {
-                if (originalChildren.length)
-                    el.append(...originalChildren);
+                for (const n of originalChildren)
+                    el.appendChild(n);
             }
             this._registerElement(el, comp);
             try {
@@ -677,19 +698,14 @@ const XToolFramework = function () {
         set isMounted(v) { this._isMounted = v; }
         get isDestroyed() { return this._isDestroyed; }
         set isDestroyed(v) { this._isDestroyed = v; }
-        _abortInvokerResources() {
-            for (const byKind of this._invokerResources.values()) {
-                for (const cleanup of byKind.values()) {
-                    try {
-                        cleanup();
-                    }
-                    catch { }
-                }
-            }
-            this._invokerResources.clear();
-        }
         _cancelUserResources() {
-            this._abortInvokerResources();
+            for (const fn of Array.from(this._userResourceCleanups)) {
+                try {
+                    fn();
+                }
+                catch { }
+                this._userResourceCleanups.delete(fn);
+            }
         }
         setFrozen(on) {
             if (on === this._isFrozen)
@@ -747,24 +763,27 @@ const XToolFramework = function () {
             this._hasComputed = false;
             this._directives = new Map();
             this._cleanupFunctions = new Set();
-            this._directiveAbort = new AbortController();
-            this._invokerResources = new Map();
-            this._targetIds = new WkMap();
-            this._targetSeq = 0;
             this._isSealed = false;
             this._isFrozen = false;
             this._sealedBeforeFreeze = null;
-            this._isMutationEnabled = true;
+            this._userResourceCleanups = new Set();
             this._effectsToRun = new Set();
             this._currentInvoker = null;
+            this._lastTimeoutByInvoker = new Map();
+            this._lastIntervalByInvoker = new Map();
+            this._lastRafByInvoker = new Map();
+            this._lastObserverByInvoker = {
+                mutation: new Map(),
+                resize: new Map(),
+                intersection: new Map()
+            };
+            this._eventListeners = [];
             this._loopScopes = new WkMap();
             this._expressionCache = new Map();
             this._propertyDependencies = new Map();
             this._activeEffect = null;
             this._renderScheduled = false;
             this._nextTickQueue = [];
-            this._changeFrameId = null;
-            this._renderFrameId = null;
             this._initialClassSets = new WkMap();
             this._rawData = {};
             this._propParent = null;
@@ -777,15 +796,27 @@ const XToolFramework = function () {
             this._addCleanupFunction = (fn) => {
                 if (typeof fn !== 'function')
                     return undefined;
-                const wrapped = () => {
+                const wrapper = () => {
                     try {
                         fn();
                     }
+                    catch {
+                        _logErr();
+                    }
+                    try {
+                        this._cleanupFunctions.delete(wrapper);
+                    }
                     catch { }
-                    this._cleanupFunctions.delete(wrapped);
                 };
-                this._cleanupFunctions.add(wrapped);
-                return () => { this._cleanupFunctions.delete(wrapped); };
+                this._cleanupFunctions.add(wrapper);
+                return () => { try {
+                    this._cleanupFunctions.delete(wrapper);
+                }
+                catch { } };
+            };
+            this._addEventListenerWithCleanup = (element, event, handler, options) => {
+                element.addEventListener(event, handler, options);
+                this._eventListeners.push({ element, event, handler, options });
             };
             this._id = id;
             this._framework = framework;
@@ -813,31 +844,19 @@ const XToolFramework = function () {
         _onDataChange(_property) {
             if (this.isBound) {
                 const self = this;
-                if (self._changeFrameId != null) {
-                    try {
-                        cancelAnimationFrame(self._changeFrameId);
-                    }
-                    catch { }
-                }
-                if (this._isMutationEnabled === false)
-                    return;
                 const effectsToRun = self._effectsToRun;
                 const directDeps = self._propertyDependencies.get(_property);
                 if (directDeps)
                     for (let i = 0; i < directDeps.length; i++)
                         effectsToRun.add(directDeps[i]);
-                self._changeFrameId = requestAnimationFrame(() => {
+                if (self.LastBatchId) {
+                    cancelAnimationFrame(self.LastBatchId);
+                }
+                self.LastBatchId = requestAnimationFrame(() => {
                     if (FT_C)
                         self._computedCache.clear();
-                    const fid = self._changeFrameId;
-                    self._changeFrameId = null;
-                    if (fid != null) {
-                        try {
-                            cancelAnimationFrame(fid);
-                        }
-                        catch { }
-                    }
-                    if (self.isDestroyed || self._isSealed)
+                    self.LastBatchId = null;
+                    if (self.isDestroyed)
                         return;
                     for (const effect of effectsToRun)
                         self._safeExecute(effect);
@@ -901,26 +920,13 @@ const XToolFramework = function () {
                 deps.push(this._activeEffect);
         }
         _scheduleRender() {
-            if (this._isSealed || this._isFrozen || this._isDestroyed)
+            if (this._isSealed || this._isFrozen)
                 return;
             if (this._renderScheduled)
                 return;
             this._renderScheduled = true;
             requestAnimationFrame(() => {
-                const fid = this._renderFrameId;
-                this._renderFrameId = null;
-                if (fid != null) {
-                    try {
-                        cancelAnimationFrame(fid);
-                    }
-                    catch { }
-                }
                 this._renderScheduled = false;
-                if (this._isDestroyed || this._isSealed) {
-                    if (this._nextTickQueue && this._nextTickQueue.length)
-                        this._nextTickQueue.length = 0;
-                    return;
-                }
                 this._render();
                 if (this._nextTickQueue && this._nextTickQueue.length) {
                     const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
@@ -1027,13 +1033,19 @@ const XToolFramework = function () {
                 }
             }
             self._directives.clear();
-            try {
-                self._directiveAbort.abort();
+            for (const { element, event, handler, options } of self._eventListeners) {
+                element.removeEventListener(event, handler, options);
             }
-            catch { }
-            self._directiveAbort = new AbortController();
-            self._abortInvokerResources();
-            self._runCleanupCallbacks();
+            self._eventListeners = [];
+            for (const cleanup of Array.from(self._cleanupFunctions)) {
+                try {
+                    cleanup();
+                }
+                catch {
+                    _logErr();
+                }
+            }
+            self._cleanupFunctions.clear();
             self._computedCache.clear();
             self._expressionCache.clear();
             self._propertyDependencies.clear();
@@ -1046,22 +1058,6 @@ const XToolFramework = function () {
             }
             if (self._element)
                 self._framework._unregisterElement(self._element);
-            if (self._changeFrameId != null) {
-                try {
-                    cancelAnimationFrame(self._changeFrameId);
-                }
-                catch { }
-                ;
-                self._changeFrameId = null;
-            }
-            if (self._renderFrameId != null) {
-                try {
-                    cancelAnimationFrame(self._renderFrameId);
-                }
-                catch { }
-                ;
-                self._renderFrameId = null;
-            }
             self._callLifecycleHook('unmounted');
             self._isDestroyed = true;
             self._isMounted = false;
@@ -1072,12 +1068,6 @@ const XToolFramework = function () {
             this._effectsToRun.clear();
             self._element = null;
             quMct(() => self._framework._unregisterComponent(self._id));
-            this._data = {};
-            this._rawData = {};
-            this._methods = {};
-            this._computed = {};
-            this._propEffects = {};
-            this._activeEffect = null;
         }
         _initReactiveProps(expr, parent) {
             if (!expr || !parent)
@@ -1115,38 +1105,6 @@ const XToolFramework = function () {
             this._propEffect = update;
             update();
         }
-        _runCleanupCallbacks() {
-            for (const fn of this._cleanupFunctions) {
-                try {
-                    fn();
-                }
-                catch { }
-            }
-            this._cleanupFunctions.clear();
-        }
-        _listen(element, event, handler, options) {
-            const signal = this._directiveAbort.signal;
-            if (typeof options === 'boolean') {
-                element.addEventListener(event, handler, { capture: options, signal });
-            }
-            else if (options) {
-                const merged = options.signal && options.signal !== signal
-                    ? options
-                    : { ...options, signal };
-                element.addEventListener(event, handler, merged);
-            }
-            else {
-                element.addEventListener(event, handler, { signal });
-            }
-        }
-        _targetKey(target) {
-            let id = this._targetIds.get(target);
-            if (!id) {
-                id = (++this._targetSeq).toString(36);
-                this._targetIds.set(target, id);
-            }
-            return id;
-        }
         _parseDirectives(element) {
             const self = this;
             let processedElements = 0;
@@ -1155,31 +1113,27 @@ const XToolFramework = function () {
                     return false;
                 }
                 const isComponentTag = el[STR_TAGNAME] === 'COMPONENT';
-                const prefixDash = PFX + '-';
-                const prefixColon = PFX + ':';
-                const directiveNames = [];
+                const directives = [];
                 let hasTextOrHtml = false;
-                let forName = null;
-                const names = el.getAttributeNames();
-                for (let i = 0; i < names.length; i++) {
-                    const name = names[i];
-                    if (name.startsWith(prefixDash) || name.startsWith(prefixColon)) {
-                        directiveNames.push(name);
-                        if (!hasTextOrHtml && (name === attrName('text') || name === attrName('html')))
+                let forAttr = null;
+                for (const a of el.attributes) {
+                    const n = a.name;
+                    if (n.startsWith(PFX + '-') || n.startsWith(PFX + ':')) {
+                        directives.push(a);
+                        if (!hasTextOrHtml && (n === attrName('text') || n === attrName('html')))
                             hasTextOrHtml = true;
-                        if (!forName && name === attrName('for'))
-                            forName = name;
+                        if (!forAttr && n === attrName('for'))
+                            forAttr = a;
                     }
                 }
-                if (directiveNames.length > 0) {
+                if (directives.length > 0) {
                     processedElements++;
-                    if (forName) {
-                        self._bindDirective(el, forName, el.getAttribute(forName) || '');
+                    if (forAttr) {
+                        self._bindDirective(el, forAttr.name, forAttr.value);
                         return false;
                     }
-                    for (const attr of directiveNames) {
-                        self._bindDirective(el, attr, el.getAttribute(attr) || '');
-                    }
+                    for (const attr of directives)
+                        self._bindDirective(el, attr.name, attr.value);
                 }
                 if (FT_TI && !hasTextOrHtml)
                     self._bindTextInterpolationsIn(el);
@@ -1195,80 +1149,78 @@ const XToolFramework = function () {
                     continue;
                 const textNode = node;
                 const raw = textNode.nodeValue || '';
-                if (textNode.__x_ti_bound || raw.indexOf('{{') === -1)
+                if (textNode.__x_tool_ti || raw.indexOf('{{') === -1)
                     continue;
+                const parentTag = (textNode.parentElement?.tagName || '').toLowerCase();
+                const inCode = parentTag === 'code' || parentTag === 'pre';
                 const segs = [];
                 let i = 0;
                 while (i < raw.length) {
-                    const ch = raw.charCodeAt(i);
-                    if (ch === 92) {
-                        let run = 0;
-                        const start = i;
-                        while (i < raw.length && raw.charCodeAt(i) === 92) {
-                            run++;
-                            i++;
-                        }
-                        if (raw.startsWith('{{', i)) {
-                            const close = raw.indexOf('}}', i + 2);
-                            if (close === -1) {
-                                segs.push({ type: 'lit', text: raw.slice(start) });
-                                break;
-                            }
-                            if (run > 1)
-                                segs.push({ type: 'lit', text: '\\'.repeat(run - 1) });
-                            segs.push({ type: 'lit', text: raw.slice(i, close + 2) });
-                            i = close + 2;
-                            continue;
-                        }
-                        segs.push({ type: 'lit', text: raw.slice(start, i) });
-                        continue;
+                    const open = raw.indexOf('{{', i);
+                    if (open === -1) {
+                        segs.push({ literal: raw.slice(i) });
+                        break;
                     }
-                    if (raw.startsWith('{{', i)) {
-                        const close = raw.indexOf('}}', i + 2);
+                    let bs = 0;
+                    for (let p = open - 1; p >= 0 && raw.charCodeAt(p) === 92; p--)
+                        bs++;
+                    if (bs > 0) {
+                        const prefixStart = i;
+                        const prefixEnd = open - bs;
+                        if (prefixEnd > prefixStart)
+                            segs.push({ literal: raw.slice(prefixStart, prefixEnd) });
+                        if (bs > 1)
+                            segs.push({ literal: '\\'.repeat(bs - 1) });
+                        const close = raw.indexOf('}}', open + 2);
                         if (close === -1) {
-                            segs.push({ type: 'lit', text: raw.slice(i) });
+                            segs.push({ literal: raw.slice(open, raw.length) });
+                            i = raw.length;
                             break;
                         }
-                        const expr = raw.slice(i + 2, close).trim();
-                        if (expr.length === 0)
-                            segs.push({ type: 'lit', text: '{{}}' });
-                        else
-                            segs.push({ type: 'expr', code: expr });
+                        segs.push({ literal: raw.slice(open, close + 2) });
                         i = close + 2;
                         continue;
                     }
-                    const nextEsc = raw.indexOf('\\', i);
-                    const nextOpen = raw.indexOf('{{', i);
-                    let end = raw.length;
-                    if (nextEsc !== -1 && nextEsc < end)
-                        end = nextEsc;
-                    if (nextOpen !== -1 && nextOpen < end)
-                        end = nextOpen;
-                    segs.push({ type: 'lit', text: raw.slice(i, end) });
-                    i = end;
+                    else {
+                        if (open > i)
+                            segs.push({ literal: raw.slice(i, open) });
+                        const close = raw.indexOf('}}', open + 2);
+                        if (close === -1) {
+                            segs.push({ literal: raw.slice(open) });
+                            i = raw.length;
+                            break;
+                        }
+                        const expr = raw.slice(open + 2, close).trim();
+                        if (expr)
+                            segs.push({ expr });
+                        else
+                            segs.push({ literal: '' });
+                        i = close + 2;
+                        continue;
+                    }
                 }
-                const hasExpr = segs.some(s => s.type === 'expr');
-                if (!hasExpr) {
-                    textNode.__x_ti_bound = true;
-                    const literalOut = segs.map(s => s.text || '').join('');
-                    if (textNode.textContent !== literalOut)
-                        textNode.textContent = literalOut;
+                const hasExpr = segs.some(s => s.expr);
+                const hasEscaped = segs.some(s => s.literal && s.literal.includes('{{'));
+                if (!hasExpr && !hasEscaped)
                     continue;
-                }
-                const evaluators = [];
-                for (const s of segs)
-                    if (s.type === 'expr')
-                        evaluators.push(this._createElementEvaluator(s.code, el));
-                textNode.__x_ti_bound = true;
+                textNode.__x_tool_ti = true;
+                const evaluators = hasExpr && !inCode ? segs.filter(s => s.expr).map(s => this._createElementEvaluator(s.expr, el)) : [];
+                let exprIndex = 0;
                 const update = () => {
+                    exprIndex = 0;
                     let out = '';
-                    let ei = 0;
                     for (const s of segs) {
-                        if (s.type === 'lit')
-                            out += s.text;
-                        else {
-                            const v = evaluators[ei++]();
-                            out += (v == null ? '' : String(v));
+                        if (s.literal != null) {
+                            out += s.literal;
+                        }
+                        else if (s.expr) {
+                            if (inCode) {
+                                out += '{{ ' + s.expr + ' }}';
+                            }
+                            else {
+                                const val = evaluators[exprIndex++]();
+                                out += (val == null ? '' : String(val));
+                            }
                         }
                     }
                     if (textNode.textContent !== out)
@@ -1481,7 +1433,7 @@ const XToolFramework = function () {
             };
             const t = element.type;
             const eventType = (element[STR_TAGNAME] === 'SELECT' || t === 'checkbox' || t === 'radio' || t === 'file') ? 'change' : 'input';
-            this._listen(element, eventType, updateData);
+            this._addEventListenerWithCleanup(element, eventType, updateData);
             this._addDirective(element, { type: 'model', property });
         }
         _bindIfDirective(element, expression) {
@@ -1744,7 +1696,7 @@ const XToolFramework = function () {
             }
             else {
                 const target = isOutside ? (element?.ownerDocument || d || document) : element;
-                self._listen(target, eventName, createEventHandler, opts);
+                self._addEventListenerWithCleanup(target, eventName, createEventHandler, opts);
             }
         }
         _createEvaluator(expression, isStatement = false) {
@@ -1803,7 +1755,7 @@ const XToolFramework = function () {
                         self._trackDependency(parentKey);
                     }
                     const value = Reflect.get(target, p, receiver);
-                    if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'reverse', 'copyWithin', 'fill', 'sort'].includes(p)) {
+                    if (ARRAY_ISARRAY(target) && typeof value === 'function' && ['push', 'pop', 'shift', 'unshift', 'splice', 'reverse', 'copyWithin', 'fill'].includes(p)) {
                         return function (...args) {
                             if (self._isInComputedEvaluation) {
                                 const name = String(p);
@@ -1996,7 +1948,6 @@ const XToolFramework = function () {
                 '$seal': (on = true) => { this._setSealed(!!on); },
                 '$mutate': (fn) => {
                     const prevMethod = this._isInMethodExecution;
-                    this._isMutationEnabled = false;
                     if (this._isInComputedEvaluation) {
                         throw new Error('[x-tool] $mutate cannot be used inside computed evaluation; computed getters must be pure.');
                     }
@@ -2006,7 +1957,6 @@ const XToolFramework = function () {
                     }
                     finally {
                         this._isInMethodExecution = prevMethod;
-                        this._isMutationEnabled = true;
                         this._scheduleRender();
                     }
                 }
@@ -2050,144 +2000,273 @@ const XToolFramework = function () {
             const cfg = this.framework._getConfig();
             const sandbox = !!cfg.sandboxExpressions;
             const allow = new Set((cfg.allowGlobals || []).map(s => String(s)));
-            const ensureInvoker = () => this._currentInvoker || '__anonymous__';
-            const registerResource = (kind, setup) => {
-                const inv = ensureInvoker();
-                let byKind = this._invokerResources.get(inv);
-                if (!byKind) {
-                    byKind = new Map();
-                    this._invokerResources.set(inv, byKind);
-                }
-                const prev = byKind.get(kind);
-                if (prev) {
+            const _lastListenerByTarget = new WkMap();
+            const wrapTarget = (t) => {
+                if (!t)
+                    return t;
+                const hasAdd = typeof t.addEventListener === 'function';
+                if (!hasAdd)
+                    return t;
+                const handlerMap = new WkMap();
+                const makeKey = (event, options) => {
                     try {
-                        prev();
+                        return event + '|' + (options === undefined ? '' : (typeof options === 'object' ? JSON.stringify(options) : String(options)));
                     }
-                    catch { }
-                    byKind.delete(kind);
-                }
-                const cleanup = setup();
-                if (typeof cleanup === 'function') {
-                    const wrapped = () => {
-                        try {
-                            cleanup();
-                        }
-                        finally {
-                            byKind?.delete(kind);
-                        }
-                    };
-                    byKind.set(kind, wrapped);
-                    this._addCleanupFunction(wrapped);
-                }
-            };
-            const wrapTarget = (target) => {
-                if (!target || typeof target.addEventListener !== 'function')
-                    return target;
-                return new Proxy(target, {
-                    get: (obj, prop) => {
+                    catch {
+                        return event + '|';
+                    }
+                };
+                return new Proxy(t, {
+                    get(target, prop, _receiver) {
                         if (prop === 'addEventListener') {
-                            return (eventName, handler, options) => {
-                                if (this._isSealed || this._isFrozen)
+                            return function (event, handler, options) {
+                                if (component._isSealed || component._isFrozen)
                                     return;
-                                obj.addEventListener(eventName, handler, options);
-                                const optSig = typeof options === 'boolean' ? options : options?.capture ? '1' : '0';
-                                const key = 'listener:' + this._targetKey(obj) + ':' + eventName + ':' + optSig;
-                                registerResource(key, () => () => {
+                                const inv = component._currentInvoker || '__anonymous__';
+                                const eKey = makeKey(event, options);
+                                let invMap = _lastListenerByTarget.get(target);
+                                if (!invMap) {
+                                    invMap = new Map();
+                                    _lastListenerByTarget.set(target, invMap);
+                                }
+                                let evMap = invMap.get(inv);
+                                if (!evMap) {
+                                    evMap = new Map();
+                                    invMap.set(inv, evMap);
+                                }
+                                const prev = evMap.get(eKey);
+                                if (prev) {
                                     try {
-                                        obj.removeEventListener(eventName, handler, options);
+                                        target.removeEventListener(event, prev.handler, prev.options);
+                                    }
+                                    catch { }
+                                    try {
+                                        prev.remover && prev.remover();
+                                    }
+                                    catch { }
+                                    evMap.delete(eKey);
+                                }
+                                target.addEventListener(event, handler, options);
+                                const remover = component._addCleanupFunction(() => {
+                                    try {
+                                        target.removeEventListener(event, handler, options);
                                     }
                                     catch { }
                                 });
+                                if (remover)
+                                    component._userResourceCleanups.add(remover);
+                                try {
+                                    if (typeof handler === 'function' && remover) {
+                                        let m = handlerMap.get(handler);
+                                        if (!m) {
+                                            m = new Map();
+                                            handlerMap.set(handler, m);
+                                        }
+                                        m.set(eKey, remover);
+                                    }
+                                }
+                                catch { }
+                                evMap.set(eKey, { handler, options, remover });
                             };
                         }
                         if (prop === 'removeEventListener') {
-                            return (eventName, handler, options) => {
+                            return function (event, handler, options) {
                                 try {
-                                    obj.removeEventListener(eventName, handler, options);
+                                    target.removeEventListener(event, handler, options);
                                 }
                                 catch { }
+                                const key = makeKey(event, options);
+                                try {
+                                    if (typeof handler === 'function') {
+                                        const m = handlerMap.get(handler);
+                                        if (m) {
+                                            const rem = m.get(key);
+                                            if (rem) {
+                                                try {
+                                                    rem();
+                                                }
+                                                catch { }
+                                                ;
+                                                m.delete(key);
+                                            }
+                                            if (m.size === 0)
+                                                handlerMap.delete(handler);
+                                        }
+                                    }
+                                }
+                                catch { }
+                                const invMap = _lastListenerByTarget.get(target);
+                                if (invMap) {
+                                    for (const [invKey, evMap] of invMap) {
+                                        const rec = evMap.get(key);
+                                        if (rec && rec.handler === handler) {
+                                            try {
+                                                rec.remover && rec.remover();
+                                            }
+                                            catch { }
+                                            evMap.delete(key);
+                                            if (evMap.size === 0)
+                                                invMap.delete(invKey);
+                                            break;
+                                        }
+                                    }
+                                }
                             };
                         }
                         if (prop === 'querySelector') {
-                            return (sel) => wrapTarget(obj.querySelector(sel));
+                            return function (sel) { const res = target.querySelector(sel); return wrapTarget(res); };
                         }
                         if (prop === 'querySelectorAll') {
-                            return (sel) => Array.from(obj.querySelectorAll(sel)).map(wrapTarget);
+                            return function (sel) { const list = target.querySelectorAll(sel); return Array.from(list).map(wrapTarget); };
                         }
                         if (prop === 'getElementById') {
-                            return (id) => wrapTarget(obj.getElementById(id));
+                            return function (id) { const res = target.getElementById(id); return wrapTarget(res); };
                         }
                         if (prop === 'document') {
-                            const doc = obj.document;
+                            const doc = target.document;
                             return wrapTarget(doc) || doc;
                         }
-                        if (prop === 'defaultView') {
-                            const win = obj.defaultView;
-                            return wrapTarget(win) || win;
+                        if (prop === 'body' && target === gDocument) {
+                            const b = target.body;
+                            return wrapTarget(b) || b;
                         }
-                        if (prop === 'body') {
-                            const body = obj.body;
-                            return wrapTarget(body) || body;
+                        if (prop === 'defaultView' && target === gDocument) {
+                            const w = target.defaultView;
+                            return wrapTarget(w) || w;
                         }
-                        const value = obj[prop];
-                        if (typeof value === 'function') {
+                        const val = target[prop];
+                        if (typeof val === 'function') {
                             try {
-                                return value.bind(obj);
+                                return val.bind(target);
                             }
-                            catch {
-                                return value;
-                            }
+                            catch { }
                         }
-                        return value;
+                        return val;
                     }
                 });
             };
+            const _timeoutRemovers = new Map();
+            const _intervalRemovers = new Map();
+            const _rafRemovers = new Map();
             const ctxSetTimeout = (fn, ms, ...args) => {
-                if (this._isSealed || this._isFrozen || this._isDestroyed)
+                if (component._isSealed || component._isFrozen)
                     return undefined;
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastTimeoutByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.clearTimeout?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.setTimeout?.(fn, ms, ...args);
-                if (id != null)
-                    registerResource('timeout', () => () => { try {
+                if (id != null) {
+                    const remover = component._addCleanupFunction(() => { try {
                         gWindow?.clearTimeout?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
+                    _timeoutRemovers.set(id, remover);
+                    component._lastTimeoutByInvoker.set(key, { id, remover });
+                }
                 return id;
             };
             const ctxSetInterval = (fn, ms, ...args) => {
-                if (this._isSealed || this._isFrozen)
+                if (component._isSealed || component._isFrozen)
                     return undefined;
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastIntervalByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.clearInterval?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.setInterval?.(fn, ms, ...args);
-                if (id != null)
-                    registerResource('interval', () => () => { try {
+                if (id != null) {
+                    const remover = component._addCleanupFunction(() => { try {
                         gWindow?.clearInterval?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
+                    _intervalRemovers.set(id, remover);
+                    component._lastIntervalByInvoker.set(key, { id, remover });
+                }
                 return id;
             };
             const ctxRequestAnimationFrame = (cb) => {
-                if (this._isSealed || this._isFrozen)
+                if (component._isSealed || component._isFrozen)
                     return undefined;
+                const key = component._currentInvoker || '__anonymous__';
+                const prev = component._lastRafByInvoker.get(key);
+                if (prev) {
+                    try {
+                        gWindow?.cancelAnimationFrame?.(prev.id);
+                    }
+                    catch { }
+                    ;
+                    try {
+                        prev.remover && prev.remover();
+                    }
+                    catch { }
+                }
                 const id = gWindow?.requestAnimationFrame?.(cb);
-                if (id != null)
-                    registerResource('raf', () => () => { try {
+                if (id != null) {
+                    const remover = component._addCleanupFunction(() => { try {
                         gWindow?.cancelAnimationFrame?.(id);
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
+                    _rafRemovers.set(id, remover);
+                    component._lastRafByInvoker.set(key, { id, remover });
+                }
                 return id;
             };
             const wrapObserverCtor = (Orig, kind) => {
                 if (!Orig)
                     return undefined;
-                return function (...observerArgs) {
+                const Wrapped = function (...args) {
                     if (component._isSealed || component._isFrozen)
                         return { observe() { }, disconnect() { }, unobserve() { } };
-                    const inst = new Orig(...observerArgs);
-                    registerResource('observer:' + kind, () => () => { try {
+                    const inst = new Orig(...args);
+                    const key = component._currentInvoker || '__anonymous__';
+                    let store = kind === 'mutation' ? component._lastObserverByInvoker.mutation : kind === 'resize' ? component._lastObserverByInvoker.resize : component._lastObserverByInvoker.intersection;
+                    const prev = store.get(key);
+                    if (prev) {
+                        try {
+                            prev.inst.disconnect();
+                        }
+                        catch { }
+                        ;
+                        try {
+                            prev.remover && prev.remover();
+                        }
+                        catch { }
+                    }
+                    const remover = component._addCleanupFunction(() => { try {
                         inst.disconnect();
                     }
                     catch { } });
+                    if (remover)
+                        component._userResourceCleanups.add(remover);
+                    store.set(key, { inst, remover });
                     return inst;
                 };
+                Wrapped.prototype = Orig.prototype;
+                return Wrapped;
             };
             const specials = {
                 '$target': targetElement || null,
@@ -2196,17 +2275,47 @@ const XToolFramework = function () {
                 ...(sandbox && !allow.has('clearTimeout') ? {} : { 'clearTimeout': (id) => { try {
                         gWindow?.clearTimeout?.(id);
                     }
-                    catch { } } }),
+                    catch { }
+                    finally {
+                        try {
+                            const r = _timeoutRemovers.get(id);
+                            if (r) {
+                                r();
+                                _timeoutRemovers.delete(id);
+                            }
+                        }
+                        catch { }
+                    } } }),
                 ...(sandbox && !allow.has('setInterval') ? {} : { 'setInterval': ctxSetInterval }),
                 ...(sandbox && !allow.has('clearInterval') ? {} : { 'clearInterval': (id) => { try {
                         gWindow?.clearInterval?.(id);
                     }
-                    catch { } } }),
+                    catch { }
+                    finally {
+                        try {
+                            const r = _intervalRemovers.get(id);
+                            if (r) {
+                                r();
+                                _intervalRemovers.delete(id);
+                            }
+                        }
+                        catch { }
+                    } } }),
                 ...(sandbox && !allow.has('requestAnimationFrame') ? {} : { 'requestAnimationFrame': ctxRequestAnimationFrame }),
                 ...(sandbox && !allow.has('cancelAnimationFrame') ? {} : { 'cancelAnimationFrame': (id) => { try {
                         gWindow?.cancelAnimationFrame?.(id);
                     }
-                    catch { } } }),
+                    catch { }
+                    finally {
+                        try {
+                            const r = _rafRemovers.get(id);
+                            if (r) {
+                                r();
+                                _rafRemovers.delete(id);
+                            }
+                        }
+                        catch { }
+                    } } }),
                 ...(sandbox && !allow.has('MutationObserver') ? {} : { 'MutationObserver': wrapObserverCtor(gWindow?.MutationObserver, 'mutation') }),
                 ...(sandbox && !allow.has('ResizeObserver') ? {} : { 'ResizeObserver': wrapObserverCtor(gWindow?.ResizeObserver, 'resize') }),
                 ...(sandbox && !allow.has('IntersectionObserver') ? {} : { 'IntersectionObserver': wrapObserverCtor(gWindow?.IntersectionObserver, 'intersection') }),
@@ -2422,8 +2531,6 @@ const XToolFramework = function () {
             for (const [element, directives] of this._directives) {
                 for (const directive of directives) {
                     if ((root === element || (element instanceof Element && root.contains(element))) && directive.update) {
-                        if (XTOOL_ENABLE_STATIC_DIRECTIVES && directive._static)
-                            continue;
                         directive.update();
                     }
                 }
@@ -2460,34 +2567,6 @@ const XToolFramework = function () {
                     scope[indexVar] = idxOrKey;
                 return scope;
             };
-            const objIds = new WeakMap();
-            let objSeq = 0;
-            const extractId = (o) => {
-                if (!o || typeof o !== 'object')
-                    return null;
-                const v = o.id ?? o._id ?? o.key;
-                if (v == null)
-                    return null;
-                const t = typeof v;
-                return (t === 'string' || t === 'number') ? ('id:' + String(v)) : null;
-            };
-            const keyFor = (item, _i, primSeen) => {
-                if (item && typeof item === 'object') {
-                    const explicit = extractId(item);
-                    if (explicit)
-                        return explicit;
-                    let id = objIds.get(item);
-                    if (!id) {
-                        id = 'o#' + (++objSeq);
-                        objIds.set(item, id);
-                    }
-                    return id;
-                }
-                const base = 'p#' + (typeof item) + ':' + String(item);
-                const n = (primSeen.get(base) || 0) + 1;
-                primSeen.set(base, n);
-                return base + '#' + n;
-            };
             const update = () => {
                 const norm = self._safeExecute(() => {
                     const result = listEval();
@@ -2511,90 +2590,39 @@ const XToolFramework = function () {
                 }, { list: [], keys: null });
                 const list = norm.list;
                 const keysArr = norm.keys;
-                const primSeen = new Map();
-                const newKeys = new Array(list.length);
-                for (let i = 0; i < list.length; i++) {
-                    newKeys[i] = keysArr ? String(keysArr[i]) : keyFor(list[i], i, primSeen);
-                }
-                const oldByKey = new Map();
-                for (let i = 0; i < instances.length; i++) {
-                    const n = instances[i];
-                    const k = n.__x_for_key;
-                    if (k)
-                        oldByKey.set(k, n);
-                }
-                const newNodes = new Array(list.length);
-                for (let i = 0; i < list.length; i++) {
-                    const k = newKeys[i];
-                    const prev = oldByKey.get(k);
-                    if (prev) {
-                        newNodes[i] = prev;
-                        const idxOrKey = keysArr ? keysArr[i] : i;
-                        self._loopScopes.set(prev, createScope(list[i], idxOrKey));
-                        const prevRef = prev.__x_itemRef;
-                        const curRef = list[i];
-                        if (prevRef !== curRef) {
-                            self._updateElementDirectives(prev);
-                            prev.__x_itemRef = curRef;
-                        }
-                        oldByKey.delete(k);
+                if (instances.length > list.length) {
+                    while (instances.length > list.length) {
+                        const inst = instances.pop();
+                        if (inst.parentNode)
+                            inst.parentNode.removeChild(inst);
                     }
-                    else {
+                }
+                const minLen = Math.min(instances.length, list.length);
+                for (let i = 0; i < minLen; i++) {
+                    const inst = instances[i];
+                    const keyVal = keysArr ? keysArr[i] : i;
+                    self._loopScopes.set(inst, createScope(list[i], keyVal));
+                    self._updateElementDirectives(inst);
+                }
+                if (list.length > instances.length) {
+                    const frag = d.createDocumentFragment();
+                    const start = instances.length;
+                    for (let i = start; i < list.length; i++) {
                         const clone = templateToClone.cloneNode(true);
                         clone.removeAttribute('x-for');
-                        const idxOrKey = keysArr ? keysArr[i] : i;
-                        self._loopScopes.set(clone, createScope(list[i], idxOrKey));
+                        const keyVal = keysArr ? keysArr[i] : i;
+                        self._loopScopes.set(clone, createScope(list[i], keyVal));
                         try {
                             self._parseDirectives(clone);
                         }
                         catch { }
-                        clone.__x_itemRef = list[i];
-                        newNodes[i] = clone;
+                        frag.appendChild(clone);
+                        instances.push(clone);
                     }
-                    newNodes[i].__x_for_key = k;
+                    const ref = instances[start - 1] || placeholder;
+                    if (ref.parentNode)
+                        ref.parentNode.insertBefore(frag, ref.nextSibling);
                 }
-                for (const [, node] of oldByKey) {
-                    if (node && node.parentNode)
-                        node.parentNode.removeChild(node);
-                }
-                const parent = placeholder.parentNode;
-                if (parent) {
-                    const oldKeys = instances.map(n => n.__x_for_key);
-                    let different = oldKeys.length !== newNodes.length;
-                    if (!different) {
-                        for (let i = 0; i < newNodes.length; i++) {
-                            if (oldKeys[i] !== newNodes[i].__x_for_key) {
-                                different = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (different) {
-                        for (let i = 0; i < instances.length; i++) {
-                            const n = instances[i];
-                            if (n.parentNode === parent)
-                                parent.removeChild(n);
-                        }
-                        let before = placeholder;
-                        for (let i = 0; i < newNodes.length; i++) {
-                            const node = newNodes[i];
-                            parent.insertBefore(node, before.nextSibling);
-                            before = node;
-                        }
-                    }
-                    else {
-                        let before = placeholder;
-                        for (let i = 0; i < newNodes.length; i++) {
-                            const node = newNodes[i];
-                            if (before.nextSibling !== node)
-                                parent.insertBefore(node, before.nextSibling);
-                            before = node;
-                        }
-                    }
-                }
-                instances.length = 0;
-                for (let i = 0; i < newNodes.length; i++)
-                    instances.push(newNodes[i]);
             };
             const dir = { type: 'for', expression };
             const effect = self._createEffect(update, dir);
@@ -2620,7 +2648,7 @@ const XToolFramework = function () {
         }
     }
     ReactiveComponent._BA = {
-        itemscope: 1, formnovalidate: 1, novalidate: 1, default: 1, readonly: 1
+        itemscope: 1, formnovalidate: 1, novalidate: 1, default: 1
     };
     const xTool = new XToolFramework();
     return xTool;

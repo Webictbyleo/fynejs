@@ -82,7 +82,9 @@ XTool.registerComponent({
           <div class="divide-y">
             <div x-for="item in visibleItems" 
                  x-bind:key="item.id"
-                 class="flex items-center p-3 hover:bg-gray-50">
+                 class="flex items-center p-3 hover:bg-gray-50"
+                 style="content-visibility: auto; contain-intrinsic-size: 3rem;">
+                 
               <input type="checkbox" 
                      x-bind:checked="selectedItems.includes(item.id)"
                      x-on:change="toggleSelection(item.id)"
@@ -96,6 +98,7 @@ XTool.registerComponent({
                       <span x-text="item.category"></span> • 
                       <span x-text="'Score: ' + item.score"></span> • 
                       <span x-text="item.status"></span>
+                      <span class="ml-2 text-xs text-gray-400" x-text="Date.now()"></span>
                     </div>
                   </div>
                 </div>

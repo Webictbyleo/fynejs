@@ -1,7 +1,7 @@
 // Order Book & Trades Ticker (simulated market depth)
 XTool.registerComponent({
   name: 'order-book-ticker',
-  template: `
+  template: html`
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-5xl mx-auto space-y-4">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-800">Order Book & Trades</h3>
@@ -15,7 +15,7 @@ XTool.registerComponent({
           <div>
             <h4 class="text-xs uppercase tracking-wide text-gray-500 mb-1">Bids</h4>
             <div class="border rounded overflow-hidden divide-y text-xs font-mono">
-              <div x-for="row in bids" class="relative flex justify-between px-2 py-1">
+              <div x-for="row in bids" class="relative flex justify-between px-2 py-1" style="content-visibility: auto;">
                 <div class="absolute inset-0 bg-green-200 opacity-30" x:style="{ width: (row.size / maxBidSize * 100) + '%' }"></div>
                 <span class="relative z-10 text-green-700" x-text="row.price.toFixed(2)"></span>
                 <span class="relative z-10" x-text="row.size"></span>
@@ -39,9 +39,9 @@ XTool.registerComponent({
             <div class="flex justify-between text-xs"><span>Spread</span><span class="font-mono" x-text="spread.toFixed(2)"></span></div>
             <div class="flex justify-between text-xs"><span>Last Trade</span><span class="font-mono" x-text="lastTrade.price ? lastTrade.price.toFixed(2) : '—'"></span></div>
           </div>
-          <div class="border rounded overflow-auto text-xs font-mono bg-gray-900 text-gray-100 max-h-64">
+          <div class="border rounded overflow-auto text-xs font-mono bg-gray-900 text-gray-100 max-h-96">
             <div class="sticky top-0 bg-gray-800 text-gray-300 px-2 py-1">Trades</div>
-            <div x-for="t in trades" class="px-2 py-1 flex justify-between" x:class="{ 'text-green-300': t.side==='BUY', 'text-red-300': t.side==='SELL' }">
+            <div x-for="t in trades" class="px-2 py-1 flex justify-between" x:class="{ 'text-green-300': t.side==='BUY', 'text-red-300': t.side==='SELL' }" style="content-visibility: auto;">
               <span x-text="t.time"></span>
               <span x-text="t.price.toFixed(2)"></span>
               <span x-text="t.size"></span>

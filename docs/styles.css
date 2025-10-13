@@ -3,12 +3,21 @@
 @tailwind utilities;
 
 /* Docs custom styles migrated from inline <style> */
-html, body {
+html {
 	overflow-x: hidden;
 }
 
 body {
 	font-family: 'Inter', sans-serif;
+}
+
+/* Fix for sticky sidebar */
+.sidebar-sticky {
+	position: -webkit-sticky;
+	position: sticky;
+	top: 1.5rem; /* 24px */
+	z-index: 10;
+	height: fit-content;
 }
 
 code, pre {
@@ -32,6 +41,8 @@ code, pre {
 	font-size: 0.875em;
 }
 
+
+
 /* Enhanced code blocks (pre > code processed by script) */
 pre[class*='bg-gray-900'] {
 	position: relative;
@@ -43,8 +54,7 @@ pre[class*='bg-gray-900'] {
 	color: #cbd5e1;
 	padding: 1rem 1rem 1.25rem;
 	border-radius: 0.75rem;
-	overflow-x: auto;
-	overflow-y: hidden;
+	overflow: auto;
 	width: 100%;
 	max-width: 100%;
 	box-sizing: border-box;
@@ -90,7 +100,7 @@ pre[class*='bg-gray-900'] {
 }
 
 .copy-btn {
-	position: absolute;
+	position: sticky;
 	top: 6px;
 	right: 6px;
 	background: rgba(255,255,255,0.06);
@@ -105,6 +115,33 @@ pre[class*='bg-gray-900'] {
 	gap: 4px;
 	backdrop-filter: blur(4px);
 	transition: all .15s ease;
+	z-index: 10;
+	align-self: flex-start;
+	margin-left: auto;
+	margin-bottom: -32px;
+}
+
+
+
+
+/* Ensure proper scrollbar styling for tabbed code blocks */
+pre.max-h-64::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+pre.max-h-64::-webkit-scrollbar-track {
+	background: #0f172a;
+	border-radius: 4px;
+}
+
+pre.max-h-64::-webkit-scrollbar-thumb {
+	background: #334155;
+	border-radius: 4px;
+}
+
+pre.max-h-64::-webkit-scrollbar-thumb:hover {
+	background: #475569;
 }
 
 .copy-btn:hover {
@@ -123,10 +160,69 @@ pre[class*='bg-gray-900'] {
 	height: 14px;
 }
 
-/* mobile-first small size; override at sm and up */
+/* Responsive code blocks - mobile first */
 .code-block {
-	font-size: 13px;
-	padding: 0.75rem 0.75rem 1rem;
+	font-size: 12px;
+	padding: 0.75rem;
+	margin: 0.5rem 0;
+}
+
+/* Responsive breakpoints for code blocks */
+@media (min-width: 640px) {
+	.code-block {
+		font-size: 13px;
+		padding: 0.875rem;
+		margin: 0.75rem 0;
+	}
+	
+	.copy-btn {
+		top: 8px;
+		right: 8px;
+		padding: 5px 9px;
+		font-size: 11px;
+	}
+}
+
+@media (min-width: 768px) {
+	.code-block {
+		font-size: 14px;
+		padding: 1rem 1rem 1.25rem;
+		margin: 1rem 0;
+	}
+	
+	.copy-btn {
+		top: 10px;
+		right: 10px;
+		padding: 6px 10px;
+		font-size: 12px;
+	}
+}
+
+@media (min-width: 1024px) {
+	.code-block {
+		font-size: 14px;
+		padding: 1.25rem 1.25rem 1.5rem;
+	}
+}
+
+/* Responsive code blocks in specific sections */
+.bg-gradient-to-r .code-block {
+	font-size: 11px;
+	padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+	.bg-gradient-to-r .code-block {
+		font-size: 12px;
+		padding: 0.75rem;
+	}
+}
+
+@media (min-width: 768px) {
+	.bg-gradient-to-r .code-block {
+		font-size: 13px;
+		padding: 1rem;
+	}
 }
 
 .code-fade {
@@ -148,7 +244,7 @@ pre[class*='bg-gray-900'] {
 }
 
 .code-line-numbers code span {
-	display: block;
+	display: inline-block;
 	counter-increment: line;
 	padding-left: var(--ln-pad, 0);
 }
@@ -247,4 +343,268 @@ pre[class*='bg-gray-900'] {
 		word-break: normal;
 		min-width: max-content;
 	}
+}
+
+/* ========================================
+   Enhanced Multi-Page Documentation Styles
+   ======================================== */
+
+/* Background Grid Pattern */
+.bg-grid-pattern {
+	background-image: 
+		linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+		linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
+
+/* Smooth Scrolling */
+html {
+	scroll-behavior: smooth;
+}
+
+/* Link Hover Effects */
+a:not(.no-underline) {
+	transition: all 0.2s ease;
+}
+
+/* Component Card Animations */
+.component-card {
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.component-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Table Enhancements */
+table {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+th, td {
+	text-align: left;
+}
+
+/* List Styles */
+ul{
+	@apply list-disc pl-5;
+}
+ol{
+	@apply list-decimal pl-5;
+}
+li{
+	@apply my-2;
+	@apply leading-6;
+	@apply list-none list-image-none
+}
+
+
+/* Dark Mode Code Inline */
+.dark :not(pre) > code {
+	background: #1e293b;
+	color: #cbd5e1;
+}
+
+/* Focus States */
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 2px solid #3b82f6;
+	outline-offset: 2px;
+}
+
+/* Skip to Content (Accessibility) */
+.skip-to-content {
+	position: absolute;
+	top: -40px;
+	left: 0;
+	background: #3b82f6;
+	color: white;
+	padding: 8px 16px;
+	text-decoration: none;
+	z-index: 100;
+}
+
+.skip-to-content:focus {
+	top: 0;
+}
+
+/* Print Styles */
+@media print {
+	nav,
+	footer,
+	button {
+		display: none !important;
+	}
+	
+	body {
+		font-size: 12pt;
+		line-height: 1.5;
+	}
+	
+	h1, h2, h3 {
+		page-break-after: avoid;
+	}
+	
+	pre, code {
+		page-break-inside: avoid;
+	}
+}
+
+/* Loading States */
+.loading {
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+	0%, 100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+/* Scroll Margin for Anchor Links */
+:target {
+	scroll-margin-top: 100px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+}
+
+::-webkit-scrollbar-track {
+	background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #cbd5e1;
+	border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #94a3b8;
+}
+
+/* Firefox Scrollbar */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Directives page styles */
+.directive-section {
+	padding: 2rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 1rem;
+	background: #fafafa;
+	transition: all 0.3s ease;
+}
+
+.directive-section:hover {
+	border-color: #d1d5db;
+	background: #f9fafb;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.directive-badge {
+	display: inline-block;
+	background: #000000;
+	color: white;
+	padding: 0.375rem 0.75rem;
+	border-radius: 0.5rem;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.875rem;
+	font-weight: 600;
+	letter-spacing: -0.025em;
+}
+
+.code-example {
+	margin-top: 1.5rem;
+}
+
+.modifier-group {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 0.75rem;
+	padding: 1.5rem;
+}
+
+.modifier-item {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0;
+}
+
+.modifier-code {
+	background: #1f2937;
+	color: #f3f4f6;
+	padding: 0.25rem 0.5rem;
+	border-radius: 0.375rem;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.75rem;
+	font-weight: 500;
+	min-width: 80px;
+	text-align: center;
+}
+
+.best-practice-card {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 0.75rem;
+	padding: 2rem;
+}
+
+.reference-table-container {
+	overflow-x: auto;
+	border-radius: 0.75rem;
+	border: 1px solid #e5e7eb;
+	background: white;
+}
+
+.reference-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.reference-table th {
+	background: #f9fafb;
+	padding: 1rem;
+	text-align: left;
+	font-weight: 700;
+	color: #111827;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.reference-table td {
+	padding: 1rem;
+	border-bottom: 1px solid #f3f4f6;
+	vertical-align: top;
+}
+
+.reference-table td:first-child code,
+.reference-table td:last-child code {
+	background: #f1f5f9;
+	color: #475569;
+	padding: 0.25rem 0.5rem;
+	border-radius: 0.25rem;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.8125rem;
+}
+
+.reference-table tr:last-child td {
+	border-bottom: none;
+}
+
+.reference-table tr:hover {
+	background: #f8fafc;
 }

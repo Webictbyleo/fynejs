@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference - FyneJS</title>
+  <meta name="description" content="Complete API reference for FyneJS framework: interfaces, types, methods, configuration options, and TypeScript definitions. Build reactive UIs with type safety." />
+  <link rel="canonical" href="https://fynejs.com/api.html" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://fynejs.com/api.html" />
+  <meta property="og:title" content="FyneJS API Reference - Complete Framework API Documentation" />
+  <meta property="og:description" content="Comprehensive API documentation for FyneJS: interfaces, types, methods, and TypeScript definitions for building reactive UIs." />
+  <meta property="og:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta property="og:site_name" content="FyneJS Documentation" />
+  <meta property="article:section" content="Documentation" />
+  <meta property="article:tag" content="API Reference" />
+  <meta property="article:tag" content="TypeScript" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://fynejs.com/api.html" />
+  <meta name="twitter:title" content="FyneJS API Reference - Complete Framework API Documentation" />
+  <meta name="twitter:description" content="Complete API documentation with TypeScript support for FyneJS reactive framework." />
+  <meta property="twitter:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta name="twitter:creator" content="@fynejs" />
+
+  <!-- Enhanced SEO -->
+  <meta name="keywords" content="fynejs api reference, typescript definitions, javascript framework api, reactive framework api, component api, directive api, framework methods, type definitions, interface documentation" />
+  <meta name="author" content="FyneJS Documentation Team" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <link rel="apple-touch-icon" href="./assets/logo-small.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.generated.css" />
+  
+  <!-- Scripts -->
+  <script src="../dist/x-tool.min.js" defer></script>
+  <script src="./shared/navigation.js" defer></script>
+  <script src="./shared/footer.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+  
+  <!-- Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "FyneJS API Reference - Complete Framework API Documentation",
+    "description": "Complete API reference for FyneJS framework: interfaces, types, methods, configuration options, and TypeScript definitions.",
+    "author": {
+      "@type": "Organization",
+      "name": "FyneJS Documentation Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FyneJS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://fynejs.com/assets/logo-small.png"
+      }
+    },
+    "datePublished": "2025-01-01",
+    "dateModified": "2025-01-11",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://fynejs.com/api.html"
+    },
+    "keywords": ["fynejs", "api reference", "typescript", "javascript framework", "reactive framework", "component api", "directive api"],
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+
+<body class="bg-white text-gray-900 font-sans" x-data="{ activePage: 'api' }">
+  <!-- Navigation -->
+  <component source="docs-nav" x-prop="{ page: 'api' }"></component>
+
+  <!-- Mobile API Navigation -->
+  <div x-data="{ showSidebar: false }" class="lg:hidden">
+    <!-- Mobile Menu Button -->
+    <div class="fixed top-20 left-4 z-50">
+      <button x-on:click="showSidebar = !showSidebar" 
+              class="bg-black text-white rounded-lg p-3 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Sidebar -->
+    <div x-show="showSidebar" 
+        
+         class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-200 shadow-xl">
+      
+      <div class="p-6 pt-24">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-black">API Reference</h3>
+          <button x-on:click="showSidebar = false" class="text-gray-500 hover:text-black">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <ul class="space-y-3 text-sm">
+          <li><a href="#framework-interface" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>Framework Interface
+          </a></li>
+          <li><a href="#configuration" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-green-500 rounded-full"></div>Configuration
+          </a></li>
+          <li><a href="#component-interfaces" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-purple-500 rounded-full"></div>Component Interfaces
+          </a></li>
+          <li><a href="#directive-interfaces" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-orange-500 rounded-full"></div>Directive Interfaces
+          </a></li>
+          <li><a href="#type-utilities" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-red-500 rounded-full"></div>Type Utilities
+          </a></li>
+          <li><a href="#global-declarations" x-on:click="showSidebar = false" class="flex items-center gap-3 text-gray-600 hover:text-black transition-colors py-2 px-3 rounded-lg hover:bg-gray-100">
+            <div class="w-3 h-3 bg-indigo-500 rounded-full"></div>Global Declarations
+          </a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Backdrop -->
+    <div x-show="showSidebar" 
+         x-on:click="showSidebar = false"
+         class="fixed inset-0 bg-black bg-opacity-50 z-30"></div>
+  </div>
+
+  <!-- Main Content with Sidebar -->
+  <main class="bg-white min-h-screen">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 sm:pb-16 lg:pb-20">
+      <div class="flex gap-8 max-w-7xl mx-auto items-start">
+        
+        <!-- API Sidebar Navigation -->
+        <nav class="hidden lg:block w-64 flex-shrink-0 sidebar-sticky bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg" x-data="{ searchTerm: '', activeSection: '' }">
+            <div class="flex items-center gap-2 mb-6">
+              <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+              <h3 class="text-lg font-bold text-black">API Reference</h3>
+            </div>
+            
+            <ul class="space-y-1 text-sm">
+              <li><a href="#framework-interface" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-blue-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-blue-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Framework Interface</span>
+              </a></li>
+              <li><a href="#configuration" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-green-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-green-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Configuration</span>
+              </a></li>
+              <li><a href="#component-interfaces" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-purple-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-purple-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Component Interfaces</span>
+              </a></li>
+              <li><a href="#directive-interfaces" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-orange-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-orange-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Directive Interfaces</span>
+              </a></li>
+              <li><a href="#type-utilities" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-red-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-red-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Type Utilities</span>
+              </a></li>
+              <li><a href="#global-declarations" 
+                     class="flex items-center gap-3 text-gray-600 hover:text-black hover:bg-indigo-50 transition-all py-3 px-3 rounded-xl group">
+                <div class="w-3 h-3 bg-indigo-500 rounded-full group-hover:scale-110 transition-transform"></div>
+                <span class="font-medium">Global Declarations</span>
+              </a></li>
+            </ul>
+            
+            <!-- API Stats -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <div class="bg-gray-900 text-white rounded-xl p-4">
+                <h4 class="font-bold text-sm text-gray-300 mb-3">API Coverage</h4>
+                <div class="space-y-2 text-xs">
+                  <div class="flex justify-between">
+                    <span>Interfaces</span>
+                    <span class="text-blue-400 font-bold">8</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Methods</span>
+                    <span class="text-green-400 font-bold">12</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Type Utilities</span>
+                    <span class="text-purple-400 font-bold">6</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 min-w-0">
+        
+        <!-- Quick Reference Card -->
+        <div class="bg-gradient-to-r from-gray-900 to-black text-white rounded-2xl p-6 sm:p-8 mb-12 shadow-2xl">
+          <div class="flex items-center gap-3 mb-4">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clip-rule="evenodd"/>
+            </svg>
+            <h3 class="text-xl font-bold">Quick Reference</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Framework Methods -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 class="font-bold text-white mb-3">Framework Methods</h4>
+              <ul class="space-y-2 text-sm">
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.init()</code> - Initialize framework</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.directive()</code> - Register directive</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.registerComponent()</code> - Register component</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.loadComponents()</code> - Load external components</li>
+              </ul>
+            </div>
+            
+            <!-- Component Context -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 class="font-bold text-white mb-3">Component Context</h4>
+              <ul class="space-y-2 text-sm">
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$el</code> - Root element</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$destroy()</code> - Destroy component</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$nextTick()</code> - Next DOM update</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$mutate()</code> - Mutate reactive data</li>
+              </ul>
+            </div>
+            
+            <!-- Type Generics -->
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <h4 class="font-bold text-white mb-3">Type Generics</h4>
+              <ul class="space-y-2 text-sm">
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">&lt;TData&gt;</code> - Component data type</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">&lt;TMethods&gt;</code> - Methods type</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">&lt;TComputed&gt;</code> - Computed type</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">&lt;T&gt;</code> - Directive value type</li>
+              </ul>
+            </div>
+          </div>
+          
+          <!-- Quick Start -->
+          <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
+            <div class="flex items-center gap-2 mb-3">
+              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span class="font-bold text-white">Quick Start</span>
+            </div>
+            <code class="text-sm text-gray-300 bg-black/30 px-3 py-2 rounded block">
+              import { XTool } from 'fynejs'; XTool.init({ debug: true });
+            </code>
+          </div>
+        </div>
+        
+        <!-- Framework Interface Section -->
+        <section id="framework-interface" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Framework Interface
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Core framework methods and configuration options for initializing and customizing FyneJS.
+            </p>
+          </div>
+
+          <!-- XToolFramework Interface -->
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">XToolFramework</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Main framework interface providing initialization, directive registration, and component management.</p>
+            
+            <!-- Method List -->
+            <div class="space-y-8">
+              <!-- init method -->
+              <div class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                      <code class="text-lg font-mono font-bold text-black">init</code>
+                    </div>
+                    <div class="text-sm text-gray-500">Returns: XToolFramework</div>
+                  </div>
+                </div>
+                
+                <div class="p-6">
+                  <div class="mb-4">
+                    <h4 class="text-lg font-bold text-black mb-2">Syntax</h4>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <code class="text-black font-mono">init(config?: <a href="#xtoolconfig" class="text-purple-600 hover:text-purple-800 underline">XToolConfig</a>): XToolFramework</code>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <h5 class="font-bold text-black mb-2">Description</h5>
+                    <p class="text-gray-600">Initialize the framework with optional configuration settings.</p>
+                  </div>
+
+                  <!-- Parameters Table -->
+                  <div class="mb-6">
+                    <h5 class="font-bold text-black mb-3">Parameters</h5>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-3 text-left font-bold text-black">Parameter</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Type</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Required</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr class="border-t border-gray-200">
+                            <td class="px-4 py-3 font-mono text-blue-600">config</td>
+                            <td class="px-4 py-3 font-mono"><a href="#xtoolconfig" class="text-purple-600 hover:text-purple-800 underline">XToolConfig</a></td>
+                            <td class="px-4 py-3 text-gray-500">Optional</td>
+                            <td class="px-4 py-3 text-gray-600">Configuration options for the framework</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Example -->
+                  <div class="mb-4">
+                    <h5 class="font-bold text-black mb-3">Example</h5>
+                    <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <pre class="text-sm"><code><span class="text-gray-400">// Initialize with default settings</span>
+<span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>();
+
+<span class="text-gray-400">// Initialize with custom configuration</span>
+<span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>({
+  <span class="text-red-400">container</span>: <span class="text-green-400">'.app'</span>,
+  <span class="text-red-400">debug</span>: <span class="text-orange-400">true</span>,
+  <span class="text-red-400">staticDirectives</span>: <span class="text-orange-400">true</span>,
+  <span class="text-red-400">prefix</span>: <span class="text-green-400">'x'</span>,
+  <span class="text-red-400">delegate</span>: <span class="text-orange-400">false</span>,
+  <span class="text-red-400">sandboxExpressions</span>: <span class="text-orange-400">false</span>,
+  <span class="text-red-400">allowGlobals</span>: [<span class="text-green-400">'Math'</span>, <span class="text-green-400">'Date'</span>]
+});</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- directive method -->
+              <div class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden">
+                <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                      <code class="text-lg font-mono font-bold text-black">directive&lt;T&gt;</code>
+                    </div>
+                    <div class="text-sm text-gray-500">Returns: XToolFramework</div>
+                  </div>
+                </div>
+                
+                <div class="p-6">
+                  <div class="mb-4">
+                    <h4 class="text-lg font-bold text-black mb-2">Syntax</h4>
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <code class="text-black font-mono">directive&lt;T&gt;(name: string, directive: <a href="#customdirective" class="text-purple-600 hover:text-purple-800 underline">CustomDirective&lt;T&gt;</a>): XToolFramework</code>
+                    </div>
+                  </div>
+                  
+                  <div class="mb-6">
+                    <h5 class="font-bold text-black mb-2">Description</h5>
+                    <p class="text-gray-600">Register a custom directive with bind, update, and unbind lifecycle hooks.</p>
+                  </div>
+
+                  <!-- Parameters Table -->
+                  <div class="mb-6">
+                    <h5 class="font-bold text-black mb-3">Parameters</h5>
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-sm border border-gray-200 rounded-lg">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-4 py-3 text-left font-bold text-black">Parameter</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Type</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Required</th>
+                            <th class="px-4 py-3 text-left font-bold text-black">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr class="border-t border-gray-200">
+                            <td class="px-4 py-3 font-mono text-blue-600">name</td>
+                            <td class="px-4 py-3 font-mono text-purple-600">string</td>
+                            <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                            <td class="px-4 py-3 text-gray-600">Directive name (without prefix)</td>
+                          </tr>
+                          <tr class="border-t border-gray-200">
+                            <td class="px-4 py-3 font-mono text-blue-600">directive</td>
+                            <td class="px-4 py-3 font-mono"><a href="#customdirective" class="text-purple-600 hover:text-purple-800 underline">CustomDirective&lt;T&gt;</a></td>
+                            <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                            <td class="px-4 py-3 text-gray-600">Directive definition with lifecycle hooks</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Example -->
+                  <div class="mb-4">
+                    <h5 class="font-bold text-black mb-3">Example</h5>
+                    <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <pre class="text-sm"><code><span class="text-blue-400">XTool</span>.<span class="text-yellow-400">directive</span>(<span class="text-green-400">'tooltip'</span>, {
+  <span class="text-red-400">bind</span>(<span class="text-blue-300">element</span>, <span class="text-blue-300">value</span>, <span class="text-blue-300">expression</span>, <span class="text-blue-300">component</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-yellow-400">setAttribute</span>(<span class="text-green-400">'title'</span>, <span class="text-blue-300">value</span>);
+  },
+  <span class="text-red-400">update</span>(<span class="text-blue-300">element</span>, <span class="text-blue-300">value</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-yellow-400">setAttribute</span>(<span class="text-green-400">'title'</span>, <span class="text-blue-300">value</span>);
+  },
+  <span class="text-red-400">unbind</span>(<span class="text-blue-300">element</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-yellow-400">removeAttribute</span>(<span class="text-green-400">'title'</span>);
+  }
+});</code></pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- registerComponent method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  registerComponent(definition): XToolFramework
+                </h4>
+                <p class="text-gray-600 mb-4">Register a reusable component with name, template, and lifecycle hooks. Returns the framework instance for chaining.</p>
+                
+                <div class="mb-4">
+                  <h5 class="text-lg font-bold text-black mb-2">Syntax</h5>
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <code class="text-black font-mono">registerComponent(definition: <a href="#registeredcomponentdefinition" class="text-purple-600 hover:text-purple-800 underline">RegisteredComponentDefinition</a>): XToolFramework</code>
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <h5 class="font-bold text-black mb-3">Parameters</h5>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded-lg">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-3 text-left font-bold text-black">Parameter</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Type</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Required</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-t border-gray-200">
+                          <td class="px-4 py-3 font-mono text-blue-600">definition</td>
+                          <td class="px-4 py-3 font-mono"><a href="#registeredcomponentdefinition" class="text-purple-600 hover:text-purple-800 underline">RegisteredComponentDefinition</a></td>
+                          <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                          <td class="px-4 py-3 text-gray-600">Component definition with required name and optional template</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <h5 class="font-bold text-black mb-3">Example</h5>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm text-gray-100"><code>XTool.registerComponent({
+  name: 'counter',
+  template: `&lt;div&gt;
+    &lt;span x-text="count"&gt;&lt;/span&gt;
+    &lt;button x-on:click="increment"&gt;+&lt;/button&gt;
+  &lt;/div&gt;`,
+  data: { count: 0 },
+  methods: {
+    increment() { this.count++; }
+  }
+});</code></pre>
+                </div>
+              </div>
+
+              <!-- loadComponents method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  loadComponents(sources): Promise&lt;<a href="#componentloaderresult" class="text-purple-600 hover:text-purple-800 underline">ComponentLoaderResult</a>&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Load external component definitions with different loading strategies. Returns a promise with load results.</p>
+                
+                <div class="mb-4">
+                  <h5 class="text-lg font-bold text-black mb-2">Syntax</h5>
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <code class="text-black font-mono">loadComponents(sources: Array&lt;string | <a href="#componentsource" class="text-purple-600 hover:text-purple-800 underline">ComponentSource</a>&gt;): Promise&lt;<a href="#componentloaderresult" class="text-purple-600 hover:text-purple-800 underline">ComponentLoaderResult</a>&gt;</code>
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <h5 class="font-bold text-black mb-3">Parameters</h5>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded-lg">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-3 text-left font-bold text-black">Parameter</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Type</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Required</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-t border-gray-200">
+                          <td class="px-4 py-3 font-mono text-blue-600">sources</td>
+                          <td class="px-4 py-3 font-mono">Array&lt;string | <a href="#componentsource" class="text-purple-600 hover:text-purple-800 underline">ComponentSource</a>&gt;</td>
+                          <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                          <td class="px-4 py-3 text-gray-600">Array of component paths or source objects with loading options</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <h5 class="font-bold text-black mb-3">Example</h5>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm text-gray-100"><code>// Load components with different modes
+await XTool.loadComponents([
+  'components/button.js',  // preload (default)
+  { path: 'components/modal.js', mode: 'defer' },
+  { path: 'components/chart.js', mode: 'lazy', name: 'data-chart' }
+]);
+
+// Returns: { settled: 2, failed: 0 }</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Configuration Section -->
+        <section id="configuration" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Configuration
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Framework configuration options for customizing behavior, performance, and security.
+            </p>
+          </div>
+
+          <!-- XToolConfig Interface -->
+          <div id="xtoolconfig" class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">XToolConfig</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Configuration interface for framework initialization with type-safe options.</p>
+            
+            <!-- Configuration Properties Table -->
+            <div class="bg-white border-2 border-gray-200 rounded-xl overflow-hidden">
+              <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+                <h4 class="text-lg font-bold text-black">Configuration Properties</h4>
+              </div>
+              
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th class="px-6 py-4 text-left font-bold text-black">Property</th>
+                      <th class="px-6 py-4 text-left font-bold text-black">Type</th>
+                      <th class="px-6 py-4 text-left font-bold text-black">Default</th>
+                      <th class="px-6 py-4 text-left font-bold text-black">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">container</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">string</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-green-600">'body'</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Container selector for auto-discovery of components</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">debug</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">boolean</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">false</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Enable debug logging for development</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">staticDirectives</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">boolean</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">true</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Enable static directive optimization for performance</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">prefix</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">string</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-green-600">'x'</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Directive prefix for custom attribute names</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">delegate</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">boolean</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">false</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Enable event delegation for better performance</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">sandboxExpressions</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">boolean</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">false</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Restrict globals in expressions for security</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                      <td class="px-6 py-4">
+                        <code class="text-blue-600 font-mono font-bold">allowGlobals</code>
+                        <div class="text-xs text-gray-500 mt-1">Optional</div>
+                      </td>
+                      <td class="px-6 py-4 font-mono text-purple-600">string[]</td>
+                      <td class="px-6 py-4">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-gray-500">undefined</code>
+                      </td>
+                      <td class="px-6 py-4 text-gray-600">Whitelist of globals when sandboxExpressions is enabled</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Usage Example -->
+            <div class="mt-6 bg-white border-2 border-gray-200 rounded-xl p-6">
+              <h5 class="font-bold text-black mb-3">Configuration Example</h5>
+              <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre class="text-sm"><code><span class="text-gray-400">// Complete configuration example</span>
+<span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>({
+  <span class="text-red-400">container</span>: <span class="text-green-400">'.app-container'</span>,    <span class="text-gray-400">// Custom container</span>
+  <span class="text-red-400">debug</span>: <span class="text-orange-400">true</span>,                  <span class="text-gray-400">// Enable debugging</span>
+  <span class="text-red-400">staticDirectives</span>: <span class="text-orange-400">true</span>,      <span class="text-gray-400">// Optimize static directives</span>
+  <span class="text-red-400">prefix</span>: <span class="text-green-400">'data'</span>,               <span class="text-gray-400">// Use 'data-' prefix</span>
+  <span class="text-red-400">delegate</span>: <span class="text-orange-400">true</span>,              <span class="text-gray-400">// Enable event delegation</span>
+  <span class="text-red-400">sandboxExpressions</span>: <span class="text-orange-400">true</span>,    <span class="text-gray-400">// Secure expressions</span>
+  <span class="text-red-400">allowGlobals</span>: [               <span class="text-gray-400">// Allowed global objects</span>
+    <span class="text-green-400">'Math'</span>, <span class="text-green-400">'Date'</span>, <span class="text-green-400">'JSON'</span>, <span class="text-green-400">'console'</span>
+  ]
+});</code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Component Interfaces Section -->
+        <section id="component-interfaces" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Component Interfaces
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              TypeScript interfaces for defining components with proper type safety and IntelliSense support.
+            </p>
+          </div>
+
+          <!-- ComponentDefinition Interface -->
+          <div id="componentdefinition" class="bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">ComponentDefinition&lt;TData, TMethods, TComputed&gt;</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Base interface for defining reactive components with typed data, methods, and computed properties.</p>
+            
+            <!-- Component Properties -->
+            <div class="space-y-6">
+              <!-- data property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  data?: TData
+                </h4>
+                <p class="text-gray-600 mb-4">Reactive data object with typed properties that trigger UI updates when changed.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Define typed data interface</span>
+<span class="text-blue-400">interface</span> <span class="text-yellow-400">UserData</span> {
+  <span class="text-red-400">name</span>: <span class="text-purple-400">string</span>;
+  <span class="text-red-400">email</span>: <span class="text-purple-400">string</span>;
+  <span class="text-red-400">isActive</span>: <span class="text-purple-400">boolean</span>;
+}
+
+<span class="text-gray-400">// Use in component</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: {
+    <span class="text-red-400">name</span>: <span class="text-green-400">'John Doe'</span>,
+    <span class="text-red-400">email</span>: <span class="text-green-400">'john@example.com'</span>,
+    <span class="text-red-400">isActive</span>: <span class="text-orange-400">true</span>
+  } <span class="text-blue-400">as</span> <span class="text-yellow-400">UserData</span>
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- methods property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  methods?: WithThisForMethods&lt;<a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Component methods with proper context binding and type safety. Methods have access to component data and the full <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: { <span class="text-red-400">count</span>: <span class="text-orange-400">0</span> },
+  <span class="text-red-400">methods</span>: {
+    <span class="text-yellow-400">increment</span>() {
+      <span class="text-blue-300">this</span>.<span class="text-red-400">count</span>++; <span class="text-gray-400">// 'this' is properly typed</span>
+    },
+    <span class="text-yellow-400">setCount</span>(<span class="text-blue-300">value</span>: <span class="text-purple-400">number</span>) {
+      <span class="text-blue-300">this</span>.<span class="text-red-400">count</span> = <span class="text-blue-300">value</span>;
+    }
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- computed property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  computed?: BindComputed&lt;<a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Computed properties with automatic caching and dependency tracking. Values are recalculated only when dependencies change. Computed functions have access to the <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: { 
+    <span class="text-red-400">firstName</span>: <span class="text-green-400">'John'</span>, 
+    <span class="text-red-400">lastName</span>: <span class="text-green-400">'Doe'</span> 
+  },
+  <span class="text-red-400">computed</span>: {
+    <span class="text-yellow-400">fullName</span>() {
+      <span class="text-blue-400">return</span> <span class="text-green-400">`${this.firstName} ${this.lastName}`</span>;
+    },
+    <span class="text-yellow-400">initials</span>() {
+      <span class="text-blue-400">return</span> <span class="text-green-400">`${this.firstName[0]}${this.lastName[0]}`</span>;
+    }
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- propEffects property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  propEffects?: PropEffectsMap&lt;<a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Reactive handlers for component prop changes with old/new value tracking. Handlers receive the new and old values and have access to the <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: { <span class="text-red-400">message</span>: <span class="text-green-400">'Hello'</span> },
+  <span class="text-red-400">propEffects</span>: {
+    <span class="text-yellow-400">userId</span>(<span class="text-blue-300">newValue</span>, <span class="text-blue-300">oldValue</span>) {
+      <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">`User changed: ${<span class="text-blue-300">oldValue</span>} → ${<span class="text-blue-300">newValue</span>}`</span>);
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">loadUserData</span>(<span class="text-blue-300">newValue</span>);
+    },
+    <span class="text-yellow-400">theme</span>(<span class="text-blue-300">newTheme</span>) {
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">updateStyles</span>(<span class="text-blue-300">newTheme</span>);
+    }
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- template property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-indigo-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  template?: string | Promise&lt;string&gt; | (() =&gt; string | Promise&lt;string&gt;)
+                </h4>
+                <p class="text-gray-600 mb-4">Component template for rendering. Supports static strings, promises, or factory functions.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Static template</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">component1</span> = {
+  <span class="text-red-400">template</span>: <span class="text-green-400">`&lt;div&gt;
+    &lt;h1 x-text="title"&gt;&lt;/h1&gt;
+    &lt;p x-text="description"&gt;&lt;/p&gt;
+  &lt;/div&gt;`</span>
+};
+
+<span class="text-gray-400">// Async template</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">component2</span> = {
+  <span class="text-red-400">template</span>: <span class="text-blue-400">async</span> () =&gt; {
+    <span class="text-blue-400">const</span> <span class="text-yellow-400">response</span> = <span class="text-blue-400">await</span> <span class="text-yellow-400">fetch</span>(<span class="text-green-400">'/templates/card.html'</span>);
+    <span class="text-blue-400">return</span> <span class="text-blue-400">await</span> <span class="text-yellow-400">response</span>.<span class="text-yellow-400">text</span>();
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- name property -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-gray-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTY</span>
+                  name?: string
+                </h4>
+                <p class="text-gray-600 mb-4">Optional component name for registration and debugging. Required for registered components.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">name</span>: <span class="text-green-400">'user-card'</span>,
+  <span class="text-red-400">data</span>: { <span class="text-red-400">user</span>: <span class="text-purple-400">null</span> },
+  <span class="text-red-400">template</span>: <span class="text-green-400">`&lt;div class="card"&gt;
+    &lt;h3 x-text="user?.name"&gt;&lt;/h3&gt;
+  &lt;/div&gt;`</span>
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- Lifecycle hooks -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">LIFECYCLE</span>
+                  Lifecycle Hooks
+                </h4>
+                <p class="text-gray-600 mb-4">Component lifecycle methods with proper context typing and execution order. All lifecycle hooks have access to the full <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline">ComponentContext</a>.</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <!-- Mount Lifecycle -->
+                  <div class="border-l-4 border-green-200 pl-4">
+                    <h5 class="font-bold text-black mb-3">Mount Lifecycle</h5>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                      <li><code class="text-green-600">beforeMount?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - Before element is attached</li>
+                      <li><code class="text-green-600">mounted?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - After element is attached and reactive</li>
+                    </ul>
+                  </div>
+
+                  <!-- Update Lifecycle -->
+                  <div class="border-l-4 border-blue-200 pl-4">
+                    <h5 class="font-bold text-black mb-3">Update Lifecycle</h5>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                      <li><code class="text-blue-600">updated?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - After reactive data changes</li>
+                    </ul>
+                  </div>
+
+                  <!-- Unmount Lifecycle -->
+                  <div class="border-l-4 border-red-200 pl-4">
+                    <h5 class="font-bold text-black mb-3">Unmount Lifecycle</h5>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                      <li><code class="text-red-600">beforeUnmount?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - Before component cleanup</li>
+                      <li><code class="text-red-600">unmounted?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - After component cleanup</li>
+                    </ul>
+                  </div>
+
+                  <!-- Destroy Lifecycle -->
+                  <div class="border-l-4 border-orange-200 pl-4">
+                    <h5 class="font-bold text-black mb-3">Destroy Lifecycle</h5>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                      <li><code class="text-orange-600">beforeDestroy?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - Before permanent destruction</li>
+                      <li><code class="text-orange-600">destroyed?(this: <a href="#componentcontext" class="text-purple-600 hover:text-purple-800 underline text-xs">ComponentContext</a>)</code> - After permanent destruction</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: { <span class="text-red-400">isReady</span>: <span class="text-orange-400">false</span> },
+  
+  <span class="text-gray-400">// Mount lifecycle</span>
+  <span class="text-yellow-400">beforeMount</span>() {
+    <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">'About to mount'</span>, <span class="text-blue-300">this</span>.<span class="text-red-400">$el</span>);
+  },
+  <span class="text-yellow-400">mounted</span>() {
+    <span class="text-blue-300">this</span>.<span class="text-red-400">isReady</span> = <span class="text-orange-400">true</span>;
+    <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">'Component mounted'</span>, <span class="text-blue-300">this</span>.<span class="text-red-400">$el</span>);
+  },
+  
+  <span class="text-gray-400">// Update lifecycle</span>
+  <span class="text-yellow-400">updated</span>() {
+    <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">'Component updated'</span>);
+  },
+  
+  <span class="text-gray-400">// Unmount lifecycle</span>
+  <span class="text-yellow-400">beforeUnmount</span>() {
+    <span class="text-blue-300">this</span>.<span class="text-yellow-400">cleanup</span>();
+  },
+  <span class="text-yellow-400">unmounted</span>() {
+    <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">'Component unmounted'</span>);
+  }
+};</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RegisteredComponentDefinition Interface -->
+          <div id="registeredcomponentdefinition" class="bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">RegisteredComponentDefinition&lt;TData, TMethods, TComputed&gt;</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Extended component definition for reusable components with required name and additional configuration options.</p>
+            
+            <div class="space-y-6">
+              <!-- Extends ComponentDefinition -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">EXTENDS</span>
+                  <a href="#componentdefinition" class="text-purple-600 hover:text-purple-800 underline">ComponentDefinition&lt;TData, TMethods, TComputed&gt;</a>
+                </h4>
+                <p class="text-gray-600 mb-4">Inherits all properties from ComponentDefinition plus additional required fields.</p>
+                
+                <div class="space-y-4">
+                  <!-- name property -->
+                  <div class="border-l-4 border-purple-200 pl-4">
+                    <h5 class="font-bold text-black mb-2">name: string <span class="text-red-600 text-sm font-bold">Required</span></h5>
+                    <p class="text-gray-600 text-sm">Unique component name used for registration and template references.</p>
+                  </div>
+                  
+                  <!-- makeData property -->
+                  <div class="border-l-4 border-gray-200 pl-4">
+                    <h5 class="font-bold text-black mb-2">makeData?: (props: Record&lt;string, string&gt;) =&gt; Record&lt;string, unknown&gt;</h5>
+                    <p class="text-gray-600 text-sm">Factory function to generate base data from component props/attributes.</p>
+                  </div>
+                  
+                  <!-- init property -->
+                  <div class="border-l-4 border-gray-200 pl-4">
+                    <h5 class="font-bold text-black mb-2">init?: (props: Record&lt;string, any&gt;) =&gt; ComponentDefinition | void</h5>
+                    <p class="text-gray-600 text-sm">Instance augmentation function to customize component per usage.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Usage Example -->
+              <div class="bg-white border-2 border-gray-200 rounded-xl p-6">
+                <h5 class="font-bold text-black mb-3">Registered Component Example</h5>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">counterComponent</span>: <span class="text-purple-400">RegisteredComponentDefinition</span> = {
+  <span class="text-red-400">name</span>: <span class="text-green-400">'counter'</span>,
+  <span class="text-red-400">template</span>: <span class="text-green-400">`&lt;div&gt;
+    &lt;span x-text="count"&gt;&lt;/span&gt;
+    &lt;button x-on:click="increment"&gt;+&lt;/button&gt;
+  &lt;/div&gt;`</span>,
+  <span class="text-red-400">data</span>: { <span class="text-red-400">count</span>: <span class="text-yellow-400">0</span> },
+  <span class="text-red-400">methods</span>: {
+    <span class="text-yellow-400">increment</span>() {
+      <span class="text-blue-300">this</span>.<span class="text-red-400">count</span>++;
+    }
+  },
+  <span class="text-red-400">makeData</span>(<span class="text-blue-300">props</span>) {
+    <span class="text-blue-400">return</span> { <span class="text-red-400">count</span>: <span class="text-yellow-400">parseInt</span>(<span class="text-blue-300">props</span>.<span class="text-red-400">start</span>) || <span class="text-yellow-400">0</span> };
+  }
+};</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ComponentContext Interface -->
+          <div id="componentcontext" class="bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">ComponentContext&lt;TData, TMethods, TComputedVals&gt;</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Component context available in methods, computed properties, and expressions with proper type safety.</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <!-- Special Properties -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">PROPERTIES</span>
+                  Special Properties
+                </h4>
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li><code class="text-black">$el</code> - Component's root element</li>
+                  <li><code class="text-black">$id</code> - Component's unique ID</li>
+                  <li><code class="text-black">$isMounted</code> - Mount status</li>
+                  <li><code class="text-black">$isDestroyed</code> - Destruction status</li>
+                  <li><code class="text-black">$isSealed</code> - Sealed mode status</li>
+                  <li><code class="text-black">$isFrozen</code> - Frozen status</li>
+                  <li><code class="text-black">$parent</code> - Parent component</li>
+                  <li><code class="text-black">$children</code> - Child components</li>
+                </ul>
+              </div>
+
+              <!-- Utility Methods -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">METHODS</span>
+                  Utility Methods
+                </h4>
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li><code class="text-black">$destroy()</code> - Destroy component</li>
+                  <li><code class="text-black">$forceUpdate()</code> - Force re-render</li>
+                  <li><code class="text-black">$addCleanupFunction()</code> - Add cleanup</li>
+                  <li><code class="text-black">$nextTick()</code> - Next DOM update</li>
+                  <li><code class="text-black">$mutate()</code> - Mutate reactive data</li>
+                  <li><code class="text-black">$seal()</code> - Toggle sealed mode</li>
+                  <li><code class="text-black">$log()</code> - Debug logging</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Usage Example -->
+            <div class="bg-white border-2 border-gray-200 rounded-xl p-6">
+              <h5 class="font-bold text-black mb-3">Component Context Usage</h5>
+              <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">component</span> = {
+  <span class="text-red-400">data</span>: { <span class="text-red-400">message</span>: <span class="text-green-400">'Hello'</span> },
+  <span class="text-red-400">methods</span>: {
+    <span class="text-yellow-400">logInfo</span>() {
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">$log</span>(<span class="text-green-400">'Component ID:'</span>, <span class="text-blue-300">this</span>.<span class="text-red-400">$id</span>);
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">$log</span>(<span class="text-green-400">'Element:'</span>, <span class="text-blue-300">this</span>.<span class="text-red-400">$el</span>);
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">$log</span>(<span class="text-green-400">'Is mounted:'</span>, <span class="text-blue-300">this</span>.<span class="text-red-400">$isMounted</span>);
+    },
+    <span class="text-yellow-400">scheduleUpdate</span>() {
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">$nextTick</span>(() => {
+        <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">'DOM updated'</span>);
+      });
+    },
+    <span class="text-yellow-400">forceChange</span>() {
+      <span class="text-blue-300">this</span>.<span class="text-yellow-400">$mutate</span>(() => {
+        <span class="text-blue-300">this</span>.<span class="text-red-400">message</span> = <span class="text-green-400">'Changed!'</span>;
+      });
+    }
+  }
+};</code></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Directive Interfaces Section -->
+        <section id="directive-interfaces" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Directive Interfaces
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Interfaces for creating custom directives with proper lifecycle management and type safety.
+            </p>
+          </div>
+
+          <!-- CustomDirective Interface -->
+          <div id="customdirective" class="bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold">INTERFACE</div>
+              <h3 class="text-2xl font-bold text-black">CustomDirective&lt;T&gt;</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Interface for defining custom directives with typed value handling and lifecycle management.</p>
+            
+            <!-- Directive Methods -->
+            <div class="space-y-6">
+              <!-- bind method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  bind?(element, value, expression, component, ...)
+                </h4>
+                <p class="text-gray-600 mb-4">Called once when directive is first bound to an element. Use for initial setup and event listeners.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">fadeDirective</span>: <span class="text-purple-400">CustomDirective</span>&lt;<span class="text-purple-400">number</span>&gt; = {
+  <span class="text-yellow-400">bind</span>(<span class="text-blue-300">element</span>, <span class="text-blue-300">value</span>, <span class="text-blue-300">expression</span>, <span class="text-blue-300">component</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-red-400">style</span>.<span class="text-red-400">transition</span> = <span class="text-green-400">'opacity 0.3s'</span>;
+    <span class="text-blue-300">element</span>.<span class="text-red-400">style</span>.<span class="text-red-400">opacity</span> = <span class="text-blue-300">value</span>.<span class="text-yellow-400">toString</span>();
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- update method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  update?(element, value, expression, component, ...)
+                </h4>
+                <p class="text-gray-600 mb-4">Called whenever reactive dependencies change. Use to update the DOM based on new values.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">fadeDirective</span>: <span class="text-purple-400">CustomDirective</span>&lt;<span class="text-purple-400">number</span>&gt; = {
+  <span class="text-yellow-400">update</span>(<span class="text-blue-300">element</span>, <span class="text-blue-300">value</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-red-400">style</span>.<span class="text-red-400">opacity</span> = <span class="text-blue-300">value</span>.<span class="text-yellow-400">toString</span>();
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- unbind method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  unbind?(element, component)
+                </h4>
+                <p class="text-gray-600 mb-4">Called when directive is removed (cleanup). Use to remove event listeners and clean up resources.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">fadeDirective</span>: <span class="text-purple-400">CustomDirective</span>&lt;<span class="text-purple-400">number</span>&gt; = {
+  <span class="text-yellow-400">unbind</span>(<span class="text-blue-300">element</span>) {
+    <span class="text-blue-300">element</span>.<span class="text-red-400">style</span>.<span class="text-red-400">transition</span> = <span class="text-green-400">''</span>;
+    <span class="text-blue-300">element</span>.<span class="text-red-400">style</span>.<span class="text-red-400">opacity</span> = <span class="text-green-400">''</span>;
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- update method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3">update?(element, value, expression, component, modifiers?, evaluator?)</h4>
+                <p class="text-gray-600 mb-4">Called whenever reactive dependencies change.</p>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm text-gray-100"><code>const fadeDirective: CustomDirective&lt;number&gt; = {
+  update(element, value) {
+    element.style.opacity = value.toString();
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- unbind method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3">unbind?(element, component)</h4>
+                <p class="text-gray-600 mb-4">Called when directive is removed (cleanup).</p>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm text-gray-100"><code>const fadeDirective: CustomDirective&lt;number&gt; = {
+  unbind(element) {
+    element.style.transition = '';
+    element.style.opacity = '';
+  }
+};</code></pre>
+                </div>
+              </div>
+
+              <!-- Complete example -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3">Complete Example</h4>
+                <p class="text-gray-600 mb-4">Full directive implementation with TypeScript.</p>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm text-gray-100"><code>interface TooltipConfig {
+  text: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+  delay?: number;
+}
+
+const tooltipDirective: CustomDirective&lt;TooltipConfig&gt; = {
+  bind(element, value, expression, component, modifiers) {
+    const config = typeof value === 'string' ? { text: value } : value;
+    
+    // Create tooltip element
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.textContent = config.text;
+    
+    // Store for cleanup
+    (element as any)._tooltip = tooltip;
+    
+    // Add event listeners
+    element.addEventListener('mouseenter', showTooltip);
+    element.addEventListener('mouseleave', hideTooltip);
+  },
+  
+  update(element, value) {
+    const tooltip = (element as any)._tooltip;
+    if (tooltip) {
+      const config = typeof value === 'string' ? { text: value } : value;
+      tooltip.textContent = config.text;
+    }
+  },
+  
+  unbind(element) {
+    const tooltip = (element as any)._tooltip;
+    if (tooltip) {
+      tooltip.remove();
+      delete (element as any)._tooltip;
+    }
+    element.removeEventListener('mouseenter', showTooltip);
+    element.removeEventListener('mouseleave', hideTooltip);
+  }
+};</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Type Utilities Section -->
+        <section id="type-utilities" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Type Utilities
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Advanced TypeScript utilities for enhanced type safety and developer experience.
+            </p>
+          </div>
+
+          <!-- Type Helper Interfaces -->
+          <div class="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">UTILITIES</div>
+              <h3 class="text-2xl font-bold text-black">Type Helpers</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Advanced TypeScript utilities used internally by the framework for enhanced type safety.</p>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- DeepReadonly -->
+              <div id="deepreadonly" class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-indigo-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  DeepReadonly&lt;T&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Deep readonly utility preventing mutations in computed getters.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Data is DeepReadonly in computed</span>
+<span class="text-red-400">computed</span>: {
+  <span class="text-yellow-400">summary</span>() {
+    <span class="text-gray-400">// this.users is DeepReadonly&lt;User[]&gt;</span>
+    <span class="text-gray-400">// Prevents: this.users.push(newUser)</span>
+    <span class="text-blue-400">return</span> <span class="text-blue-300">this</span>.<span class="text-red-400">users</span>.<span class="text-yellow-400">length</span>;
+  }
+}</code></pre>
+                </div>
+              </div>
+
+              <!-- ComputedValues -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  ComputedValues&lt;TComputed&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Derives computed value types from getter functions.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">const</span> <span class="text-yellow-400">computed</span> = {
+  <span class="text-yellow-400">fullName</span>(): <span class="text-purple-400">string</span> { <span class="text-gray-400">/* ... */</span> },
+  <span class="text-yellow-400">age</span>(): <span class="text-purple-400">number</span> { <span class="text-gray-400">/* ... */</span> }
+};
+
+<span class="text-gray-400">// ComputedValues&lt;typeof computed&gt; = {</span>
+<span class="text-gray-400">//   fullName: string;</span>
+<span class="text-gray-400">//   age: number;</span>
+<span class="text-gray-400">// }</span></code></pre>
+                </div>
+              </div>
+
+              <!-- WithThisForMethods -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  WithThisForMethods&lt;TCtx, TMethods&gt;
+                </h4>
+                <p class="text-gray-600 mb-4">Injects proper 'this' context into method signatures.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Original method signature</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">methods</span> = {
+  <span class="text-yellow-400">updateUser</span>(<span class="text-blue-300">id</span>: <span class="text-purple-400">number</span>, <span class="text-blue-300">data</span>: <span class="text-yellow-400">UserData</span>) { <span class="text-gray-400">/* ... */</span> }
+};
+
+<span class="text-gray-400">// With proper 'this' binding:</span>
+<span class="text-gray-400">// (this: <a href="#componentcontext" class="text-blue-400 hover:text-blue-500 underline">ComponentContext</a>, id: number, data: UserData) => void</span></code></pre>
+                </div>
+              </div>
+
+              <!-- HtmlTag -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  HtmlTag
+                </h4>
+                <p class="text-gray-600 mb-4">Template literal type for HTML template strings.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">import</span> { <span class="text-yellow-400">html</span> } <span class="text-blue-400">from</span> <span class="text-green-400">'fynejs'</span>;
+
+<span class="text-blue-400">const</span> <span class="text-yellow-400">template</span> = <span class="text-yellow-400">html</span><span class="text-green-400">`</span>
+  &lt;div class="${className}"&gt;
+    &lt;h1&gt;${title}&lt;/h1&gt;
+    &lt;p&gt;${content}&lt;/p&gt;
+  &lt;/div&gt;
+`;</code></pre>
+                </div>
+              </div>
+
+              <!-- ComponentSource -->
+              <div id="componentsource" class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  ComponentSource
+                </h4>
+                <p class="text-gray-600 mb-4">Configuration object for component loading with path, mode, and optional name.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">interface</span> <span class="text-yellow-400">ComponentSource</span> {
+  <span class="text-red-400">path</span>: <span class="text-purple-400">string</span>;                          <span class="text-gray-400">// Component file path</span>
+  <span class="text-red-400">mode</span>?: <span class="text-green-400">'preload'</span> | <span class="text-green-400">'defer'</span> | <span class="text-green-400">'lazy'</span>;    <span class="text-gray-400">// Loading strategy</span>
+  <span class="text-red-400">name</span>?: <span class="text-purple-400">string</span>;                         <span class="text-gray-400">// Override component name</span>
+}
+
+<span class="text-gray-400">// Usage in loadComponents</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">sources</span> = [
+  <span class="text-green-400">'components/button.js'</span>,                     <span class="text-gray-400">// string (preload mode)</span>
+  { <span class="text-red-400">path</span>: <span class="text-green-400">'modal.js'</span>, <span class="text-red-400">mode</span>: <span class="text-green-400">'defer'</span> },          <span class="text-gray-400">// ComponentSource</span>
+  { <span class="text-red-400">path</span>: <span class="text-green-400">'chart.js'</span>, <span class="text-red-400">mode</span>: <span class="text-green-400">'lazy'</span>, <span class="text-red-400">name</span>: <span class="text-green-400">'data-chart'</span> }
+];</code></pre>
+                </div>
+              </div>
+
+              <!-- ComponentLoaderResult -->
+              <div id="componentloaderresult" class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">TYPE</span>
+                  ComponentLoaderResult
+                </h4>
+                <p class="text-gray-600 mb-4">Return type from loadComponents() showing load success counts and failures.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">interface</span> <span class="text-yellow-400">ComponentLoaderResult</span> {
+  <span class="text-red-400">settled</span>: <span class="text-purple-400">number</span>;    <span class="text-gray-400">// Successfully loaded (preload + defer modes)</span>
+  <span class="text-red-400">failed</span>: <span class="text-purple-400">number</span>;     <span class="text-gray-400">// Failed immediate loads</span>
+}
+
+<span class="text-gray-400">// Example result</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">result</span> = <span class="text-blue-400">await</span> <span class="text-yellow-400">XTool</span>.<span class="text-yellow-400">loadComponents</span>([<span class="text-green-400">'a.js'</span>, <span class="text-green-400">'b.js'</span>]);
+<span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-400">`Loaded: ${<span class="text-blue-300">result</span>.<span class="text-red-400">settled</span>}, Failed: ${<span class="text-blue-300">result</span>.<span class="text-red-400">failed</span>}`</span>);</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Global Declarations Section -->
+        <section id="global-declarations" class="mb-12 sm:mb-16 lg:mb-20 scroll-mt-24">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">
+              Global Declarations
+            </h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">
+              Global types and module declarations for both browser and bundler environments.
+            </p>
+          </div>
+
+          <!-- Browser Globals -->
+          <div class="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-bold">BROWSER</div>
+              <h3 class="text-2xl font-bold text-black">Browser Environment</h3>
+            </div>
+            <p class="text-gray-700 mb-6">Global declarations available in browser environments via script tags.</p>
+            
+            <div class="bg-white border-2 border-gray-200 rounded-xl p-6">
+              <h4 class="text-lg font-bold text-black mb-4">Global Window Objects</h4>
+              <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto mb-4">
+                <pre class="text-sm"><code><span class="text-gray-400">// Available on window object</span>
+<span class="text-blue-400">declare</span> <span class="text-purple-400">global</span> {
+  <span class="text-blue-400">interface</span> <span class="text-yellow-400">Window</span> {
+    <span class="text-red-400">XTool</span>: <span class="text-yellow-400">XToolFramework</span>;
+    <span class="text-red-400">FyneJS</span>: <span class="text-yellow-400">XToolFramework</span>;  <span class="text-gray-400">// Alias</span>
+  }
+}
+
+<span class="text-gray-400">// Usage in browser</span>
+<span class="text-green-400">&lt;script src="..."&gt;&lt;/script&gt;</span>
+<span class="text-green-400">&lt;script&gt;</span>
+  <span class="text-gray-400">// Both are available</span>
+  <span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>();
+  <span class="text-blue-400">FyneJS</span>.<span class="text-yellow-400">init</span>();  <span class="text-gray-400">// Same instance</span>
+<span class="text-green-400">&lt;/script&gt;</span></code></pre>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-2">
+                  <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="font-bold text-blue-700">Note</span>
+                </div>
+                <p class="text-blue-700 text-sm">Both <code>XTool</code> and <code>FyneJS</code> reference the same framework instance.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module Exports -->
+          <div class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 sm:p-8 mb-8">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">MODULES</div>
+              <h3 class="text-2xl font-bold text-black">Module Exports</h3>
+            </div>
+            <p class="text-gray-700 mb-6">ESM and CommonJS module declarations for modern bundlers and Node.js environments.</p>
+            
+            <div class="space-y-6">
+              <!-- ESM Import -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">ESM</span>
+                  ES Module Imports
+                </h4>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Named imports</span>
+<span class="text-blue-400">import</span> { <span class="text-yellow-400">XTool</span>, <span class="text-yellow-400">FyneJS</span>, <span class="text-yellow-400">html</span> } <span class="text-blue-400">from</span> <span class="text-green-400">'fynejs'</span>;
+<span class="text-blue-400">import type</span> { <a href="#componentdefinition" class="text-yellow-400 hover:text-yellow-500 underline">ComponentDefinition</a>, <a href="#xtoolconfig" class="text-yellow-400 hover:text-yellow-500 underline">XToolConfig</a> } <span class="text-blue-400">from</span> <span class="text-green-400">'fynejs'</span>;
+
+<span class="text-gray-400">// Default import</span>
+<span class="text-blue-400">import</span> <span class="text-yellow-400">XTool</span> <span class="text-blue-400">from</span> <span class="text-green-400">'fynejs'</span>;</code></pre>
+                </div>
+              </div>
+
+              <!-- CommonJS Require -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold">CJS</span>
+                  CommonJS Requires
+                </h4>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-gray-400">// Destructured require</span>
+<span class="text-blue-400">const</span> { <span class="text-yellow-400">XTool</span>, <span class="text-yellow-400">FyneJS</span>, <span class="text-yellow-400">html</span> } = <span class="text-yellow-400">require</span>(<span class="text-green-400">'fynejs'</span>);
+
+<span class="text-gray-400">// Default require</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">XTool</span> = <span class="text-yellow-400">require</span>(<span class="text-green-400">'fynejs'</span>).<span class="text-red-400">default</span>;</code></pre>
+                </div>
+              </div>
+
+              <!-- HTML Template Helper -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">HELPER</span>
+                  HTML Template Helper
+                </h4>
+                <p class="text-gray-600 mb-4">Tagged template literal for HTML strings with syntax highlighting support in IDEs.</p>
+                
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-sm"><code><span class="text-blue-400">import</span> { <span class="text-yellow-400">html</span> } <span class="text-blue-400">from</span> <span class="text-green-400">'fynejs'</span>;
+
+<span class="text-gray-400">// Template literal with syntax highlighting</span>
+<span class="text-blue-400">const</span> <span class="text-yellow-400">template</span> = <span class="text-yellow-400">html</span><span class="text-green-400">`
+  &lt;div x-data="{ count: 0 }"&gt;
+    &lt;span x-text="count"&gt;&lt;/span&gt;
+    &lt;button x-on:click="count++"&gt;Increment&lt;/button&gt;
+  &lt;/div&gt;
+`</span>;</code></pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <component source="docs-footer"></component>
+
+  <!-- Scroll to top button -->
+  <div x-data="{ showScrollTop: false }" 
+       x-init="window.addEventListener('scroll', () => showScrollTop = window.scrollY > 400)"
+       x-show="showScrollTop" 
+       class="fixed bottom-8 right-8 z-40">
+    <button x-on:click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+            class="bg-black text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+      </svg>
+    </button>
+  </div>
+</body>
+</html>
