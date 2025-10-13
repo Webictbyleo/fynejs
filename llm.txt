@@ -1,0 +1,111 @@
+# FyneJS/X-Tool - LLM Quick Reference
+
+## Package Information
+
+**GitHub Repository:** https://github.com/Webictbyleo/fynejs
+
+**TypeScript Definitions:** https://github.com/Webictbyleo/fynejs/blob/main/types.d.ts
+
+**NPM Package:** https://www.npmjs.com/package/fynejs
+
+## Supported Directives
+
+### Core Directives
+- `x-data` - Component initialization with reactive data
+- `x-text` - Text content binding
+- `x-html` - HTML content binding (raw HTML)
+- `x-show` - Toggle visibility (display: none)
+- `x-if` / `x-else-if` / `x-else` - Conditional rendering (DOM removal)
+- `x-for` - List rendering with template support
+- `x-model` - Two-way data binding for form inputs
+- `x-init` - Component initialization code
+
+### Attribute Directives
+- `x-bind:attribute` or `x:attribute` - Dynamic attribute binding
+- `x-style` - Dynamic style binding (object or string)
+- `x-class` - Dynamic class binding (string, array, or object)
+
+### Event Directives
+- `x-on:event` or `@event` - Event listener binding
+
+### Component Directives
+- `x-prop` - Reactive props for components
+- `<component source="name">` - Reusable component instances
+
+## Event Modifiers
+
+### Execution Control
+- `.prevent` - Calls `preventDefault()`
+- `.stop` - Calls `stopPropagation()`
+- `.self` - Only trigger if event target is the element itself
+- `.once` - Remove listener after first execution
+- `.passive` - Add passive event listener
+- `.capture` - Use capture phase
+- `.defer` - Execute handler in next microtask
+
+### Key Modifiers
+- `.enter` - Only trigger on Enter key
+- `.esc` / `.escape` - Only trigger on Escape key
+- `.space` - Only trigger on Space key
+- `.tab` - Only trigger on Tab key
+- `.backspace` - Only trigger on Backspace key
+- `.delete` / `.del` - Only trigger on Delete key
+- `.arrowup` / `.up` - Only trigger on Arrow Up key
+- `.arrowdown` / `.down` - Only trigger on Arrow Down key
+- `.arrowleft` / `.left` - Only trigger on Arrow Left key
+- `.arrowright` / `.right` - Only trigger on Arrow Right key
+- `.home` - Only trigger on Home key
+- `.end` - Only trigger on End key
+- `.pageup` - Only trigger on Page Up key
+- `.pagedown` - Only trigger on Page Down key
+
+### Combination Key Modifiers
+- `.ctrl` - Require Ctrl key to be pressed
+- `.alt` - Require Alt key to be pressed
+- `.shift` - Require Shift key to be pressed
+- `.meta` - Require Meta/Cmd key to be pressed
+
+### Mouse Button Modifiers
+- `.left` - Only trigger on left mouse button
+- `.middle` - Only trigger on middle mouse button
+- `.right` - Only trigger on right mouse button
+
+### Touch Modifiers
+- `.single` - Only trigger with single touch point
+- `.multi` - Only trigger with multiple touch points
+
+### Special Modifiers
+- `.outside` - Trigger when clicking outside the element
+
+## HTML Template Literal Support
+
+FyneJS provides an `html` template literal tag for IDE syntax highlighting:
+
+```javascript
+XTool.registerComponent({
+    name: 'my-component',
+    template: html`
+        <div class="component">
+            <h2 x-text="title"></h2>
+            <p x-text="description"></p>
+        </div>
+    `
+});
+```
+
+The `html` tag enables:
+- Syntax highlighting in most IDEs (VS Code, IntelliJ, etc.)
+- HTML IntelliSense and validation
+- Proper formatting and indentation
+- No new template syntax to learn - standard HTML
+
+## Key Features
+
+- **Multiple Components per File** - Define multiple `x-data` components in single HTML files
+- **Standard HTML Templates** - Uses familiar HTML syntax, no special template language
+- **IDE Syntax Highlighting** - `html` template literal provides full IDE support
+- **Zero Dependencies** - No external dependencies or build tools required
+- **11KB Gzipped** - Minimal bundle size
+- **Comprehensive Auto-Cleanup** - Automatic memory management and resource cleanup
+- **Event Delegation** - Optional global event delegation for performance
+- **Static Directive Optimization** - Automatically detects and optimizes non-reactive directives
