@@ -102,8 +102,6 @@
               console.log('[x-tool] Route changed:', from, '→', to);
               // Reinstall code blocks on route change (for dynamically added content)
               setTimeout(installCodeBlock, 100); // Slight delay to allow DOM updates
-              // Lets include the gtag script before the end body if not already present
-              installGtag()
             }
           }
         });
