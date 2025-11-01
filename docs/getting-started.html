@@ -45,7 +45,7 @@
   <link rel="stylesheet" href="./styles.generated.css" />
   
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/fynejs@1.0.14/dist/x-tool.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
   <script src="./shared/navigation.js" defer></script>
   <script src="./shared/footer.js" defer></script>
   <script src="./demo-loader.js" defer></script>
@@ -86,10 +86,9 @@
   }
   </script>
 </head>
-<body class="bg-white text-gray-900 antialiased")
+<body class="bg-white text-gray-900 antialiased">
   
-  <!-- Navigation -->
-  <component source="docs-nav" x-prop="{page:'getting-started'}"></component>
+  <component  source="docs-nav" x-prop="{page:'getting-started'}"></component>
 
   <!-- Hero Section -->
   <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
@@ -102,7 +101,7 @@
           Ready in 30 seconds
         </div>
         
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+        <h1 data-vt='title' class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
           Getting Started with
           <span class="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">FyneJS</span>
         </h1>
@@ -315,7 +314,352 @@ FyneJS.loadComponents([
         </div>
       </section>
 
+      <!-- Usage Guides for Multi-Page Projects -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">Building Multi-Page Projects</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            Learn how to organize and structure complex FyneJS applications with multiple pages and components.
+          </p>
+        </div>
 
+        <div class="space-y-12">
+          <!-- Central Setup Pattern -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-8 lg:p-12 border-2 border-blue-200">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-blue-900 mb-3">Central Setup File Pattern</h3>
+                <p class="text-blue-800 mb-6">
+                  Create a single setup file (like <code class="px-2 py-1 bg-white/60 rounded">demo-loader.js</code> or 
+                  <code class="px-2 py-1 bg-white/60 rounded">app-setup.js</code>) that handles initialization, 
+                  component loading, and routing for your entire application.
+                </p>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-blue-200">
+              <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 bg-blue-600 text-white rounded flex items-center justify-center text-sm">1</span>
+                Create your setup file:
+              </h4>
+              <pre class="code-block"><code>// demo-loader.js (or app-setup.js)
+(function() {
+  // List all your component files
+  const componentFiles = [
+    'header.js',
+    'footer.js',
+    'user-card.ts',        // TypeScript works too!
+    'modal.js',
+    'data-chart.ts'
+  ];
+  
+  // Initialize FyneJS
+  XTool.init({ 
+    router: { enabled: true }
+  });
+  
+  // Load all components
+  XTool.loadComponents(
+    componentFiles.map(file => ({
+      path: 'components/' + file,
+      mode: 'preload'  // or 'defer', 'lazy'
+    }))
+  );
+})();</code></pre>
+              
+              <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p class="text-sm text-blue-800">
+                  <strong>📚 Full API:</strong> See the 
+                  <a href="api.html#init" class="underline font-semibold hover:text-blue-900">XTool.init()</a> and
+                  <a href="api.html#loadComponents" class="underline font-semibold hover:text-blue-900">loadComponents()</a> 
+                  documentation for all configuration options.
+                </p>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-blue-200 mt-6">
+              <h4 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 bg-blue-600 text-white rounded flex items-center justify-center text-sm">2</span>
+                Include in every HTML page:
+              </h4>
+              <pre class="code-block"><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;title&gt;My App - Home&lt;/title&gt;
+  
+  &lt;!-- Styles --&gt;
+  &lt;link rel="stylesheet" href="./styles.css" /&gt;
+  
+  &lt;!-- FyneJS Core --&gt;
+  &lt;script src="../dist/x-tool.min.js" defer&gt;&lt;/script&gt;
+  
+  &lt;!-- Your Setup File (loads everything) --&gt;
+  &lt;script src="./demo-loader.js" defer&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Components are now available --&gt;
+  &lt;component source="header"&gt;&lt;/component&gt;
+  
+  &lt;main&gt;
+    &lt;component source="user-card"&gt;&lt;/component&gt;
+  &lt;/main&gt;
+  
+  &lt;component source="footer"&gt;&lt;/component&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            </div>
+          </div>
+
+          <!-- Component Organization -->
+          <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-3xl p-8 lg:p-12 border-2 border-green-200">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-green-900 mb-3">Recommended Project Structure</h3>
+                <p class="text-green-800 mb-6">
+                  Organize your components logically by feature, page, or UI type. Mix JavaScript and TypeScript files as needed.
+                </p>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-green-200">
+              <pre class="code-block bg-gray-50"><code>my-fynejs-app/
+├── index.html
+├── about.html
+├── contact.html
+├── styles.css
+├── demo-loader.js          # Central setup file
+├── components/
+│   ├── page-specific/
+│   │   ├── hero-section.ts
+│   │   ├── pricing-table.js
+│   │   └── testimonials.ts
+│   ├── features/
+│   │   ├── user-dashboard.ts
+│   │   ├── analytics-widget.js
+│   │   └── notification-center.ts
+│   └── ui/
+│       ├── modal.js
+│       ├── tooltip.js
+│       └── dropdown.ts
+└── shared/
+    ├── navigation.js       # Shared across all pages
+    └── footer.js          # Shared across all pages</code></pre>
+
+              <div class="mt-6 p-4 bg-green-50 rounded-lg border border-green-300">
+                <h5 class="font-bold text-green-900 mb-2 flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  Pro Tips
+                </h5>
+                <ul class="text-sm text-green-800 space-y-1">
+                  <li>• Keep shared components (nav, footer) in a <code class="px-1.5 py-0.5 bg-white rounded">shared/</code> directory</li>
+                  <li>• Group page-specific components together</li>
+                  <li>• Use feature folders for related component groups</li>
+                  <li>• Mix .js and .ts files freely—FyneJS handles both!</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Routing Setup -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl p-8 lg:p-12 border-2 border-purple-200">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-purple-900 mb-3">Routing & Navigation</h3>
+                <p class="text-purple-800 mb-6">
+                  FyneJS includes a built-in SPA router with view transitions, prefetching, and navigation hooks.
+                </p>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 border border-purple-200">
+              <h4 class="font-bold text-gray-900 mb-4">Enable routing in your setup file:</h4>
+              <pre class="code-block"><code>XTool.init({
+  router: {
+    enabled: true,
+    before: (to, from, info) => {
+      // Optional: auth checks, analytics, etc.
+      return true;
+    },
+    after: (to, from, info) => {
+      // Optional: scroll, update UI, etc.
+    }
+  }
+});</code></pre>
+
+              <div class="mt-6">
+                <h4 class="font-bold text-gray-900 mb-4">Use x-link in your navigation:</h4>
+                <pre class="code-block"><code>&lt;nav&gt;
+  &lt;a href="/index.html" x-link&gt;Home&lt;/a&gt;
+  &lt;a href="/about.html" x-link&gt;About&lt;/a&gt;
+  &lt;a href="/contact.html" x-link&gt;Contact&lt;/a&gt;
+&lt;/nav&gt;</code></pre>
+              </div>
+            </div>
+
+            <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-300">
+              <p class="text-sm text-purple-800">
+                <strong>📚 Learn more:</strong> Check out the 
+                <a href="router.html" class="underline font-semibold hover:text-purple-900">Router documentation</a> or 
+                <a href="api.html#routeroptions" class="underline font-semibold hover:text-purple-900">Router API reference</a>
+                for all configuration options including view transitions, prefetching, error handlers, and more.
+              </p>
+            </div>
+          </div>
+
+          <!-- Real Example -->
+          <div class="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 lg:p-12 text-white">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold mb-3">This Documentation Site Uses This Pattern!</h3>
+                <p class="text-gray-300 mb-6">
+                  The site you're reading right now follows this exact structure. Check out 
+                  <code class="px-2 py-1 bg-black/50 rounded text-blue-300">docs/demo-loader.js</code> to see it in action.
+                </p>
+              </div>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+              <div class="bg-black/30 rounded-xl p-6 border border-gray-700">
+                <h4 class="font-bold mb-3 flex items-center gap-2">
+                  <span class="text-green-400">✓</span> What We Do
+                </h4>
+                <ul class="text-sm text-gray-300 space-y-2">
+                  <li>• Single <code class="px-1.5 py-0.5 bg-black/50 rounded">demo-loader.js</code> file</li>
+                  <li>• All pages include the same scripts</li>
+                  <li>• Components loaded once, shared everywhere</li>
+                  <li>• Router handles navigation smoothly</li>
+                  <li>• TypeScript components work seamlessly</li>
+                </ul>
+              </div>
+              
+              <div class="bg-black/30 rounded-xl p-6 border border-gray-700">
+                <h4 class="font-bold mb-3 flex items-center gap-2">
+                  <span class="text-blue-400">⚡</span> Benefits
+                </h4>
+                <ul class="text-sm text-gray-300 space-y-2">
+                  <li>• DRY: Don't repeat script includes</li>
+                  <li>• Consistent: Same setup everywhere</li>
+                  <li>• Fast: Components cached after first load</li>
+                  <li>• Maintainable: Change once, apply everywhere</li>
+                  <li>• Scalable: Easy to add new components</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- New Features -->
+      <section class="mb-16">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">What's New</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            Discover the latest features added to FyneJS that make building interactive applications even easier.
+          </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- SPA Router -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-blue-500 text-white p-2 rounded-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-blue-900">SPA Router</h3>
+            </div>
+            <p class="text-blue-800 mb-4 text-sm">
+              Built-in single-page application routing with view transitions, prefetching, and navigation hooks.
+            </p>
+            <div class="bg-blue-900 rounded-lg p-3 text-xs">
+              <code class="text-blue-100">
+                XTool.init({<br/>
+                &nbsp;&nbsp;router: { enabled: true }<br/>
+                });
+              </code>
+            </div>
+          </div>
+
+          <!-- Intersection Observer -->
+          <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-green-500 text-white p-2 rounded-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-green-900">Scroll Triggers</h3>
+            </div>
+            <p class="text-green-800 mb-4 text-sm">
+              Use x-intersect to trigger actions when elements enter or leave the viewport.
+            </p>
+            <div class="bg-green-900 rounded-lg p-3 text-xs">
+              <code class="text-green-100">
+                &lt;div x-intersect:enter="<br/>
+                &nbsp;&nbsp;animateIn()<br/>
+                "&gt;Animate me!&lt;/div&gt;
+              </code>
+            </div>
+          </div>
+
+          <!-- TypeScript Support -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-purple-500 text-white p-2 rounded-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-purple-900">TypeScript Without Build</h3>
+            </div>
+            <p class="text-purple-800 mb-4 text-sm">
+              Run .ts component files directly in the browser with instant type stripping. No compilation needed!
+            </p>
+            <div class="bg-purple-900 rounded-lg p-3 text-xs">
+              <code class="text-purple-100">
+                XTool.loadComponents([<br/>
+                &nbsp;&nbsp;'components/user-card.ts'<br/>
+                ]); // Types stripped instantly!
+              </code>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="typescript.html" 
+             class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
+            TypeScript Support →
+          </a>
+          <a href="router.html" 
+             class="inline-flex items-center px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
+            Learn About SPA Routing →
+          </a>
+        </div>
+      </section>
 
       <!-- Next Steps -->
       <section class="text-center py-8 border-t border-gray-200">
@@ -329,6 +673,10 @@ FyneJS.loadComponents([
              class="inline-flex items-center px-4 py-2 text-black hover:text-gray-600 transition-colors font-medium underline">
             Build Components →
           </a>
+          <a href="router.html" 
+             class="inline-flex items-center px-4 py-2 text-black hover:text-gray-600 transition-colors font-medium underline">
+            SPA Routing →
+          </a>
           <a href="examples.html" 
              class="inline-flex items-center px-4 py-2 text-black hover:text-gray-600 transition-colors font-medium underline">
             View Examples →
@@ -341,14 +689,6 @@ FyneJS.loadComponents([
 
   <!-- Footer -->
   <component source="docs-footer"></component>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-1ZJ9J95NPP');
-</script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 // Advanced Todo App with filtering, persistence, and animations (extracted)
 XTool.registerComponent({
   name: 'advanced-todo',
-  template: `
+  template: html`
   <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 max-w-md mx-auto">
       <div class="flex items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-800 flex-1">Advanced Todo</h2>

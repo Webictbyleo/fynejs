@@ -81,7 +81,7 @@ XTool.registerComponent({
         <div class="max-h-96 overflow-y-auto" x-ref="listContainer">
           <div class="divide-y">
             <div x-for="item in visibleItems" 
-                 x-bind:key="item.id"
+                 x-key="item.id"
                  class="flex items-center p-3 hover:bg-gray-50"
                  style="content-visibility: auto; contain-intrinsic-size: 3rem;">
                  
@@ -139,13 +139,12 @@ XTool.registerComponent({
   },
   methods: {
     generateItems() {
-      const newItems = this.items.slice();
       const startId = this.items.length;
       for (let i = 0; i < this.batchSize; i++) {
         const id = startId + i + 1;
-        newItems.push({ id, name: `Item ${id.toLocaleString()}`, category: this.categories[Math.floor(Math.random() * this.categories.length)], status: this.statuses[Math.floor(Math.random() * this.statuses.length)], score: Math.floor(Math.random() * 1000), icon: this.icons[Math.floor(Math.random() * this.icons.length)], createdAt: new Date().toISOString() });
+        this.items.push({ id, name: `Item ${id.toLocaleString()}`, category: this.categories[Math.floor(Math.random() * this.categories.length)], status: this.statuses[Math.floor(Math.random() * this.statuses.length)], score: Math.floor(Math.random() * 1000), icon: this.icons[Math.floor(Math.random() * this.icons.length)], createdAt: new Date().toISOString() });
       }
-      this.items = newItems
+      
 
     },
     debounceSearch() { 

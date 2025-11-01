@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Router & SPA - FyneJS</title>
+  <meta name="description" content="Build single-page applications with FyneJS router. Learn about SPA navigation, prefetching, route hooks, view transitions, and configuration." />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://fynejs.com/router.html" />
+  <meta property="og:title" content="FyneJS Router - Single Page Application Navigation" />
+  <meta property="og:description" content="Master SPA routing with FyneJS. Learn navigation, prefetching, route hooks, and view transitions for seamless user experiences." />
+  <meta property="og:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta property="og:site_name" content="FyneJS Documentation" />
+  <meta property="article:section" content="Documentation" />
+  <meta property="article:tag" content="Router" />
+  <meta property="article:tag" content="SPA" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://fynejs.com/router.html" />
+  <meta name="twitter:title" content="FyneJS Router - Single Page Application Navigation" />
+  <meta name="twitter:description" content="Master SPA routing with FyneJS. Learn navigation, prefetching, route hooks, and view transitions." />
+  <meta property="twitter:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta name="twitter:creator" content="@fynejs" />
+
+  <!-- Enhanced SEO -->
+  <meta name="keywords" content="fynejs router, spa navigation, single page application, view transitions, route hooks, prefetching, javascript routing, client-side routing" />
+  <meta name="author" content="FyneJS Documentation Team" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <link rel="apple-touch-icon" href="./assets/logo-small.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.generated.css" />
+  
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
+  <script src="./shared/navigation.js" defer></script>
+  <script src="./shared/footer.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+  
+  <!-- Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "FyneJS Router - Single Page Application Navigation",
+    "description": "Build single-page applications with FyneJS router. Learn about SPA navigation, prefetching, route hooks, view transitions, and configuration.",
+    "author": {
+      "@type": "Organization",
+      "name": "FyneJS Documentation Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FyneJS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://fynejs.com/assets/logo-small.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://fynejs.com/router.html"
+    },
+    "keywords": ["fynejs", "router", "spa", "navigation", "view transitions", "single page application"],
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+
+<body class="bg-white text-gray-900 font-sans" x-data="{ activePage: 'router' }">
+  <!-- Navigation -->
+  <component source="docs-nav" x-prop="{ page: 'router' }"></component>
+
+  <!-- Hero Section -->
+  <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+    <div class="container mx-auto max-w-5xl">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full text-sm font-medium mb-8">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          SPA Navigation
+        </div>
+        <h1 data-vt='title' class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+          Router & SPA
+        </h1>
+        <p  class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+          Build single-page applications with seamless navigation, intelligent prefetching, and smooth view transitions. Create fast, responsive web apps that feel native.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pb-24">
+    
+    <!-- Quick Start -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Quick Start</h2>
+      <p class="text-lg text-gray-600 mb-6">
+        Enable SPA routing in your FyneJS application with a simple configuration:
+      </p>
+      
+      <div class="bg-gray-900 rounded-xl p-6 mb-8">
+        <pre><code class="text-gray-100 text-sm"><span class="text-green-400">// Enable router with basic configuration</span>
+<span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>({
+  <span class="text-red-400">router</span>: {
+    <span class="text-red-400">enabled</span>: <span class="text-purple-400">true</span>,
+    <span class="text-red-400">transitionName</span>: <span class="text-green-300">'route'</span>,
+    <span class="text-red-400">prefetchOnHover</span>: <span class="text-purple-400">true</span>
+  }
+});</code></pre>
+      </div>
+      
+      <p class="text-gray-600 mb-4">
+        Once enabled, all internal navigation will be intercepted and handled as SPA transitions:
+      </p>
+      
+      <div class="bg-gray-900 rounded-xl p-6">
+        <pre><code class="text-gray-100 text-sm"><span class="text-gray-500">&lt;!-- These links will trigger SPA navigation --&gt;</span>
+<span class="text-blue-400">&lt;a</span> <span class="text-red-400">href</span>=<span class="text-green-300">"/about"</span><span class="text-blue-400">&gt;</span>About Us<span class="text-blue-400">&lt;/a&gt;</span>
+<span class="text-blue-400">&lt;a</span> <span class="text-red-400">href</span>=<span class="text-green-300">"/products/123"</span><span class="text-blue-400">&gt;</span>Product Details<span class="text-blue-400">&lt;/a&gt;</span>
+<span class="text-blue-400">&lt;a</span> <span class="text-red-400">href</span>=<span class="text-green-300">"/contact#form"</span><span class="text-blue-400">&gt;</span>Contact Form<span class="text-blue-400">&lt;/a&gt;</span></code></pre>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">How It Works</h2>
+      
+      <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-blue-900 mb-4">Container-Scoped Routing</h3>
+          <p class="text-blue-800 mb-4">
+            Unlike traditional SPAs that take over the entire page, FyneJS router only manages navigation within your specified container (default: <code class="bg-blue-100 px-1 rounded">body</code>).
+          </p>
+          <p class="text-blue-700 text-sm">
+            This means you can embed SPA functionality in just part of your page—perfect for adding interactive sections to existing websites without full page takeover.
+          </p>
+        </div>
+        
+        <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h3 class="text-xl font-semibold text-green-900 mb-4">Intelligent Navigation</h3>
+          <p class="text-green-800 mb-4">
+            Setting <code class="bg-green-100 px-1 rounded">location.href</code> within components is automatically intercepted when the router is enabled—no need to use special navigation methods.
+          </p>
+          <p class="text-green-700 text-sm">
+            External links, downloads, and same-document navigation (hash changes) work normally while internal navigation is handled by the SPA router.
+          </p>
+        </div>
+      </div>
+      
+      <div class="bg-white border border-gray-200 rounded-xl p-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Built-in UX Features</h3>
+        
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h4 class="font-semibold text-gray-900 mb-2">History Management</h4>
+            <p class="text-gray-600 text-sm">Browser back/forward buttons work seamlessly with proper state restoration.</p>
+          </div>
+          
+          <div class="text-center">
+            <div class="bg-orange-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h4 class="font-semibold text-gray-900 mb-2">Scroll Restoration</h4>
+            <p class="text-gray-600 text-sm">Page scroll positions are saved and restored when navigating back/forward.</p>
+          </div>
+          
+          <div class="text-center">
+            <div class="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h4 class="font-semibold text-gray-900 mb-2">Hash Navigation</h4>
+            <p class="text-gray-600 text-sm">Hash changes and anchor links work normally alongside SPA navigation.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Configuration -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Configuration Options</h2>
+      
+      <div class="bg-white border border-gray-200 rounded-xl p-8 mb-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">Complete Router Configuration</h3>
+        
+        <div class="bg-gray-900 rounded-xl p-6">
+          <pre><code class="text-gray-100 text-sm"><span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>({
+  <span class="text-red-400">router</span>: {
+    <span class="text-green-400">// Enable/disable SPA routing</span>
+    <span class="text-red-400">enabled</span>: <span class="text-purple-400">true</span>,
+    
+    <span class="text-green-400">// Transition name for view transitions API</span>
+    <span class="text-red-400">transitionName</span>: <span class="text-green-300">'route'</span>,
+    
+    <span class="text-green-400">// Prefetch pages on hover/touch</span>
+    <span class="text-red-400">prefetchOnHover</span>: <span class="text-purple-400">true</span>,
+    
+    <span class="text-green-400">// Navigation lifecycle hooks</span>
+    <span class="text-red-400">before</span>: <span class="text-blue-400">async</span> (<span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>, <span class="text-yellow-400">info</span>) => {
+      <span class="text-green-400">// Return false to cancel navigation</span>
+      <span class="text-purple-400">if</span> (<span class="text-yellow-400">to</span>.<span class="text-yellow-400">includes</span>(<span class="text-green-300">'/admin'</span>) && !<span class="text-yellow-400">isAuthenticated</span>) {
+        <span class="text-purple-400">return</span> <span class="text-purple-400">false</span>;
+      }
+    },
+    
+    <span class="text-red-400">after</span>: <span class="text-blue-400">async</span> (<span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>, <span class="text-yellow-400">info</span>) => {
+      <span class="text-green-400">// Track page views, update analytics</span>
+      <span class="text-yellow-400">analytics</span>.<span class="text-yellow-400">track</span>(<span class="text-green-300">'page_view'</span>, { <span class="text-red-400">url</span>: <span class="text-yellow-400">to</span> });
+    },
+    
+    <span class="text-red-400">error</span>: (<span class="text-yellow-400">error</span>, <span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>) => {
+      <span class="text-green-400">// Handle navigation errors</span>
+      <span class="text-yellow-400">console</span>.<span class="text-yellow-400">error</span>(<span class="text-green-300">'Navigation failed:'</span>, <span class="text-yellow-400">error</span>);
+    }
+  }
+});</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Hooks -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Navigation Hooks</h2>
+      
+      <div class="grid md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-blue-900 mb-3">before</h3>
+          <p class="text-blue-700 text-sm">
+            Called before navigation starts. Return <code class="bg-blue-100 px-1 rounded">false</code> to cancel.
+          </p>
+        </div>
+        
+        <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-green-900 mb-3">after</h3>
+          <p class="text-green-700 text-sm">
+            Called after successful navigation and DOM update.
+          </p>
+        </div>
+        
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-red-900 mb-3">error</h3>
+          <p class="text-red-700 text-sm">
+            Called when navigation fails or throws an error.
+          </p>
+        </div>
+      </div>
+      
+      <div class="bg-white border border-gray-200 rounded-xl p-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-4">Hook Parameters</h3>
+        
+        <div class="bg-gray-900 rounded-xl p-6 mb-4">
+          <pre><code class="text-gray-100 text-sm"><span class="text-green-400">// All hooks receive these parameters:</span>
+<span class="text-red-400">before</span>: (<span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>, <span class="text-yellow-400">info</span>) => {
+  <span class="text-green-400">// to: destination URL (string)</span>
+  <span class="text-green-400">// from: current URL (string)</span>
+  <span class="text-green-400">// info: { source: 'link' | 'popstate' | 'program' }</span>
+  
+  <span class="text-purple-400">if</span> (<span class="text-yellow-400">info</span>.<span class="text-yellow-400">source</span> === <span class="text-green-300">'link'</span>) {
+    <span class="text-green-400">// User clicked a link</span>
+  } <span class="text-purple-400">else if</span> (<span class="text-yellow-400">info</span>.<span class="text-yellow-400">source</span> === <span class="text-green-300">'popstate'</span>) {
+    <span class="text-green-400">// User used back/forward buttons</span>
+  } <span class="text-purple-400">else</span> {
+    <span class="text-green-400">// Programmatic navigation</span>
+  }
+}</code></pre>
+        </div>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p class="text-blue-800 text-sm">
+            <strong>Learn more:</strong> <a href="api.html#router-callback-context" class="text-blue-600 hover:text-blue-800 underline">Router Hook Context</a> for detailed information about hook parameters and usage patterns.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- View Transitions -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">View Transitions</h2>
+      
+      <p class="text-lg text-gray-600 mb-6">
+        FyneJS router supports the View Transitions API for smooth page transitions in supported browsers:
+      </p>
+      
+      <div class="bg-gray-900 rounded-xl p-6 mb-8">
+        <pre><code class="text-gray-100 text-sm"><span class="text-green-400">/* Add CSS for custom transitions */</span>
+<span class="text-red-400">@view-transition</span> {
+  <span class="text-yellow-400">navigation</span>: <span class="text-green-300">auto</span>;
+}
+
+<span class="text-green-400">/* Customize the transition */</span>
+<span class="text-red-400">::view-transition-old</span>(<span class="text-green-300">route</span>) {
+  <span class="text-yellow-400">animation</span>: <span class="text-green-300">slide-out-left 0.3s ease-in-out</span>;
+}
+
+<span class="text-red-400">::view-transition-new</span>(<span class="text-green-3">route</span>) {
+  <span class="text-yellow-400">animation</span>: <span class="text-green-300">slide-in-right 0.3s ease-in-out</span>;
+}
+
+<span class="text-red-400">@keyframes</span> <span class="text-blue-400">slide-out-left</span> {
+  <span class="text-purple-400">to</span> { <span class="text-yellow-400">transform</span>: <span class="text-green-300">translateX(-100%)</span>; }
+}
+
+<span class="text-red-400">@keyframes</span> <span class="text-blue-400">slide-in-right</span> {
+  <span class="text-purple-400">from</span> { <span class="text-yellow-400">transform</span>: <span class="text-green-300">translateX(100%)</span>; }
+}</code></pre>
+      </div>
+      
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div class="flex items-start gap-3">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <p class="text-blue-800 font-medium mb-1">Browser Support</p>
+            <p class="text-blue-700 text-sm">
+              View Transitions API is supported in Chrome 111+, Edge 111+, and other Chromium-based browsers. The router gracefully falls back to instant navigation in unsupported browsers.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prefetching -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Intelligent Prefetching</h2>
+      
+      <p class="text-lg text-gray-600 mb-6">
+        Improve perceived performance with automatic page prefetching:
+      </p>
+      
+      <div class="grid md:grid-cols-2 gap-8 mb-8">
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Hover Prefetching</h3>
+          <p class="text-gray-600 mb-4">
+            When enabled, pages are prefetched when users hover over or touch links:
+          </p>
+          <div class="bg-gray-900 rounded-lg p-4">
+            <pre><code class="text-gray-100 text-xs"><span class="text-red-400">prefetchOnHover</span>: <span class="text-purple-400">true</span></code></pre>
+          </div>
+        </div>
+        
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Manual Prefetching</h3>
+          <p class="text-gray-600 mb-4">
+            Add prefetch hints manually for critical pages:
+          </p>
+          <div class="bg-gray-900 rounded-lg p-4">
+            <pre><code class="text-gray-100 text-xs"><span class="text-blue-400">&lt;link</span> <span class="text-red-400">rel</span>=<span class="text-green-300">"prefetch"</span> <span class="text-red-400">href</span>=<span class="text-green-300">"/about"</span><span class="text-blue-400">&gt;</span></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Best Practices -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Best Practices</h2>
+      
+      <div class="space-y-6">
+        <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-green-900 mb-3">✅ Do</h3>
+          <ul class="space-y-2 text-green-800">
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0"></span>
+              Use relative URLs for internal navigation
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0"></span>
+              Implement proper error handling in hooks
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0"></span>
+              Use prefetching for frequently visited pages
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-green-600 rounded-full mt-2 flex-shrink-0"></span>
+              Test navigation with browser back/forward buttons
+            </li>
+          </ul>
+        </div>
+        
+        <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 class="text-lg font-semibold text-red-900 mb-3">❌ Don't</h3>
+          <ul class="space-y-2 text-red-800">
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-red-600 rounded-full mt-2 flex-shrink-0"></span>
+              Block navigation hooks with long-running operations
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="w-1.5 h-1.5 bg-red-600 rounded-full mt-2 flex-shrink-0"></span>
+              Rely on the router for forms with file uploads
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Examples -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8">Complete Example</h2>
+      
+      <div class="bg-white border border-gray-200 rounded-xl p-8">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Multi-page Application Setup</h3>
+        
+        <div class="bg-gray-900 rounded-xl p-6">
+          <pre><code class="text-gray-100 text-sm"><span class="text-green-400">// app.js - Application setup</span>
+<span class="text-blue-400">XTool</span>.<span class="text-yellow-400">init</span>({
+  <span class="text-red-400">container</span>: <span class="text-green-300">'body'</span>,
+  <span class="text-red-400">router</span>: {
+    <span class="text-red-400">enabled</span>: <span class="text-purple-400">true</span>,
+    <span class="text-red-400">transitionName</span>: <span class="text-green-300">'page-transition'</span>,
+    <span class="text-red-400">prefetchOnHover</span>: <span class="text-purple-400">true</span>,
+    
+    <span class="text-red-400">before</span>: <span class="text-blue-400">async</span> (<span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>, <span class="text-yellow-400">info</span>) => {
+      <span class="text-green-400">// Show loading indicator</span>
+      <span class="text-yellow-400">document</span>.<span class="text-yellow-400">body</span>.<span class="text-yellow-400">classList</span>.<span class="text-yellow-400">add</span>(<span class="text-green-300">'navigating'</span>);
+      
+      <span class="text-green-400">// Authentication check</span>
+      <span class="text-purple-400">if</span> (<span class="text-yellow-400">to</span>.<span class="text-yellow-400">includes</span>(<span class="text-green-300">'/admin'</span>) && !<span class="text-yellow-400">user</span>.<span class="text-yellow-400">isAuthenticated</span>) {
+        <span class="text-yellow-400">alert</span>(<span class="text-green-300">'Please log in to access admin pages'</span>);
+        <span class="text-purple-400">return</span> <span class="text-purple-400">false</span>;
+      }
+    },
+    
+    <span class="text-red-400">after</span>: <span class="text-blue-400">async</span> (<span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>, <span class="text-yellow-400">info</span>) => {
+      <span class="text-green-400">// Hide loading indicator</span>
+      <span class="text-yellow-400">document</span>.<span class="text-yellow-400">body</span>.<span class="text-yellow-400">classList</span>.<span class="text-yellow-400">remove</span>(<span class="text-green-300">'navigating'</span>);
+      
+      <span class="text-green-400">// Update page title from &lt;title&gt; tag</span>
+      <span class="text-purple-400">const</span> <span class="text-yellow-400">title</span> = <span class="text-yellow-400">document</span>.<span class="text-yellow-400">querySelector</span>(<span class="text-green-300">'title'</span>)?.<span class="text-yellow-400">textContent</span>;
+      <span class="text-purple-400">if</span> (<span class="text-yellow-400">title</span>) <span class="text-yellow-400">document</span>.<span class="text-yellow-400">title</span> = <span class="text-yellow-400">title</span>;
+      
+      <span class="text-green-400">// Analytics tracking</span>
+      <span class="text-yellow-400">gtag</span>(<span class="text-green-300">'config'</span>, <span class="text-green-3">'GA_MEASUREMENT_ID'</span>, {
+        <span class="text-red-400">page_path</span>: <span class="text-yellow-400">to</span>
+      });
+    },
+    
+    <span class="text-red-400">error</span>: (<span class="text-yellow-400">error</span>, <span class="text-yellow-400">to</span>, <span class="text-yellow-400">from</span>) => {
+      <span class="text-yellow-400">console</span>.<span class="text-yellow-400">error</span>(<span class="text-green-3">'Navigation error:'</span>, <span class="text-yellow-400">error</span>);
+      <span class="text-yellow-400">document</span>.<span class="text-yellow-400">body</span>.<span class="text-yellow-400">classList</span>.<span class="text-yellow-400">remove</span>(<span class="text-green-300">'navigating'</span>);
+      
+      <span class="text-green-400">// Fallback to full page load</span>
+      <span class="text-yellow-400">location</span>.<span class="text-yellow-400">href</span> = <span class="text-yellow-400">to</span>;
+    }
+  }
+});</code></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <component source="docs-footer"></component>
+</body>
+</html>

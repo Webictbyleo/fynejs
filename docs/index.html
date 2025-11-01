@@ -40,7 +40,7 @@
   <link rel="stylesheet" href="./styles.generated.css" />
   
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/fynejs@1.0.14/dist/x-tool.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
   <script src="./shared/navigation.js" defer></script>
   <script src="./shared/footer.js" defer></script>
   <script src="./demo-loader.js" defer></script>
@@ -162,10 +162,11 @@
   }
   </script>
 </head>
-<body class="bg-white text-gray-900 antialiased" x-data="{ mobileMenuOpen: false }">
-  
+<body class="bg-white text-gray-900 antialiased" 
+x-data="{ mobileMenuOpen: false }"
+>
   <!-- Navigation -->
-  <component source="docs-nav" x-prop="{page:'index'}"></component>
+  <component  source="docs-nav" x-prop="{page: 'index'}"></component>
 
   <!-- Hero Section -->
   <section class="relative pt-20 sm:pt-32 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -188,7 +189,7 @@
         </div>
 
         <!-- Main Heading -->
-        <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
+        <h1 data-vt='title' class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
           Fast Reactive UI<br />
           <span class="relative">
             For The Web
@@ -234,7 +235,7 @@
   </section>
 
   <!-- Interactive Demo Section -->
-  <section class="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+  <section x-intersect:enter.once="$target.querySelector('#showcase-demo').setAttribute('source','interactive-showcase')" class="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
     <div class="container mx-auto max-w-7xl">
       <div class="text-center mb-12 sm:mb-16">
         <h2 class="text-4xl sm:text-5xl font-black text-gray-900 mb-4 sm:mb-6">See It In Action</h2>
@@ -303,7 +304,7 @@ XTool.registerComponent({
             </div>
             
             <div class="w-full max-w-lg">
-              <component source="interactive-showcase"></component>
+              <component id="showcase-demo"></component>
             </div>
           </div>
         </div>
@@ -317,115 +318,146 @@ XTool.registerComponent({
       <div class="text-center mb-12 sm:mb-20">
         <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-4 sm:mb-6">Why Choose FyneJS?</h2>
         <p class="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-          Enterprise-grade features in just 11KB. All the power, none of the complexity.
+          Enterprise-grade features in just ~18.6KB. All the power, none of the complexity.
         </p>
       </div>
 
-      <!-- Main Features Grid -->
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 sm:mb-20">
-        <!-- Feature 1: Zero Build -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+      <!-- Hero Features (TypeScript + Router) -->
+      <div class="grid md:grid-cols-2 gap-8 mb-12 max-w-5xl mx-auto">
+        <!-- Feature: TypeScript Without Build -->
+        <div class="group bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-3xl border-3 border-blue-200 hover:border-purple-500 hover:shadow-2xl transition-all duration-300 h-full relative overflow-hidden">
+          <div class="absolute top-3 right-3 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-bold rounded-full shadow-lg">
+            NEW & UNIQUE
+          </div>
+          <div class="w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mb-6 shadow-xl">
+            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
             </svg>
           </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Zero Build Required</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            No webpack, Vite, or compilation. Drop in a script tag and start building immediately.
+          <h3 class="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">TypeScript Without Build</h3>
+          <p class="text-gray-700 leading-relaxed mb-6 font-medium text-lg">
+            Run <code class="px-2 py-0.5 bg-white rounded text-blue-600">.ts</code> files directly in the browser. 
+            Token-based type stripping in ~74ms—<strong>no other reactive framework has this!</strong>
           </p>
-          <div class="bg-gray-100 p-3 rounded-lg font-mono text-xs text-gray-800">
-            &lt;script src="https://cdn.jsdelivr.net/npm/fynejs"&gt;
+          <div class="flex flex-wrap gap-2">
+            <span class="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 rounded-lg text-sm font-bold">Instant Stripping</span>
+            <span class="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 rounded-lg text-sm font-bold">Zero Config</span>
+            <span class="px-3 py-1.5 bg-gradient-to-r from-blue-100 to-purple-100 text-purple-700 rounded-lg text-sm font-bold">Browser Native</span>
           </div>
         </div>
 
-        <!-- Feature 2: Automatic Memory Management -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clip-rule="evenodd"/>
+        <!-- Feature: SPA Router -->
+        <div class="group bg-gradient-to-br from-gray-50 to-gray-100 p-8 rounded-3xl border-3 border-gray-300 hover:border-black hover:shadow-2xl transition-all duration-300 h-full">
+          <div class="w-20 h-20 bg-black rounded-2xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6 shadow-xl">
+            <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
             </svg>
           </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Auto Memory Cleanup</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            Multi-layered cleanup prevents memory leaks. Event listeners, timers, observers—all handled automatically.
+          <h3 class="text-3xl font-black text-gray-900 mb-4">Built-in SPA Router</h3>
+          <p class="text-gray-700 leading-relaxed mb-6 font-medium text-lg">
+            Client-side routing with view transitions, intelligent prefetching, and navigation hooks—no additional libraries needed.
           </p>
           <div class="flex flex-wrap gap-2">
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">WeakMaps</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">AbortController</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Resource Tracking</span>
+            <span class="px-3 py-1.5 bg-gray-200 rounded-lg text-sm font-bold">View Transitions</span>
+            <span class="px-3 py-1.5 bg-gray-200 rounded-lg text-sm font-bold">Smart Prefetching</span>
+            <span class="px-3 py-1.5 bg-gray-200 rounded-lg text-sm font-bold">Navigation Hooks</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Features Section -->
+      <div class="mb-12 sm:mb-20">
+        <!-- Top 2 Features (2-column) -->
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+          <!-- Feature 1: Zero Build -->
+          <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
+            <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-4">Zero Build Required</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+              No webpack, Vite, or compilation. Drop in a script tag and start building immediately.
+            </p>
+            <div class="bg-gray-100 p-3 rounded-lg font-mono text-xs text-gray-800">
+              &lt;script src="https://cdn.jsdelivr.net/npm/fynejs"&gt;
+            </div>
+          </div>
+
+          <!-- Feature 2: Automatic Memory Management -->
+          <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
+            <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-4">Auto Memory Cleanup</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+              Multi-layered cleanup prevents memory leaks. Event listeners, timers, observers—all handled automatically.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">WeakMaps</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">AbortController</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Resource Tracking</span>
+            </div>
           </div>
         </div>
 
-        <!-- Feature 3: Built-in Performance -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-            </svg>
+        <!-- Bottom 3 Features (3-column) -->
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Feature 3: Built-in Performance -->
+          <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
+            <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-4">Built-in Performance</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+              Static directive optimization, computed caching, batched DOM updates, and event delegation built-in.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Static Analysis</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">RAF Batching</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Event Delegation</span>
+            </div>
           </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Built-in Performance</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            Static directive optimization, computed caching, batched DOM updates, and event delegation built-in.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Static Analysis</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">RAF Batching</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Event Delegation</span>
-          </div>
-        </div>
 
-        <!-- Feature 4: Dynamic Components -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zM14 5a2 2 0 012-2h1a2 2 0 012 2v6.5a1.5 1.5 0 01-3 0V7a1 1 0 00-2 0v4.5a1.5 1.5 0 01-3 0V5z"/>
-            </svg>
+          <!-- Feature 4: Dynamic Components -->
+          <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
+            <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zM14 5a2 2 0 012-2h1a2 2 0 012 2v6.5a1.5 1.5 0 01-3 0V7a1 1 0 00-2 0v4.5a1.5 1.5 0 01-3 0V5z"/>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-4">Dynamic Switching</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+              Switch components instantly by changing source attribute—like img src. Includes lazy loading and preload strategies.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Dynamic Switching</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Lazy Loading</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Preload Strategies</span>
+            </div>
           </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Dynamic Switching</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            Switch components instantly by changing source attribute—like img src. Includes lazy loading and preload strategies.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Dynamic Switching</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Lazy Loading</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Preload Strategies</span>
-          </div>
-        </div>
 
-        <!-- Feature 5: Component System -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
-            </svg>
-          </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Enterprise Components</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            Reusable components with reactive props, lifecycle hooks, slots, and HTML templates with IDE syntax highlighting.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Reactive Props</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Lifecycle Hooks</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Slots</span>
-          </div>
-        </div>
-
-        <!-- Feature 6: Alpine.js Drop-in -->
-        <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
-          <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
-            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-            </svg>
-          </div>
-          <h3 class="text-2xl font-black text-gray-900 mb-4">Alpine.js Drop-in</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">
-            Zero migration effort. Enhanced performance, more features, better memory management—100% Alpine.js compatible.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">100% Compatible</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Zero Migration</span>
-            <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Enhanced Features</span>
+          <!-- Feature 5: Component System -->
+          <div class="group bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300 h-full">
+            <div class="w-16 h-16 bg-black rounded-xl flex items-center justify-center group-hover:bg-gray-800 transition-colors duration-300 mb-6">
+              <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/>
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-4">Enterprise Components</h3>
+            <p class="text-gray-600 leading-relaxed mb-6">
+              Reusable components with reactive props, lifecycle hooks, slots, and HTML templates with IDE syntax highlighting.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Reactive Props</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Lifecycle Hooks</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Slots</span>
+            </div>
           </div>
         </div>
       </div>
@@ -465,11 +497,11 @@ XTool.registerComponent({
         <div class="bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300">
           <div class="w-14 h-14 bg-black rounded-xl flex items-center justify-center mb-6">
             <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+              <path d="M3 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
             </svg>
           </div>
-          <h4 class="text-xl font-black text-gray-900 mb-3">Just 11KB Gzipped</h4>
-          <p class="text-gray-600">7x smaller than Vue, 4x smaller than React. Complete framework in a single optimized file.</p>
+          <h4 class="text-xl font-black text-gray-900 mb-3">Just ~18.6KB Gzipped</h4>
+          <p class="text-gray-600">4x smaller than Vue, 2.5x smaller than React. Complete framework with TypeScript stripping, router, and enterprise features in a single optimized file.</p>
         </div>
 
         <div class="bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300">
@@ -478,7 +510,7 @@ XTool.registerComponent({
               <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
             </svg>
           </div>
-          <h4 class="text-xl font-black text-gray-900 mb-3">25+ Event Modifiers</h4>
+          <h4 class="text-xl font-black text-gray-900 mb-3">35+ Event Modifiers</h4>
           <p class="text-gray-600">Most comprehensive event system. Key combinations, mouse buttons, touch gestures, timing controls.</p>
         </div>
 
@@ -499,7 +531,7 @@ XTool.registerComponent({
             </svg>
           </div>
           <h4 class="text-xl font-black text-gray-900 mb-3">Mustache Interpolation</h4>
-          <p class="text-gray-600">Inline text bindings with {{ like this }} anywhere in templates. Works alongside x-text/x-html.</p>
+          <p class="text-gray-600">Inline text bindings with \{{ like this }} anywhere in templates. Works alongside x-text/x-html.</p>
         </div>
 
         <div class="bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300">
@@ -695,6 +727,13 @@ XTool.registerComponent({
               <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
             </tr>
+            <tr class="hover:bg-blue-50 bg-blue-50/50 transition-colors duration-200">
+              <td class="px-8 py-6 text-base font-bold text-gray-900">Browser-Native TypeScript (.ts files)</td>
+              <td class="px-8 py-6 text-center text-2xl font-bold text-blue-600">✅</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+            </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Comprehensive Auto-Cleanup</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
@@ -704,24 +743,17 @@ XTool.registerComponent({
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Event Modifiers</td>
-              <td class="px-8 py-6 text-center font-bold text-black">✅ 25+</td>
-              <td class="px-8 py-6 text-center font-semibold">✅ 8</td>
-              <td class="px-8 py-6 text-center font-semibold">✅ 6</td>
+              <td class="px-8 py-6 text-center font-bold text-black">✅ 35+</td>
+              <td class="px-8 py-6 text-center font-semibold">✅ 30</td>
+              <td class="px-8 py-6 text-center font-semibold">✅ 29</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Lifecycle Hooks</td>
               <td class="px-8 py-6 text-center font-bold text-black">✅ 7</td>
-              <td class="px-8 py-6 text-center font-semibold">⚠️ 2</td>
+              <td class="px-8 py-6 text-center font-semibold">⚠️ 1</td>
               <td class="px-8 py-6 text-center font-semibold">✅ 8</td>
               <td class="px-8 py-6 text-center font-semibold">✅ 3</td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors duration-200 bg-gray-100">
-              <td class="px-8 py-6 text-base font-bold text-gray-900">Bundle Size (gzipped)</td>
-              <td class="px-8 py-6 text-center font-black text-xl text-black bg-white rounded-lg">~12KB</td>
-              <td class="px-8 py-6 text-center font-semibold">~16KB</td>
-              <td class="px-8 py-6 text-center font-semibold">~76KB</td>
-              <td class="px-8 py-6 text-center font-semibold">~48KB</td>
             </tr>
           </tbody>
         </table>
@@ -731,14 +763,6 @@ XTool.registerComponent({
 
   <!-- Footer -->
   <component source="docs-footer"></component>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-1ZJ9J95NPP');
-</script>
 </body>
 </html>

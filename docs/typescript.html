@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TypeScript Support - FyneJS</title>
+  <meta name="description" content="Run TypeScript components directly in the browser without any build step. FyneJS features blazing-fast type stripping that transforms .ts files on the fly." />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://fynejs.com/typescript.html" />
+  <meta property="og:title" content="TypeScript Without Build Steps - FyneJS" />
+  <meta property="og:description" content="Run TypeScript components directly in the browser. No compilation, no bundling—just pure TypeScript with instant type stripping." />
+  <meta property="og:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta property="og:site_name" content="FyneJS Documentation" />
+  <meta property="article:section" content="Documentation" />
+  <meta property="article:tag" content="TypeScript" />
+  <meta property="article:tag" content="Zero Build" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://fynejs.com/typescript.html" />
+  <meta name="twitter:title" content="TypeScript Without Build Steps - FyneJS" />
+  <meta name="twitter:description" content="Run TypeScript components directly in the browser with instant type stripping. No bundler needed." />
+  <meta name="twitter:image" content="https://fynejs.com/assets/og-image.jpg" />
+  <meta name="twitter:creator" content="@fynejs" />
+
+  <!-- Enhanced SEO -->
+  <meta name="keywords" content="typescript without build, type stripping, browser typescript, no compilation typescript, typescript components, zero build typescript, instant typescript, fynejs typescript" />
+  <meta name="author" content="FyneJS Documentation Team" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <link rel="apple-touch-icon" href="./assets/logo-small.png" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./styles.generated.css" />
+  
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
+  <script src="./shared/navigation.js" defer></script>
+  <script src="./shared/footer.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+  
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "TypeScript Without Build Steps - FyneJS",
+    "description": "Run TypeScript components directly in the browser without any build step. FyneJS features blazing-fast type stripping that transforms .ts files on the fly.",
+    "author": {
+      "@type": "Organization",
+      "name": "FyneJS Documentation Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "FyneJS",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://fynejs.com/assets/logo-small.png"
+      }
+    },
+    "datePublished": "2025-11-01",
+    "dateModified": "2025-11-01",
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": "https://fynejs.com/typescript.html"
+    },
+    "keywords": ["typescript", "type stripping", "zero build", "browser typescript", "fynejs"],
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "FyneJS",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+
+<body class="bg-white text-gray-900 font-sans">
+  <!-- Navigation -->
+  <component source="docs-nav" x-prop="{ page: 'typescript' }"></component>
+
+  <!-- Hero Section -->
+  <section class="pt-24 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-blue-50 to-white">
+    <div class="container mx-auto max-w-5xl">
+      <div class="text-center mb-16">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-full text-sm font-medium mb-8">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+          </svg>
+          Game-Changing Feature
+        </div>
+        
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+          TypeScript
+          <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Without Build Steps</span>
+        </h1>
+        
+        <p class="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+          Run <code class="px-2 py-1 bg-gray-100 rounded text-blue-600">.ts</code> files directly in the browser. 
+          <span class="font-bold text-gray-900">No compilation, no bundling, no setup</span>—just pure TypeScript with instant type stripping.
+        </p>
+        
+        <!-- Key Benefits -->
+        <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-sm text-gray-600">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Instant Type Stripping</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Zero Configuration</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            <span class="font-medium">Blazing Fast</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="pb-20 px-4 sm:px-6 lg:px-8">
+    <div class="container mx-auto max-w-4xl">
+
+      <!-- Why This Matters Section -->
+      <section class="mb-20">
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 lg:p-12 border-2 border-blue-200">
+          <h2 class="text-3xl sm:text-4xl font-black text-gray-900 mb-6">🚀 Why This Is Revolutionary</h2>
+          <div class="space-y-4 text-lg text-gray-700 leading-relaxed">
+            <p class="font-semibold">
+              FyneJS is the <strong class="text-blue-600">first reactive framework</strong> that lets you run TypeScript component files 
+              directly in the browser without any compilation or bundling step.
+            </p>
+            <p>
+              While other frameworks require complex build setups (Webpack, Vite, Rollup, tsc, etc.) and watch processes 
+              to use TypeScript, FyneJS strips types <strong>instantly in the browser</strong>—as fast as the browser 
+              can parse JavaScript.
+            </p>
+            <div class="bg-white rounded-xl p-6 border border-blue-200 mt-6">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 class="font-bold text-red-600 mb-3 flex items-center gap-2">
+                    <span class="text-2xl">❌</span> Traditional Approach
+                  </h3>
+                  <ul class="space-y-2 text-sm text-gray-600">
+                    <li>• Install TypeScript compiler</li>
+                    <li>• Configure tsconfig.json</li>
+                    <li>• Set up build tool (Webpack/Vite)</li>
+                    <li>• Watch mode for development</li>
+                    <li>• Wait for compilation on each change</li>
+                    <li>• Deal with source maps</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 class="font-bold text-green-600 mb-3 flex items-center gap-2">
+                    <span class="text-2xl">✅</span> FyneJS Approach
+                  </h3>
+                  <ul class="space-y-2 text-sm text-gray-600">
+                    <li>• Write .ts files</li>
+                    <li>• Load with FyneJS.loadComponents()</li>
+                    <li>• <strong>That's it!</strong></li>
+                    <li>• Types stripped instantly</li>
+                    <li>• Reload page to see changes</li>
+                    <li>• No build step ever</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- How It Works -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">How It Works</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            FyneJS uses a high-performance token-based scanner that strips TypeScript types while preserving runtime behavior and code structure.
+          </p>
+        </div>
+
+        <div class="space-y-8">
+          <!-- Step 1 -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-blue-400 transition-colors">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+              <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                <span class="flex items-center justify-center w-8 h-8 bg-white text-blue-600 rounded-full font-black">1</span>
+                Write TypeScript Components
+              </h3>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">
+                Create your component files with full TypeScript support—interfaces, types, generics, everything.
+              </p>
+              <pre class="code-block"><code>// components/user-card.ts
+import { XTool, html } from 'fynejs';
+
+interface User {
+  name: string;
+  email: string;
+  role: 'admin' | 'user';
+}
+
+XTool.registerComponent({
+  name: 'user-card',
+  template: html\`
+    &lt;div class="card"&gt;
+      &lt;h2 x-text="user.name"&gt;&lt;/h2&gt;
+      &lt;p x-text="user.email"&gt;&lt;/p&gt;
+      &lt;span x-text="user.role"&gt;&lt;/span&gt;
+    &lt;/div&gt;
+  \`,
+  data: {
+    user: { name: 'John', email: 'john@example.com', role: 'admin' } as User
+  }
+});</code></pre>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-blue-400 transition-colors">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+              <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                <span class="flex items-center justify-center w-8 h-8 bg-white text-green-600 rounded-full font-black">2</span>
+                Load with FyneJS
+              </h3>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">
+                Use <code class="px-2 py-1 bg-gray-100 rounded">loadComponents()</code> to load your .ts files.
+                FyneJS automatically detects the TypeScript extension and strips types on the fly.
+              </p>
+              <pre class="code-block"><code>// In your main HTML or setup file
+XTool.loadComponents([
+  { path: 'components/user-card.ts', mode: 'preload' },
+  { path: 'components/dashboard.ts', mode: 'defer' },
+  { path: 'components/modal.ts', mode: 'lazy' }
+]);
+
+// Or load a single component dynamically
+await XTool.loadComponent('components/user-card.ts');</code></pre>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden hover:border-blue-400 transition-colors">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+              <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                <span class="flex items-center justify-center w-8 h-8 bg-white text-purple-600 rounded-full font-black">3</span>
+                Instant Execution
+              </h3>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">
+                Types are stripped using a single-pass tokenizer with linked token tracking for context awareness.
+                The JavaScript is executed immediately—no compilation, no waiting, no build process.
+              </p>
+              <pre class="code-block"><code>&lt;!-- Use the component immediately --&gt;
+&lt;component source="user-card"&gt;&lt;/component&gt;
+
+&lt;!-- Dynamic loading example --&gt;
+&lt;component x:source="'user-card'"&gt;&lt;/component&gt;</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Setup Guide -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">Complete Setup Guide</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            Follow this pattern for organizing your multi-page FyneJS projects with TypeScript.
+          </p>
+        </div>
+
+        <div class="space-y-8">
+          <!-- demo-loader.js pattern -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 p-8">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Step 1: Create Setup File</h3>
+                <p class="text-gray-600 mb-4">
+                  Create a central <code class="px-2 py-1 bg-gray-100 rounded">demo-loader.js</code> or 
+                  <code class="px-2 py-1 bg-gray-100 rounded">app-setup.js</code> file that initializes FyneJS, 
+                  loads all components, and handles routing.
+                </p>
+              </div>
+            </div>
+            
+            <pre class="code-block"><code>// demo-loader.js or app-setup.js
+(function() {
+  // List of component files (mix .ts and .js)
+  const componentFiles = [
+    'interactive-showcase.ts',  // TypeScript component
+    'user-dashboard.ts',         // TypeScript component
+    'data-chart.ts',            // TypeScript component
+    'shopping-cart.js',         // JavaScript component
+    'modal.js'                  // JavaScript component
+  ];
+  
+  const basePath = 'components/';
+  
+  // Initialize FyneJS
+  XTool.init({
+    container: 'body',
+    debug: false,
+    router: {
+      enabled: true,
+      before: (to, from, info) => {
+        console.log(\`Navigating from \${from} to \${to}\`);
+        return true; // Allow navigation
+      },
+      after: (to, from, info) => {
+        console.log(\`Navigated to: \${to}\`);
+      }
+    }
+  });
+  
+  // Load all components
+  XTool.loadComponents(
+    componentFiles.map(file => ({
+      path: basePath + file,
+      mode: 'preload'  // or 'defer' or 'lazy'
+    }))
+  );
+  
+  // Optional: Add code block enhancement
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('pre > code').forEach(block => {
+      // Add line numbers, syntax highlighting, etc.
+    });
+  });
+})();</code></pre>
+          </div>
+
+          <!-- HTML Pages -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 p-8">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Step 2: Include in HTML Pages</h3>
+                <p class="text-gray-600 mb-4">
+                  Every HTML page that uses FyneJS should include the framework script and your setup file.
+                </p>
+              </div>
+            </div>
+            
+            <pre class="code-block"><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8" /&gt;
+  &lt;title&gt;My FyneJS App&lt;/title&gt;
+  
+  &lt;!-- Styles --&gt;
+  &lt;link rel="stylesheet" href="./styles.css" /&gt;
+  
+  &lt;!-- FyneJS Framework --&gt;
+  &lt;script src="../dist/x-tool.min.js" defer&gt;&lt;/script&gt;
+  
+  &lt;!-- Shared Components --&gt;
+  &lt;script src="./shared/navigation.js" defer&gt;&lt;/script&gt;
+  &lt;script src="./shared/footer.js" defer&gt;&lt;/script&gt;
+  
+  &lt;!-- Your Setup File (loads TypeScript components) --&gt;
+  &lt;script src="./demo-loader.js" defer&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;!-- Navigation component --&gt;
+  &lt;component source="docs-nav" x-prop="{ page: 'home' }"&gt;&lt;/component&gt;
+  
+  &lt;!-- Page content --&gt;
+  &lt;main&gt;
+    &lt;!-- TypeScript component loaded automatically --&gt;
+    &lt;component source="interactive-showcase"&gt;&lt;/component&gt;
+  &lt;/main&gt;
+  
+  &lt;!-- Footer component --&gt;
+  &lt;component source="docs-footer"&gt;&lt;/component&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+          </div>
+
+          <!-- Component Organization -->
+          <div class="bg-white rounded-2xl border-2 border-gray-200 p-8">
+            <div class="flex items-start gap-4 mb-6">
+              <div class="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Step 3: Organize Components</h3>
+                <p class="text-gray-600 mb-4">
+                  Structure your components logically. Mix TypeScript and JavaScript files as needed.
+                </p>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+              <h4 class="font-bold text-gray-900 mb-3">Recommended Structure:</h4>
+              <pre class="code-block bg-white"><code>project/
+├── index.html
+├── about.html
+├── contact.html
+├── demo-loader.js          # Central setup
+├── components/
+│   ├── page-specific/
+│   │   ├── hero-section.ts      # TypeScript
+│   │   ├── pricing-table.ts     # TypeScript
+│   │   └── testimonials.js      # JavaScript
+│   ├── features/
+│   │   ├── user-dashboard.ts
+│   │   ├── analytics-widget.ts
+│   │   └── notification-center.ts
+│   └── ui/
+│       ├── modal.js
+│       ├── tooltip.js
+│       └── dropdown.ts
+└── shared/
+    ├── navigation.js        # Shared across all pages
+    └── footer.js           # Shared across all pages</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Performance -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">⚡ Performance</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            Single-pass tokenization with optimized character testing delivers exceptional performance.
+          </p>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 border-2 border-blue-200">
+          <div class="text-center mb-8">
+            <div class="text-5xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">~34ms</div>
+            <div class="text-lg text-gray-700 font-medium">Blazingly Fast: 983-line TypeScript Component</div>
+            <div class="text-sm text-gray-600 mt-2">
+              Real-world performance with the <code class="px-2 py-0.5 bg-white rounded">interactive-showcase.ts</code> component
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 border border-blue-200">
+            <h4 class="font-bold text-gray-900 mb-3">Benchmark Details:</h4>
+            <ul class="text-sm text-gray-700 space-y-2">
+              <li>• <strong>File:</strong> 983 lines of TypeScript with interfaces, types, and complex generics</li>
+              <li>• <strong>Average Time:</strong> ~34ms (including file read, tokenization, and stripping)</li>
+              <li>• <strong>Implementation:</strong> Token-based scanner with linked token tracking</li>
+              <li>• <strong>Memory:</strong> Efficient string handling with incremental concatenation</li>
+              <li>• <strong>Note:</strong> Timing varies based on system load, but consistently fast</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+          <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            Performance Note
+          </h3>
+          <p class="text-gray-700 text-sm leading-relaxed">
+            Type stripping happens once when the component is loaded. After that, the component runs as pure JavaScript with zero overhead.
+            The stripping time includes file I/O and is far faster than traditional compilation workflows that take seconds or minutes.
+          </p>
+        </div>
+      </section>
+
+      <!-- Limitations -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">Usage Considerations</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            Understanding the type stripping implementation and its characteristics.
+          </p>
+        </div>
+
+        <div class="space-y-6">
+          <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-blue-900 mb-2">Best Suited for Well-Formed Code</h3>
+                <p class="text-blue-800 text-sm">
+                  The stripper works best with well-formed TypeScript code. It does not perform full TypeScript parsing
+                  but focuses on type syntax removal while preserving runtime behavior and code structure.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-purple-900 mb-2">Handles Most TypeScript Patterns</h3>
+                <p class="text-purple-800 text-sm mb-3">
+                  The implementation handles most common TypeScript patterns reliably and tries to handle very complex type constructs.
+                  <strong>The simpler the types, the better the results.</strong>
+                </p>
+                <div class="bg-white rounded-lg p-4 border border-purple-200">
+                  <h4 class="font-bold text-purple-900 text-xs mb-2">What Gets Removed:</h4>
+                  <ul class="text-xs text-purple-800 space-y-1">
+                    <li>• Type annotations (variables, parameters, return types)</li>
+                    <li>• Interface, namespace, declare, and type alias declarations</li>
+                    <li>• Generics in functions and classes</li>
+                    <li>• Import/export declarations (including regular ones, not just type-only)</li>
+                    <li>• Non-null assertion operators (!)</li>
+                    <li>• Access modifiers (public, private, protected)</li>
+                    <li>• Function overload signatures</li>
+                    <li>• Type assertions ('as' syntax)</li>
+                    <li>• Enum declarations</li>
+                    <li>• implements clauses in class declarations</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-amber-900 mb-2">No Type Checking or Runtime Type Info</h3>
+                <p class="text-amber-800 text-sm">
+                  This is not suitable for runtime type information preservation—types are completely removed.
+                  No type checking is performed; use an IDE with TypeScript support (VS Code, WebStorm) for type checking during development.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 border-2 border-gray-300 rounded-2xl p-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Consider File Size</h3>
+                <p class="text-gray-700 text-sm">
+                  While the stripper is fast, consider file size when processing large codebases. Browser environments work best with
+                  reasonably-sized component files. You decide what's appropriate for your use case.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Comparison -->
+      <section class="mb-20">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl sm:text-4xl font-black mb-4 text-black">Framework Comparison</h2>
+          <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+            No other reactive framework offers this capability.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl border-3 border-black overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-black text-white">
+              <tr>
+                <th class="px-6 py-4 text-left font-black">Framework</th>
+                <th class="px-6 py-4 text-center font-black">TypeScript Support</th>
+                <th class="px-6 py-4 text-center font-black">Build Required</th>
+                <th class="px-6 py-4 text-center font-black">Browser-Native .ts</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr class="hover:bg-blue-50 bg-blue-50/50">
+                <td class="px-6 py-4 font-bold text-gray-900">FyneJS</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">❌</td>
+                <td class="px-6 py-4 text-center text-2xl font-bold text-blue-600">✅</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 font-semibold text-gray-700">Alpine.js</td>
+                <td class="px-6 py-4 text-center text-2xl">⚠️</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">❌</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 font-semibold text-gray-700">Vue</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">❌</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 font-semibold text-gray-700">React</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">❌</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 font-semibold text-gray-700">Svelte</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">✅</td>
+                <td class="px-6 py-4 text-center text-2xl">❌</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Get Started -->
+      <section class="text-center">
+        <div class="bg-gradient-to-r from-black to-gray-800 rounded-3xl p-12">
+          <h2 class="text-3xl sm:text-4xl font-black text-white mb-4">Ready to Try It?</h2>
+          <p class="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            Start writing TypeScript components without any build setup today.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="getting-started.html" 
+               class="px-8 py-4 bg-white text-black rounded-xl hover:bg-gray-100 transition-colors font-bold text-lg">
+              Get Started →
+            </a>
+            <a href="examples.html" 
+               class="px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl hover:bg-white/10 transition-colors font-bold text-lg">
+              View Examples
+            </a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <component source="docs-footer"></component>
+
+</body>
+</html>

@@ -45,7 +45,7 @@
   <link rel="stylesheet" href="./styles.generated.css" />
   
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/fynejs@1.0.14/dist/x-tool.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
   <script src="./shared/navigation.js" defer></script>
   <script src="./shared/footer.js" defer></script>
   <script src="./demo-loader.js" defer></script>
@@ -98,15 +98,17 @@
           </svg>
           Complete Reference
         </div>
+        <div data-vt='title'>
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
+            FyneJS
+            <span class="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">Directives</span>
+          </h1>
+
+          <p class="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+            Complete reference guide to all FyneJS directives. Build reactive UIs with simple, declarative attributes.
+          </p>
+        </div>
         
-        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 mb-6 leading-tight">
-          FyneJS
-          <span class="bg-gradient-to-r from-black to-gray-600 bg-clip-text text-transparent">Directives</span>
-        </h1>
-        
-        <p class="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-          Complete reference guide to all FyneJS directives. Build reactive UIs with simple, declarative attributes.
-        </p>
         
         <!-- Quick stats -->
         <div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 text-sm text-gray-600">
@@ -187,13 +189,13 @@
             <!-- Mustache -->
             <div class="directive-section p-4 sm:p-6 lg:p-8 bg-gray-50/50 rounded-2xl border border-gray-100">
               <h3 class="text-xl sm:text-2xl lg:text-3xl font-black mb-3 sm:mb-4 text-black flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <span class="directive-badge inline-block px-3 py-1 bg-black text-white text-sm font-mono rounded-lg">{{ ... }}</span>
+                <span class="directive-badge inline-block px-3 py-1 bg-black text-white text-sm font-mono rounded-lg">\{{ ... }}</span>
                 <span class="text-lg sm:text-xl lg:text-2xl">Mustache Text Interpolation</span>
               </h3>
               <p class="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg leading-relaxed">Embed values inline without attributes. Escapes HTML by default.</p>
               <div class="code-example">
                 <pre class="code-block overflow-x-auto" data-lang="html"><code>&lt;div x-data="{ first: 'Ada', last: 'Lovelace' }"&gt;
-  &lt;p&gt;Hello, {{ first }} {{ last }}!&lt;/p&gt;
+  &lt;p&gt;Hello, \{{ first }} \{{ last }}!&lt;/p&gt;
 &lt;/div&gt;</code></pre>
               </div>
             </div>
@@ -258,16 +260,49 @@
                 List Rendering
               </h3>
               <p class="text-gray-600 mb-6 text-lg">
-                Renders a list of elements from an array. Supports complex iteration patterns.
+                Renders a list of elements from an array. Supports complex iteration patterns with stable diffing via x-key.
               </p>
               <div class="code-example">
                 <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ items: ['Apple', 'Banana', 'Cherry'] }"&gt;
   &lt;ul&gt;
+    &lt;!-- Basic loop with index key --&gt;
     &lt;li x-for="(item, index) in items" :key="index"&gt;
       &lt;span x-text="`${index + 1}. ${item}`"&gt;&lt;/span&gt;
     &lt;/li&gt;
   &lt;/ul&gt;
+&lt;/div&gt;
+
+&lt;!-- Advanced: Using x-key for stable diffing with objects --&gt;
+&lt;div x-data="{ 
+  users: [
+    { id: 1, name: 'Alice', email: 'alice@example.com' },
+    { id: 2, name: 'Bob', email: 'bob@example.com' }
+  ]
+}"&gt;
+  &lt;template x-for="user in users" x-key="user.id"&gt;
+    &lt;div class="user-card"&gt;
+      &lt;h3 x-text="user.name"&gt;&lt;/h3&gt;
+      &lt;p x-text="user.email"&gt;&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/template&gt;
 &lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-green-50 border border-green-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-green-800 font-medium mb-1">x-key for Stable Diffing</p>
+                    <p class="text-green-700 text-sm mb-2">
+                      Use <code class="bg-green-100 px-1 rounded">x-key</code> on your template element to provide stable keys for efficient list updates. This prevents unnecessary DOM recreation when items are reordered or modified.
+                    </p>
+                    <p class="text-green-700 text-sm">
+                      When working with objects, use unique properties like <code class="bg-green-100 px-1 rounded">x-key="item.id"</code> rather than array indices for better performance.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -305,6 +340,72 @@
      x-init="time = new Date().toLocaleTimeString()"&gt;
   &lt;p&gt;Page loaded at: &lt;span x-text="time"&gt;&lt;/span&gt;&lt;/p&gt;
 &lt;/div&gt;</code></pre>
+              </div>
+            </div>
+
+            <!-- x-intersect -->
+            <div class="directive-section">
+              <h3 class="text-2xl font-black mb-4 text-black flex items-center gap-3">
+                <span class="directive-badge">x-intersect:enter</span>
+                <span class="directive-badge">x-intersect:leave</span>
+                Intersection Observer
+              </h3>
+              <p class="text-gray-600 mb-6 text-lg">
+                Trigger actions when elements enter or leave the viewport using the Intersection Observer API.
+              </p>
+              <div class="code-example">
+                <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ visible: false, count: 0 }"&gt;
+  &lt;!-- Trigger when entering viewport --&gt;
+  &lt;div x-intersect:enter="visible = true; console.log('Element entered!')"
+       class="h-64 bg-blue-100 flex items-center justify-center"&gt;
+    &lt;span x-text="visible ? 'I am visible!' : 'Scroll to see me'"&gt;&lt;/span&gt;
+  &lt;/div&gt;
+  
+  &lt;!-- Trigger when leaving viewport --&gt;
+  &lt;div x-intersect:leave="console.log('Element left viewport')"
+       class="h-32 bg-red-100"&gt;
+    Scroll past me!
+  &lt;/div&gt;
+  
+  &lt;!-- With modifiers --&gt;
+  &lt;div x-intersect:enter.once.rootMargin-100px="count++"
+       class="h-48 bg-green-100"&gt;
+    &lt;p&gt;Triggered &lt;span x-text="count"&gt;&lt;/span&gt; times&lt;/p&gt;
+    &lt;p&gt;(Only once, with 100px margin)&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-purple-800 font-medium mb-1">Available Modifiers</p>
+                    <div class="text-purple-700 text-sm space-y-1">
+                      <p><code class="bg-purple-100 px-1 rounded">.once</code> - Trigger only once</p>
+                      <p><code class="bg-purple-100 px-1 rounded">.rootMargin-{pixels}px</code> - Adjust detection area (e.g., <code class="bg-purple-100 px-1 rounded">.rootMargin-50px</code>)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-4">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-blue-800 font-medium mb-1">Use Cases</p>
+                    <p class="text-blue-700 text-sm mb-2">
+                      Perfect for lazy loading images, triggering animations on scroll, infinite scrolling, analytics tracking, and progressive disclosure of content.
+                    </p>
+                    <p class="text-blue-700 text-sm">
+                      <strong>Learn more:</strong> <a href="api.html#intersect-callback-context" class="text-blue-600 hover:text-blue-800 underline">x-intersect Callback Context</a> for details on the payload passed to your callbacks.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -404,21 +505,42 @@
                 Event Listeners
               </h3>
               <p class="text-gray-600 mb-6 text-lg">
-                Attach event listeners to elements using the x-on directive.
+                Attach event listeners to elements using the x-on directive or the convenient @ shorthand.
               </p>
               <div class="code-example">
                 <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ count: 0 }"&gt;
-  &lt;!-- Click events --&gt;
+  &lt;!-- Long form syntax --&gt;
   &lt;button x-on:click="count++"&gt;Increment&lt;/button&gt;
   &lt;button x-on:click="count--"&gt;Decrement&lt;/button&gt;
   
+  &lt;!-- Shorthand @ syntax --&gt;
+  &lt;button @click="count++"&gt;Increment&lt;/button&gt;
+  &lt;button @click="count--"&gt;Decrement&lt;/button&gt;
+  
   &lt;!-- Form events --&gt;
-  &lt;input x-on:input="console.log($event.target.value)"&gt;
-  &lt;form x-on:submit.prevent="handleSubmit()"&gt;&lt;/form&gt;
+  &lt;input @input="console.log($event.target.value)"&gt;
+  &lt;form @submit.prevent="handleSubmit()"&gt;&lt;/form&gt;
   
   &lt;!-- Keyboard events --&gt;
-  &lt;input x-on:keydown.enter="search()"&gt;
+  &lt;input @keydown.enter="search()"&gt;
 &lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-blue-800 font-medium mb-1">@ Shorthand Syntax</p>
+                    <p class="text-blue-700 text-sm mb-2">
+                      You can use <code class="bg-blue-100 px-1 rounded">@event</code> as a shorthand for <code class="bg-blue-100 px-1 rounded">x-on:event</code>. Both syntaxes work identically and support all the same modifiers.
+                    </p>
+                    <p class="text-blue-700 text-sm">
+                      <strong>Learn more:</strong> <a href="api.html#event-callback-contexts" class="text-blue-600 hover:text-blue-800 underline">Event Callback Contexts</a> for details on $event, $target variables and function arguments.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -731,14 +853,5 @@ XTool.registerComponent({
 
   <!-- Footer -->
   <component source="docs-footer"></component>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-1ZJ9J95NPP');
-</script>
 </body>
 </html>

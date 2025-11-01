@@ -2,7 +2,7 @@
 (function(){
   // List of advanced example component scripts (Examples section only)
   const componentFiles = [
-    'interactive-showcase.js',
+    'interactive-showcase.ts',
      'advanced-todo.js',
      'timer-demo.js',
     'data-chart.js',
@@ -21,16 +21,16 @@
     'timeseries-resampler.js'
   ];
   const basePath = 'components/';
-
-  function immediateInit(){
-          const guessLang = (code) => {
+  function installCodeBlock(){
+    // Simple language guesser for code blocks
+    const guessLang = (code) => {
         const txt = code.trim();
         if (/^</.test(txt) && /<\/?(div|span|script|component|button)/i.test(txt)) return 'html';
         if (/\b(XTool|function|=>|const|let|var)\b/.test(txt)) return 'js';
         if (/npm install|yarn add|pnpm add/.test(txt)) return 'bash';
         return '';
       };
-      document.querySelectorAll('pre > code').forEach(codeEl => {
+        document.querySelectorAll('pre > code').forEach(codeEl => {
         const pre = codeEl.parentElement;
         if (pre.classList.contains('enhanced')) return;
         // Normalize classes for consistency
@@ -66,11 +66,40 @@
         fade.className = 'code-fade';
         pre.appendChild(fade);
       });
+  }
+  function immediateInit(){
+          
+    installCodeBlock();
     // Perform the core page init ASAP (without waiting for example components)
     if (!window.__XTOOL_INITIALIZED__){
       window.__XTOOL_INITIALIZED__ = true;
+      // Lets include the gtag script before the end body if not already present
+      const existingGtag = document.querySelector('script[src*="www.googletagmanager.com/gtag/js"]');
+      if (!existingGtag){
+        const gtagScript = document.createElement('script');
+        gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP';
+        gtagScript.async = true;
+        document.body.appendChild(gtagScript);
+        const gtagInit = document.createElement('script');
+        gtagInit.text = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-1ZJ9J95NPP');
+        `;
+        document.body.appendChild(gtagInit);
+      }
+
       try {
-        XTool.init({ container: 'body' });
+        XTool.init({ container: 'body',debug: true,router:{
+          enabled: true,
+          prefetchOnHover: true,
+          after: (to,from) => {
+            console.log('[x-tool] Route changed:', from, '→', to);
+            // Reinstall code blocks on route change (for dynamically added content)
+            setTimeout(installCodeBlock, 100); // Slight delay to allow DOM updates
+          }
+        }});
         console.log('[x-tool] Core page initialized (examples will load asynchronously).');
       } catch (e){
         console.error('[x-tool] Failed initial init', e);

@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 /* Docs custom styles migrated from inline <style> */
+
 html {
 	overflow-x: hidden;
 }
@@ -607,4 +608,89 @@ textarea:focus {
 
 .reference-table tr:hover {
 	background: #f8fafc;
+}
+
+/* ========================================
+	 View Transitions for SPA route changes
+	 Works for default 'root' and named 'route'
+	 ======================================== */
+@view-transition{
+	navigation: auto;
+}
+
+
+/* ========================================
+	 Per-element View Transition targeting
+	 - Opt-in via [data-vt="..."] attributes for portability
+	 - Plus lightweight defaults for docs layout classes
+	 ======================================== */
+@media (prefers-reduced-motion: no-preference) {
+	/* Attribute-based opt-in (recommended) */
+	[data-vt='header']  { view-transition-name: vt-header; }
+	[data-vt='nav']     { view-transition-name: vt-nav; }
+	[data-vt='title']   { view-transition-name: vt-title; }
+	[data-vt='main']    { view-transition-name: vt-main; }
+	[data-vt='sidebar'] { view-transition-name: vt-sidebar; }
+	[data-vt='footer']  { view-transition-name: vt-footer; }
+
+	/* Docs defaults (safe if unique per page) */
+	header.site-header { view-transition-name: vt-header; }
+	nav.site-nav      { view-transition-name: vt-nav; }
+	h1.page-title     { view-transition-name: vt-title; }
+	main              { view-transition-name: vt-main; }
+	aside.sidebar     { view-transition-name: vt-sidebar; }
+	footer.site-footer{ view-transition-name: vt-footer; }
+
+	/* Tailored animations for specific elements */
+	@keyframes xt-vt-fade {
+		from { opacity: 0; }
+		to   { opacity: 1; }
+	}
+	@keyframes xt-vt-fade-down {
+		from { opacity: 0; transform: translateY(-6px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+	@keyframes xt-vt-fade-up {
+		from { opacity: 0; transform: translateY(8px); }
+		to   { opacity: 1; transform: translateY(0); }
+	}
+	@keyframes xt-vt-slide-left {
+		from { opacity: .6; transform: translateX(12px); filter: blur(1px); }
+		to   { opacity: 1;  transform: translateX(0);    filter: none; }
+	}
+	@keyframes xt-vt-slide-right {
+		from { opacity: .6; transform: translateX(-12px); filter: blur(1px); }
+		to   { opacity: 1;  transform: translateX(0);     filter: none; }
+	}
+
+	/* Header: subtle fade from top */
+	::view-transition-new(vt-header) { animation: xt-vt-fade-down 260ms var(--xt-vt-ease, cubic-bezier(.2,0,0,1)) both; }
+	::view-transition-old(vt-header) { animation: xt-vt-fade 160ms ease both reverse; }
+
+	/* Nav: quick fade */
+	::view-transition-new(vt-nav) { animation: xt-vt-fade 200ms ease-out both; }
+	::view-transition-old(vt-nav) { animation: xt-vt-fade 120ms ease-in both reverse; }
+
+	/* Title: tiny scale + lift */
+	@keyframes xt-vt-title-in {
+		from { opacity: 0; transform: translateY(6px) scale(0.99); filter: blur(2px); }
+		to   { opacity: 1; transform: translateY(0)    scale(1);    filter: none; }
+	}
+	@keyframes xt-vt-title-out {
+		to   { opacity: 0; transform: translateY(-4px) scale(1.01); filter: blur(1px); }
+	}
+	::view-transition-new(vt-title) { animation: xt-vt-title-in 280ms var(--xt-vt-ease, cubic-bezier(.2,0,0,1)) 30ms both; }
+	::view-transition-old(vt-title) { animation: xt-vt-title-out 180ms ease both; }
+
+	/* Sidebar: horizontal slide */
+	::view-transition-new(vt-sidebar) { animation: xt-vt-slide-right 280ms var(--xt-vt-ease, cubic-bezier(.2,0,0,1)) 20ms both; }
+	::view-transition-old(vt-sidebar) { animation: xt-vt-slide-left 160ms ease both; }
+
+	/* Main: complement the root/route with a gentle rise */
+	::view-transition-new(vt-main) { animation: xt-vt-fade-up 280ms var(--xt-vt-ease, cubic-bezier(.2,0,0,1)) 40ms both; }
+	::view-transition-old(vt-main) { animation: xt-vt-fade 140ms ease both reverse; }
+
+	/* Footer: minimal fade */
+	::view-transition-new(vt-footer) { animation: xt-vt-fade 180ms ease-out both; }
+	::view-transition-old(vt-footer) { animation: xt-vt-fade 120ms ease-in both reverse; }
 }
