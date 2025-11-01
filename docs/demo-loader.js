@@ -67,9 +67,29 @@
       pre.appendChild(fade);
     });
   }
+
+  function installGtag() {
+    // Lets include the gtag script before the end body if not already present
+    const existingGtag = document.querySelector('script[src*="www.googletagmanager.com/gtag/js"]');
+    if (!existingGtag) {
+      const gtagScript = document.createElement('script');
+      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP';
+      gtagScript.async = true;
+      document.body.appendChild(gtagScript);
+      const gtagInit = document.createElement('script');
+      gtagInit.text = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-1ZJ9J95NPP');
+        `;
+      document.body.appendChild(gtagInit);
+    }
+  }
   function immediateInit() {
 
     installCodeBlock();
+    installGtag()
     // Perform the core page init ASAP (without waiting for example components)
     if (!window.__XTOOL_INITIALIZED__) {
       window.__XTOOL_INITIALIZED__ = true;
@@ -83,21 +103,7 @@
               // Reinstall code blocks on route change (for dynamically added content)
               setTimeout(installCodeBlock, 100); // Slight delay to allow DOM updates
               // Lets include the gtag script before the end body if not already present
-              const existingGtag = document.querySelector('script[src*="www.googletagmanager.com/gtag/js"]');
-              if (!existingGtag) {
-                const gtagScript = document.createElement('script');
-                gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-1ZJ9J95NPP';
-                gtagScript.async = true;
-                document.body.appendChild(gtagScript);
-                const gtagInit = document.createElement('script');
-                gtagInit.text = `
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'G-1ZJ9J95NPP');
-        `;
-                document.body.appendChild(gtagInit);
-              }
+              installGtag()
             }
           }
         });
