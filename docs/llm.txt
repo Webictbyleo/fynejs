@@ -32,6 +32,12 @@
 - `x-prop` - Reactive props for components
 - `<component source="name">` - Reusable component instances
 
+### Special Directives
+- `x-intersect` - Trigger actions when elements enter/leave viewport (IntersectionObserver)
+  - `x-intersect:enter` - Fire when element enters viewport
+  - `x-intersect:leave` - Fire when element leaves viewport
+  - `x-intersect:enter.once` - Fire only once when entering
+
 ## Event Modifiers
 
 ### Execution Control
@@ -99,13 +105,155 @@ The `html` tag enables:
 - Proper formatting and indentation
 - No new template syntax to learn - standard HTML
 
+## TypeScript Support
+
+FyneJS can run TypeScript component files directly in the browser without any build step:
+
+```javascript
+// Load TypeScript components (types are stripped automatically)
+XTool.loadComponents([
+  { path: 'components/user-card.ts', mode: 'preload' },
+  { path: 'components/dashboard.ts', mode: 'defer' }
+]);
+
+// Works with .js files too
+XTool.loadComponents([
+  { path: 'components/modal.js', mode: 'lazy' }
+]);
+```
+
+**Features:**
+- Instant type stripping (token-based, blazing fast)
+- No compilation or bundling required
+- Mix `.ts` and `.js` files freely
+- Full TypeScript syntax support (interfaces, types, generics, etc.)
+- Types removed at runtime, no type checking (use IDE for that)
+
+**Learn more:** https://fynejs.com/typescript.html
+
+## Built-in SPA Router
+
+FyneJS includes a complete single-page application router:
+
+```javascript
+  // Initialize FyneJS with router
+  XTool.init({
+    container: 'body',
+    debug: false,
+    router: {
+      enabled: true,
+      before: (to, from, info) => {
+        console.log(\`Navigating: \${from} → \${to}\`);
+        // Add analytics, auth checks, etc.
+        return true;
+      },
+      after: (to, from, info) => {
+        // Update active states, scroll to top, etc.
+        window.scrollTo(0, 0);
+      }
+    }
+  });
+```
+
+**Usage in HTML:**
+```html
+<!-- Basic routing -->
+<a href="/about.html" x-link>About</a>
+
+<!-- With prefetching -->
+<a href="/dashboard.html" x-link x-prefetch="hover">Dashboard</a>
+<a href="/profile.html" x-link x-prefetch="visible">Profile</a>
+```
+
+**Features:**
+- View transitions with native View Transitions API
+- Intelligent prefetching strategies (hover, visible, immediate)
+- Navigation lifecycle hooks
+- History/hash mode support
+- Programmatic navigation
+- No page reloads for smoother UX
+
+**Learn more:** https://fynejs.com/router.html
+
+## Multi-Page Project Setup
+
+Recommended pattern for organizing multi-page FyneJS applications:
+
+### 1. Central Setup File (demo-loader.js)
+```javascript
+(function() {
+  const componentFiles = [
+    'header.js',
+    'footer.js',
+    'user-card.ts',  // TypeScript!
+    'modal.js'
+  ];
+  
+  XTool.init({
+    router: { enabled: true }
+  });
+  
+  XTool.loadComponents(
+    componentFiles.map(f => ({
+      path: 'components/' + f,
+      mode: 'preload'
+    }))
+  );
+})();
+```
+
+### 2. Include in Every Page
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="../dist/x-tool.min.js" defer></script>
+  <script src="./demo-loader.js" defer></script>
+</head>
+<body>
+  <component source="header"></component>
+  <main><!-- page content --></main>
+  <component source="footer"></component>
+</body>
+</html>
+```
+
+### 3. Project Structure
+```
+project/
+├── index.html
+├── about.html
+├── demo-loader.js      # Setup file
+├── components/
+│   ├── header.js
+│   ├── footer.js
+│   ├── user-card.ts    # TypeScript
+│   └── modal.js
+└── shared/
+    └── styles.css
+```
+
+**Learn more:** https://fynejs.com/getting-started.html
+
+## Documentation Links
+
+- **Getting Started:** https://fynejs.com/getting-started.html
+- **Directives Guide:** https://fynejs.com/directives.html
+- **Components Guide:** https://fynejs.com/components.html
+- **Router Documentation:** https://fynejs.com/router.html
+- **TypeScript Support:** https://fynejs.com/typescript.html
+- **API Reference:** https://fynejs.com/api.html
+- **Examples:** https://fynejs.com/examples.html
+
 ## Key Features
 
+- **TypeScript Without Build** - Run `.ts` component files directly in the browser with instant type stripping
+- **Built-in SPA Router** - Client-side routing with view transitions, prefetching, and navigation hooks
 - **Multiple Components per File** - Define multiple `x-data` components in single HTML files
 - **Standard HTML Templates** - Uses familiar HTML syntax, no special template language
 - **IDE Syntax Highlighting** - `html` template literal provides full IDE support
 - **Zero Dependencies** - No external dependencies or build tools required
-- **11KB Gzipped** - Minimal bundle size
+- **~18.6KB Gzipped** - Minimal bundle size with enterprise features
 - **Comprehensive Auto-Cleanup** - Automatic memory management and resource cleanup
 - **Event Delegation** - Optional global event delegation for performance
 - **Static Directive Optimization** - Automatically detects and optimizes non-reactive directives

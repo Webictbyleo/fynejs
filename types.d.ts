@@ -16,6 +16,23 @@ export interface XToolConfig {
     sandboxExpressions?: boolean;
     /** Whitelist of globals when sandboxExpressions is true */
     allowGlobals?: string[];
+    /** Router for SPA */
+    router?: {
+        /** Enable SPA routing (default: false) */
+        enabled: boolean;
+        /**
+         * View transition name (for CSS transitions)
+         */
+        transtionName?: string;
+        /** Before navigation hook */
+        before?: (to: string, from: string, info: {source: string}) => boolean | Promise<boolean>;
+        /** After navigation hook */
+        after?: (to: string, from: string, info: {source: string}) => void;
+        /** Navigation error handler */
+        error?: (error:unknown,to: string,from:string) => void;
+        /** Enable prefetching on link hover (default: false) */
+        prefetchOnHover?: boolean;
+    }
 }
 
 export interface CustomDirective<T = unknown> {
@@ -170,7 +187,7 @@ export interface RegisteredComponentDefinition<
     /** Required component name */
     name: string;
     /** Base data factory */
-    makeData?: (props: Record<string, string>) => Record<string, unknown>;
+    makeData?: (props: Record<string, string>) => TData;
     /** Instance augmentation function */
     init?: (props: Record<string, any>) => ComponentDefinition<TData, TMethods, TComputed> | void;
 }
