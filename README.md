@@ -9,13 +9,19 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 ## Why FyneJS
 
-- Tiny & fast: zero dependencies and optimized for performance
-- Engineered reactivity: lean, cached evaluations; fine‑grained computed invalidation
-- Smart GC: precise cleanup for timers, observers, events, and component trees
-- Declarative power: rich directives and component composition without a build step
-- SEO‑friendly by design: progressive enhancement on existing HTML; no client‑side rendering takeover, so your server content remains crawlable
+- **Tiny & fast**: zero dependencies, ~18.6KB gzipped, optimized for performance
+- **Engineered reactivity**: lean, cached evaluations; fine‑grained computed invalidation
+- **Smart GC**: precise cleanup for timers, observers, events, and component trees
+- **Built-in SPA router**: client-side navigation with view transitions, prefetching, and lifecycle hooks
+- **Browser-native TypeScript**: load `.ts` component files directly—blazing fast type stripping (~34ms for 1000 lines) with zero build tools
+- **Declarative power**: rich directives and component composition without a build step
+- **SEO‑friendly by design**: progressive enhancement on existing HTML; no client‑side rendering takeover, so your server content remains crawlable
 
 ## Capabilities (with examples)
+
+- **Built-in SPA router** with view transitions, prefetching, and navigation hooks (see [Built-in SPA Router](#built-in-spa-router) section)
+
+- **Browser-native TypeScript**: Load `.ts` component files directly without build tools—blazing fast type stripping in ~34ms (see [Browser-Native TypeScript](#browser-native-typescript-zero-build) section)
 
 - Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes
 
@@ -103,7 +109,16 @@ Include the minified build from jsDelivr or unpkg:
 <!-- or -->
 <script src="https://unpkg.com/fynejs@latest/dist/x-tool.min.js"></script>
 <script>
-  XTool.init({ debug: false });
+  XTool.init({ 
+    debug: false,
+    router: { enabled: true }  // Optional: enable SPA routing
+  });
+  
+  // Optional: Load external components (supports .js and .ts files!)
+  XTool.loadComponents([
+    'components/header.js',
+    'components/user-card.ts'  // TypeScript works directly in browser!
+  ]);
 </script>
 
 <div x-data="{ count: 0 }">
@@ -188,9 +203,50 @@ You can copy the file into your repo and point `typeRoots` to it, or vendor the 
     </li>
   </template>
 
+### Built-in SPA Router
+
+FyneJS includes a lightweight client-side router with view transitions and navigation hooks:
+
+```js
+XTool.init({
+  router: {
+    enabled: true,
+    transtionName: 'slide',        // CSS view transition name
+    before: (to, from, info) => {
+      // Check auth, analytics, etc.
+      // Return false to cancel navigation
+      return true;
+    },
+    after: (to, from, info) => {
+      // Update UI, scroll, analytics
+      console.log(`Navigated from ${from} to ${to}`);
+    },
+    error: (error, to, from) => {
+      console.error('Navigation error:', error);
+    },
+    prefetchOnHover: true          // Smart link prefetching
+  }
+});
+```
+
+Use `x-link` directive for SPA navigation:
+
+```html
+<nav>
+  <a href="/index.html" x-link>Home</a>
+  <a href="/about.html" x-link>About</a>
+  <a href="/contact.html" x-link>Contact</a>
+</nav>
+
+<!-- With prefetching -->
+<a href="/dashboard.html" x-link x-prefetch="hover">Dashboard</a>
+```
+
+The router intercepts link clicks, updates the URL, and loads new pages without full refreshes—perfect for multi-page apps that feel like SPAs.
+
 ### Dynamic component file loading
 
-Use `loadComponents` to register external component definition scripts with flexible loading strategies:
+Load external component files (`.js` or `.ts`) with flexible loading strategies:
 
 ```js
 // Preload immediately (default for string entries)
@@ -225,8 +281,98 @@ Defer mode details:
 
 Return value:
 `loadComponents` resolves with `{ settled, failed }` counting only immediate (preload + defer) operations; lazy entries are not counted until they actually load.
+
+**TypeScript components work too!** FyneJS automatically strips TypeScript type annotations from `.ts` files:
+
+```js
+XTool.loadComponents([
+  'components/user-card.ts',      // TypeScript file
+  'components/data-chart.ts',     // TypeScript file
+  'components/modal.js'           // Regular JavaScript
+]);
+```
 </ul>
 ```
+
+### Browser-Native TypeScript (Zero Build)
+
+**Unique to FyneJS**: Load TypeScript component files directly in the browser without any build step or compilation!
+
+```js
+// Load TypeScript components just like JavaScript
+XTool.loadComponents([
+  { path: 'components/user-dashboard.ts', mode: 'preload' },
+  { path: 'components/analytics-chart.ts', mode: 'lazy' }
+]);
+```
+
+```html
+<!-- Use TypeScript components seamlessly -->
+<component source="user-dashboard"></component>
+<component source="analytics-chart"></component>
+```
+
+**How it works:**
+- Token-based type stripping using a single-pass scanner
+- Blazingly fast: ~34ms for 1000 lines of TypeScript
+- Handles interfaces, types, generics, enums, access modifiers, and more
+- No compilation, no waiting, no build process
+- Works with simple and complex TypeScript patterns
+
+**What gets removed:**
+- Type annotations (variables, parameters, return types)
+- Interface, type, namespace, and declare declarations
+- Generics in functions and classes
+- Import/export statements (including type-only imports)
+- Non-null assertions (`!`)
+- Access modifiers (public, private, protected, readonly)
+- Type assertions (`as` syntax)
+- Enum declarations
+- `implements` clauses
+
+**Important notes:**
+- This is type *stripping*, not type *checking*—use an IDE (VS Code, WebStorm) for type safety during development
+- Best suited for well-formed TypeScript code
+- Simpler types work better than very complex type constructs
+- Consider file size for large codebases (performance is excellent for typical component files)
+
+**Example TypeScript component:**
+
+```typescript
+// components/user-card.ts
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+XTool.registerComponent<{ user: User }>({
+  name: 'user-card',
+  data: {
+    user: null as User | null,
+    loading: false
+  },
+  methods: {
+    async loadUser(id: number): Promise<void> {
+      this.loading = true;
+      const response = await fetch(`/api/users/${id}`);
+      this.user = await response.json();
+      this.loading = false;
+    }
+  },
+  template: html`
+    <div class="card">
+      <template x-if="loading">Loading...</template>
+      <template x-if="!loading && user">
+        <h3 x-text="user.name"></h3>
+        <p x-text="user.email"></p>
+      </template>
+    </div>
+  `
+});
+```
+
+The TypeScript code above is automatically stripped to valid JavaScript and executed in the browser—**no build step required!**
 
 ### Next tick
 
@@ -320,22 +466,45 @@ XTool.registerComponent({
 
 ```ts
 XTool.init(config?: {
-  container?: string; // default: 'body'
-  debug?: boolean;
-  staticDirectives?: boolean;
-  prefix?: string;    // default: 'x'
-  delegate?: boolean; // event delegation
-  sandboxExpressions?: boolean;
-  allowGlobals?: string[];
+  container?: string;           // default: 'body'
+  debug?: boolean;              // enable debug logging
+  staticDirectives?: boolean;   // optimize static directives
+  prefix?: string;              // default: 'x'
+  delegate?: boolean;           // event delegation for performance
+  sandboxExpressions?: boolean; // restrict globals in expressions
+  allowGlobals?: string[];      // whitelist globals when sandboxed
+  router?: {                    // SPA routing configuration
+    enabled: boolean;
+    transtionName?: string;     // CSS view transition name
+    before?: (to: string, from: string, info: {source: string}) => boolean | Promise<boolean>;
+    after?: (to: string, from: string, info: {source: string}) => void;
+    error?: (error: unknown, to: string, from: string) => void;
+    prefetchOnHover?: boolean;  // smart link prefetching
+  }
 });
 
 XTool.directive(name: string, impl: { bind?, update?, unbind? }): void;
 XTool.registerComponent({ name, data, methods, computed, propEffects, template, ... }): void;
+XTool.loadComponents(sources: Array<string | { path: string; mode?: 'preload' | 'defer' | 'lazy'; name?: string }>): Promise<{ settled: number; failed: number }>;
 
 // Optional: custom directive prefix (not hardcoded to "x")
 XTool.init({ prefix: 'u' }); // use u-data, u-text, u-on:click, ...
 ```
 
+
+## Documentation
+
+For complete documentation, guides, and interactive examples, visit:
+
+**[https://fynejs.com](https://fynejs.com)**
+
+- [Getting Started Guide](https://fynejs.com/getting-started.html)
+- [Directives Reference](https://fynejs.com/directives.html)
+- [Components Guide](https://fynejs.com/components.html)
+- [Router Documentation](https://fynejs.com/router.html)
+- [TypeScript Support](https://fynejs.com/typescript.html)
+- [API Reference](https://fynejs.com/api.html)
+- [Examples](https://fynejs.com/examples.html)
 
 ## License
 
