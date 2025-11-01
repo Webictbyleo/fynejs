@@ -221,13 +221,13 @@ interface User {
 
 XTool.registerComponent({
   name: 'user-card',
-  template: html\`
+  template: html`
     &lt;div class="card"&gt;
       &lt;h2 x-text="user.name"&gt;&lt;/h2&gt;
       &lt;p x-text="user.email"&gt;&lt;/p&gt;
       &lt;span x-text="user.role"&gt;&lt;/span&gt;
     &lt;/div&gt;
-  \`,
+  `,
   data: {
     user: { name: 'John', email: 'john@example.com', role: 'admin' } as User
   }
@@ -331,11 +331,11 @@ await XTool.loadComponent('components/user-card.ts');</code></pre>
     router: {
       enabled: true,
       before: (to, from, info) => {
-        console.log(\`Navigating from \${from} to \${to}\`);
+        console.log(`Navigating from ${from} to ${to}`);
         return true; // Allow navigation
       },
       after: (to, from, info) => {
-        console.log(\`Navigated to: \${to}\`);
+        console.log(`Navigated to: ${to}`);
       }
     }
   });
