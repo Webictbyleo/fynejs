@@ -769,8 +769,7 @@ const XToolFramework = function () {
                         for (const key in desc) {
                             const dsc = desc[key];
                             if (typeof dsc.get === 'function') {
-                                const getter = dsc.get;
-                                computed[key] = function () { return getter.call(this); };
+                                computed[key] = dsc.get;
                             }
                             else if ('value' in dsc) {
                                 plainData[key] = dsc.value;
