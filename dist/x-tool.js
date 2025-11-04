@@ -763,11 +763,28 @@ const XToolFramework = function () {
                         else {
                             data = this._parseDataExpression(dataExpression);
                         }
-                        const hasOwnMethods = data.methods;
-                        data = hasOwnMethods ? { methods: data.methods, data: { ...data } } : { data: { ...data } };
-                        if (parentForEval) {
-                            data.data.$parent = parentForEval;
+                        const desc = Object.getOwnPropertyDescriptors(data);
+                        const computed = {};
+                        const plainData = {};
+                        for (const key in desc) {
+                            const dsc = desc[key];
+                            if (typeof dsc.get === 'function') {
+                                const getter = dsc.get;
+                                computed[key] = function () { return getter.call(this); };
+                            }
+                            else if ('value' in dsc) {
+                                plainData[key] = dsc.value;
+                            }
                         }
+                        const hasOwnMethods = plainData.methods || data.methods;
+                        const methodsObj = data.methods;
+                        const def = hasOwnMethods ? { methods: methodsObj, data: plainData } : { data: plainData };
+                        if (_Okeys(computed).length)
+                            def.computed = computed;
+                        if (parentForEval) {
+                            def.data.$parent = parentForEval;
+                        }
+                        data = def;
                     }
                     catch (e) {
                     }
@@ -3435,11 +3452,12 @@ const XToolFramework = function () {
         _bindAttributeDirective(element, attributeName, expression) {
             const self = this;
             const evaluator = self._createElementEvaluator(expression, element);
+            const isSvg = element.namespaceURI === 'http://www.w3.org/2000/svg';
             if (attributeName === 'class') {
                 const el = element;
                 if (!self._initialClassSets.get(el)) {
                     const baseSet = new Set();
-                    const oc = el.className || '';
+                    const oc = isSvg ? (element.getAttribute('class') || '') : (element.className || '');
                     if (oc)
                         for (const cls of oc.split(/\s+/)) {
                             if (cls)
@@ -3452,20 +3470,47 @@ const XToolFramework = function () {
             const update = () => {
                 const value = evaluator();
                 if (attributeName === 'class') {
-                    const el = element;
-                    const base = self._initialClassSets.get(el);
+                    const base = self._initialClassSets.get(element);
                     if (typeof value === 'string') {
-                        el.className = base && base.size ? [...base].join(' ') + (value ? ' ' + value : '') : value || '';
+                        const finalCls = base && base.size ? [...base].join(' ') + (value ? ' ' + value : '') : value || '';
+                        if (isSvg) {
+                            if (finalCls)
+                                element.setAttribute('class', finalCls);
+                            else
+                                element.removeAttribute('class');
+                        }
+                        else {
+                            element.className = finalCls;
+                        }
                     }
                     else if (ARRAY_ISARRAY(value)) {
-                        if (base && base.size)
-                            el.className = [...base, ...value.filter(Boolean)].join(' ');
-                        else
-                            el.className = value.filter(Boolean).join(' ');
+                        const tokens = value.filter(Boolean);
+                        const finalList = base && base.size ? [...base, ...tokens] : tokens;
+                        const finalStr = finalList.join(' ');
+                        if (isSvg) {
+                            if (finalStr)
+                                element.setAttribute('class', finalStr);
+                            else
+                                element.removeAttribute('class');
+                        }
+                        else {
+                            element.className = finalStr;
+                        }
                     }
                     else if (value && typeof value === 'object') {
-                        if (base && base.size)
-                            el.className = [...base].join(' ');
+                        if (base && base.size) {
+                            const baseStr = [...base].join(' ');
+                            if (isSvg) {
+                                if (baseStr)
+                                    element.setAttribute('class', baseStr);
+                                else
+                                    element.removeAttribute('class');
+                            }
+                            else {
+                                element.className = baseStr;
+                            }
+                        }
+                        const elAny = element;
                         for (const raw in value) {
                             const on = !!value[raw];
                             if (!raw)
@@ -3475,15 +3520,24 @@ const XToolFramework = function () {
                                 const tk = tokens[i];
                                 if (!tk)
                                     continue;
-                                el.classList.toggle(tk, on);
+                                elAny.classList?.toggle(tk, on);
                             }
                         }
                     }
                     else if (value == null && base && base.size) {
-                        el.className = [...base].join(' ');
+                        const baseStr = [...base].join(' ');
+                        if (isSvg) {
+                            if (baseStr)
+                                element.setAttribute('class', baseStr);
+                            else
+                                element.removeAttribute('class');
+                        }
+                        else {
+                            element.className = baseStr;
+                        }
                     }
                     else if (value == null) {
-                        el.removeAttribute('class');
+                        element.removeAttribute('class');
                     }
                     return;
                 }
