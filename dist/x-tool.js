@@ -2776,6 +2776,7 @@ const XToolFramework = function () {
             const shouldPrevent = !!modifiers?.prevent;
             const shouldStop = !!modifiers?.stop;
             const isOutside = !!modifiers?.outside;
+            const isWindow = !!modifiers?.window;
             const deferExec = !!modifiers?.defer;
             const keyAliasMap = { enter: ['enter'], esc: ['escape', 'esc'], escape: ['escape', 'esc'], space: [' ', 'space', 'spacebar'], tab: ['tab'], backspace: ['backspace'], delete: ['delete', 'del'], del: ['delete', 'del'], arrowup: ['arrowup', 'up'], arrowdown: ['arrowdown', 'down'], arrowleft: ['arrowleft', 'left'], arrowright: ['arrowright', 'right'], home: ['home'], end: ['end'], pageup: ['pageup'], pagedown: ['pagedown'] };
             const comboRequirements = {
@@ -2865,12 +2866,12 @@ const XToolFramework = function () {
             };
             const cfg = this.framework._getConfig();
             const canDelegate = !!cfg.delegate && EV_DELEGATED.includes(eventName);
-            if (!isOutside && canDelegate) {
+            if (!isOutside && !isWindow && canDelegate) {
                 const remover = this.framework._registerDelegated(element, eventName, { filter: (e) => passesFilters(e), run: (e) => createEventHandler(e), once: !!modifiers?.once, comp: this });
                 this._addCleanupFunction(remover);
             }
             else {
-                const target = isOutside ? (element?.ownerDocument || d || document) : element;
+                const target = isWindow ? (typeof window !== 'undefined' ? window : element) : (isOutside ? (element?.ownerDocument || d || document) : element);
                 self._listen(target, eventName, createEventHandler, opts);
             }
         }
@@ -2878,7 +2879,13 @@ const XToolFramework = function () {
             const key = `${isStatement ? 's' : 'r'}:${expression}`;
             let fn = this._expressionCache.get(key);
             if (!fn) {
-                fn = new Function('ctx', `with(ctx){${isStatement ? expression : `return (${expression})`}}`);
+                try {
+                    fn = new Function('ctx', `with(ctx){${isStatement ? expression : `return (${expression})`}}`);
+                }
+                catch {
+                    expression = JSON.stringify(expression);
+                    fn = new Function('ctx', `with(ctx){${isStatement ? expression : `return (${expression})`}}`);
+                }
                 this._expressionCache.set(key, fn);
             }
             return fn;
