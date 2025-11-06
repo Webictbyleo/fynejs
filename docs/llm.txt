@@ -82,6 +82,7 @@
 
 ### Special Modifiers
 - `.outside` - Trigger when clicking outside the element
+- `.window` - Trigger on the window object
 
 ## HTML Template Literal Support
 
