@@ -79,6 +79,14 @@ export interface DirectiveInfo {
 /**
  * Component context available in methods, computed properties, and expressions
  */
+// Ref value types
+export type RefValue = Element | Record<string, any>;
+export type RefReturn<T = RefValue> = T | T[] | undefined;
+export interface RefAccessor {
+    <T = RefValue>(name: string): RefReturn<T>;
+    <T = RefValue>(name: string, value: T): void;
+}
+
 export type ComponentContext<
     TData = Record<string, any>,
     TMethods = Record<string, any>,
@@ -101,6 +109,10 @@ export type ComponentContext<
     readonly $parent: ComponentReference | null;
     /** Child components */
     readonly $children: readonly ComponentReference[];
+    /** Access or register a ref. Getter: $ref('name') -> element | array | undefined. Setter: $ref('name', value). */
+    $ref: RefAccessor;
+    /** Proxy for direct ref access: $refs.myRef -> element | array | undefined */
+    $refs: { [name: string]: RefReturn };
 
     /** Utility methods */
     /** Destroy the component */
@@ -131,16 +143,7 @@ type ComputedValues<TComp extends Record<string, (...args: any) => any>> = {
     [K in keyof TComp]: TComp[K] extends (...a: any) => infer R ? R : never
 };
 
-// Inject a concrete `this` into user-declared method/computed signatures
-type WithThisForMethods<TCtx, TMethods> = {
-    [K in keyof TMethods]: TMethods[K] extends (...a: infer A) => infer R
-        ? (this: TCtx, ...a: A) => R
-        : never;
-};
 
-type BindComputed<TCtx, TComputed> = {
-    [K in keyof TComputed]: TComputed[K] extends (...a: any) => infer R ? (this: TCtx) => R : never
-};
 
 // Deep readonly helper to prevent mutations inside computed getters
 type DeepReadonly<T> = T extends (...args: any[]) => any
@@ -151,6 +154,10 @@ type DeepReadonly<T> = T extends (...args: any[]) => any
             ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
             : T;
 
+// Convenience helper for a fully-augmented context (data + methods + computed values)
+type FullContext<TData, TMethods, TComputedVals> = ComponentContext<TData, TMethods, TComputedVals> & TMethods & TComputedVals;
+
+
 export interface ComponentDefinition<
     TData extends Record<string, any> = Record<string, any>,
     TMethods extends MethodMap = {},
@@ -159,37 +166,83 @@ export interface ComponentDefinition<
     /** Reactive data object */
     data?: TData;
     /** Component methods with proper context */
-    methods?: WithThisForMethods<ComponentContext<TData, TMethods, ComputedValues<TComputed>> & TMethods & ComputedValues<TComputed>, TMethods>;
+    // Methods should see data, other methods, and computed values.
+    // Keep raw shape for inference; rely on ThisType for contextual access.
+    methods?: TMethods & ThisType<FullContext<TData, TMethods, ComputedValues<TComputed>>>;
     /** Computed properties */
-    // In computed getters, expose data as DeepReadonly to forbid mutations
-    computed?: BindComputed<ComponentContext<DeepReadonly<TData>, TMethods, ComputedValues<TComputed>> & TMethods & ComputedValues<TComputed>, TComputed>;
+    // In computed getters, expose data as DeepReadonly to forbid mutations and allow cross-usage of methods & other computed values.
+    computed?: TComputed & ThisType<FullContext<DeepReadonly<TData>, TMethods, ComputedValues<TComputed>>>;
     /** Prop change handlers */
-    propEffects?: PropEffectsMap<ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>>;
+    // Prop effects should have full access to methods and computed values with proper inference
+    propEffects?: PropEffectsMap<FullContext<TData, TMethods, ComputedValues<TComputed>>> & ThisType<FullContext<TData, TMethods, ComputedValues<TComputed>>>;
     /** Lifecycle hooks */
-    mounted?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    unmounted?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    beforeMount?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    beforeUnmount?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    updated?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    destroyed?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
-    beforeDestroy?: (this: ComponentContext<TData, TMethods> & TMethods & ComputedValues<TComputed>) => void;
+    mounted?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    unmounted?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeMount?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeUnmount?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    updated?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    destroyed?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeDestroy?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
     /** Template for reusable components */
     template?: string | Promise<string> | (() => string | Promise<string>);
     /** Component name (for registration) */
     name?: string;
 }
 
+/**
+ * Registered component definition with proper type inference.
+ * 
+ * ORDER MATTERS for TypeScript inference:
+ * 1. name, data, makeData
+ * 2. methods  
+ * 3. computed
+ * 4. propEffects, lifecycle hooks
+ * 
+ * When properties are in the correct order, TypeScript provides full IntelliSense
+ * and type checking. Different orders may result in typing fallbacks.
+ */
 export interface RegisteredComponentDefinition<
-    TData extends Record<string, any> = Record<string, any>,
+    TData extends Record<string, any> = {},
+    TFactoryData extends Record<string, any> = {},
     TMethods extends MethodMap = {},
     TComputed extends ComputedMap = {}
-> extends ComponentDefinition<TData, TMethods, TComputed> {
+> {
     /** Required component name */
     name: string;
-    /** Base data factory */
-    makeData?: (props: Record<string, string>) => TData;
-    /** Instance augmentation function */
-    init?: (props: Record<string, any>) => ComponentDefinition<TData, TMethods, TComputed> | void;
+    /** Static reactive data */
+    data?: TData;
+    /** Factory function for dynamic data (merged with static data) */
+    makeData?: (props: Record<string, any>) => TFactoryData;
+    /** Component methods with proper context */
+    methods?: TMethods & ThisType<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>>;
+    /** Computed properties */
+    computed?: TComputed & ThisType<FullContext<DeepReadonly<TData & TFactoryData>, TMethods, ComputedValues<TComputed>>>;
+    /** Prop change handlers */
+    propEffects?: PropEffectsMap<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>> & ThisType<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>>;
+    /** Lifecycle hooks */
+    mounted?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    unmounted?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeMount?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeUnmount?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    updated?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    destroyed?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    beforeDestroy?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    /** Template for reusable components */
+    template?: string | Promise<string> | (() => string | Promise<string>);
+    /** Instance augmentation function (may further extend data/computed/methods) */
+    init?: (props: Record<string, any>) => Partial<{
+        data: TData;
+        methods: TMethods;
+        computed: TComputed;
+        propEffects: PropEffectsMap<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>>;
+        mounted: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        unmounted: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        beforeMount: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        beforeUnmount: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        updated: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        destroyed: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+        beforeDestroy: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
+    }> | void;
 }
 
 export interface EventHandlerInfo {
@@ -228,15 +281,17 @@ export interface XToolFramework {
      */
     directive<T = unknown>(name: string, directive: CustomDirective<T>): XToolFramework;
 
-        /**
-     * Register a reusable component
-     * @param definition Component definition
+    /**
+     * Register a reusable component with proper type inference.
+     * Uses RegisteredComponentDefinition interface for type safety.
      */
     registerComponent<
-        TData extends Record<string, any> = Record<string, any>,
+        TData extends Record<string, any> = {},
+        TFactoryData extends Record<string, any> = {},
         TMethods extends MethodMap = {},
         TComputed extends ComputedMap = {}
-    >(definition: RegisteredComponentDefinition<TData, TMethods, TComputed>): XToolFramework;
+    >(definition: RegisteredComponentDefinition<TData, TFactoryData, TMethods, TComputed> & ThisType<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>>): XToolFramework;
+
 
     /**
      * Load and evaluate external component definition files.
