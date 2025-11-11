@@ -23,7 +23,7 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 
 - **Browser-native TypeScript**: Load `.ts` component files directly without build tools—blazing fast type stripping in ~34ms (see [Browser-Native TypeScript](#browser-native-typescript-zero-build) section)
 
-- Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes
+- Declarative directives: text, HTML, show/hide, if/else, loops, model binding, events, styles, classes, transitions
 
   ```html
   <div x-data="{ n: 0, items: [1,2,3], open: true }">
@@ -31,6 +31,17 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
     <span x-text="n"></span>
 
     <template x-if="open"><p>Shown</p></template>
+    <!-- Transition example (class phases + end hook) -->
+    <div
+      x-show="open"
+      x-transition:enter="transition ease-out duration-200"
+      x-transition:enter-from="opacity-0 -translate-y-2"
+      x-transition:enter-to="opacity-100 translate-y-0"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-from="opacity-100 translate-y-0"
+      x-transition:leave-to="opacity-0 -translate-y-2"
+      x-transition:enter.after="({ el, phase, config }) => console.log('entered', config.duration)"
+    >Animated block</div>
     <ul>
       <template x-for="(v,i) in items"><li>#<span x-text="i"></span>: <span x-text="v"></span></li></template>
     </ul>
@@ -62,6 +73,35 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
   ```
 
 - Lifecycle hooks: beforeMount, mounted, updated, beforeUnmount, unmounted
+
+### Transitions (x-transition)
+
+Animate enter/leave for `x-show` and `x-if`:
+
+```html
+<div x-data="{ open: false }">
+  <button x-on:click="open = !open">Toggle</button>
+  <div x-show="open" x-transition="opacity-0 transition-opacity duration-200" class="panel">Fade panel</div>
+</div>
+```
+
+Granular class phases + end callback:
+
+```html
+<div
+  x-data="{ open: true }"
+  x-show="open"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-from="opacity-0 scale-95"
+  x-transition:enter-to="opacity-100 scale-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-from="opacity-100 scale-100"
+  x-transition:leave-to="opacity-0 scale-95"
+  x-transition:enter.after="({ el, config }) => console.log(config.duration)"
+>Modal</div>
+```
+
+`.after` / `.end` modifiers run once per completed phase (never on cancellation) and receive `{ el, phase, config }` where `config.duration` is the effective transition time including delays. For `x-if` branches, the original display value is preserved (including `display: contents` for template wrappers).
 
 - Slot & props: lightweight component composition
 
@@ -228,6 +268,46 @@ XTool.init({
   }
 });
 ```
+
+### Transitions (x-transition)
+
+Animate enter/leave for `x-show` and `x-if`.
+
+Simple toggle form:
+
+```html
+<div x-show="open" x-transition="opacity-0 transition-opacity duration-200">Fade</div>
+```
+
+Configuration object form:
+
+```html
+<div
+  x-show="open"
+  x-transition="{ duration: 300, easing: 'ease-out', enter: 'transition', enterFrom: 'opacity-0 scale-95', enterTo: 'opacity-100 scale-100', leave: 'transition', leaveFrom: 'opacity-100 scale-100', leaveTo: 'opacity-0 scale-95' }"
+  x-transition:enter.after="({ config }) => console.log(config.duration)"
+>Dialog</div>
+```
+
+Granular phases + end hook:
+
+```html
+<div
+  x-show="open"
+  x-transition:enter="transition ease-out duration-300"
+  x-transition:enter-from="opacity-0 scale-95"
+  x-transition:enter-to="opacity-100 scale-100"
+  x-transition:leave="transition ease-in duration-200"
+  x-transition:leave-from="opacity-100 scale-100"
+  x-transition:leave-to="opacity-0 scale-95"
+  x-transition:enter.after="({ el, phase, config }) => console.log(phase, config.duration, el)"
+>Modal</div>
+```
+
+Notes:
+- `.after` / `.end` modifiers run once per completed phase (never on cancellation)
+- Handlers receive `{ el, phase, config }` where `config.duration` is the effective time including delays
+- With `x-if`, original display is preserved (including `display: contents` for template wrappers)
 
 Use `x-link` directive for SPA navigation:
 

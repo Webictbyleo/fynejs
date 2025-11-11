@@ -233,6 +233,89 @@
               </div>
             </div>
 
+            <!-- x-transition -->
+            <div class="directive-section p-4 sm:p-6 lg:p-8 bg-gray-50/50 rounded-2xl border border-gray-100">
+              <h3 class="text-xl sm:text-2xl lg:text-3xl font-black mb-3 sm:mb-4 text-black flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span class="directive-badge inline-block px-3 py-1 bg-black text-white text-sm font-mono rounded-lg">x-transition</span>
+                <span class="text-lg sm:text-xl lg:text-2xl">Transitions (enter/leave + end hooks)</span>
+              </h3>
+              <p class="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg leading-relaxed">
+                Animate visibility changes with class-based phases or a simple toggle class list. Works with both
+                <code class="bg-gray-100 px-1 rounded">x-show</code> and <code class="bg-gray-100 px-1 rounded">x-if</code>.
+              </p>
+
+              <div class="space-y-6">
+                <div>
+                  <p class="text-gray-700 mb-2 font-medium">Simple toggle form</p>
+                  <pre class="code-block overflow-x-auto" data-lang="html"><code>&lt;div x-data="{ open: false }"&gt;
+  &lt;button x-on:click="open = !open"&gt;Toggle&lt;/button&gt;
+  &lt;div
+    x-show="open"
+    x-transition="opacity-0 transition-opacity duration-200"
+    class="p-4 bg-white rounded shadow"
+  &gt;Fades in/out using your classes&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                  <p class="text-gray-600 text-sm">On show, the classes are added; on hide, they are removed. The framework waits for the
+                    computed CSS transition/animation duration (with delays) before finishing.</p>
+                </div>
+
+                <div>
+                  <p class="text-gray-700 mb-2 font-medium">Configuration object form</p>
+                  <p class="text-gray-600 text-sm mb-2">
+                    You can pass an object with keys like <code class="bg-gray-100 px-1 rounded">duration</code>, 
+                    <code class="bg-gray-100 px-1 rounded">easing</code>, <code class="bg-gray-100 px-1 rounded">enter</code>, 
+                    <code class="bg-gray-100 px-1 rounded">enterFrom</code>, <code class="bg-gray-100 px-1 rounded">enterTo</code>, 
+                    <code class="bg-gray-100 px-1 rounded">leave</code>, <code class="bg-gray-100 px-1 rounded">leaveFrom</code>, 
+                    <code class="bg-gray-100 px-1 rounded">leaveTo</code>, and <code class="bg-gray-100 px-1 rounded">toggle</code>.
+                    See the <a href="./api.html#transitionconfig" class="text-blue-600 hover:text-blue-800 underline">TransitionConfig API reference</a> for full details.
+                  </p>
+                  <pre class="code-block overflow-x-auto" data-lang="html"><code>&lt;div
+  x-show="open"
+  x-transition="{ duration: 300, easing: 'ease-out', enter: 'transition', enterFrom: 'opacity-0', enterTo: 'opacity-100' }"
+&gt;Dialog&lt;/div&gt;</code></pre>
+                </div>
+
+                <div>
+                  <p class="text-gray-700 mb-2 font-medium">Granular phases (Tailwind-style)</p>
+                  <pre class="code-block overflow-x-auto" data-lang="html"><code>&lt;div
+  x-data="{ open: true }"
+  x-show="open"
+  x-transition:enter="transition ease-out duration-200"
+  x-transition:enter-from="opacity-0 -translate-y-2"
+  x-transition:enter-to="opacity-100 translate-y-0"
+  x-transition:leave="transition ease-in duration-150"
+  x-transition:leave-from="opacity-100 translate-y-0"
+  x-transition:leave-to="opacity-0 translate-y-2"
+&gt;Content&lt;/div&gt;</code></pre>
+                </div>
+
+                <div>
+                  <p class="text-gray-700 mb-2 font-medium">Run code after transition ends</p>
+                  <pre class="code-block overflow-x-auto" data-lang="html"><code>&lt;div
+  x-data="{ open: true }"
+  x-show="open"
+  x-transition:enter="transition ease-out duration-500"
+  x-transition:enter-from="opacity-0 translate-x-full"
+  x-transition:enter-to="opacity-100 translate-x-0"
+  x-transition:enter.after="({ el, phase, config }) =&gt; console.log(phase, config.duration, el)"
+&gt;Slide-in panel&lt;/div&gt;</code></pre>
+                  <p class="text-gray-600 text-sm">Use <code class="bg-gray-100 px-1 rounded">.after</code> (or <code class="bg-gray-100 px-1 rounded">.end</code>) on
+                    <code class="bg-gray-100 px-1 rounded">x-transition</code> or any phase (e.g.,
+                    <code class="bg-gray-100 px-1 rounded">x-transition:enter.after</code>) to run an expression once the transition completes.
+                    The handler receives: <code class="bg-gray-100 px-1 rounded">{ el, phase, config }</code> where <code>config.duration</code> is the
+                    effective duration (ms) detected from CSS (including delays), and <code>phase</code> is <code>enter</code> or <code>leave</code>.</p>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li>Actual duration is computed from CSS transition/animation durations and delays; falls back only if none are defined.</li>
+                    <li>End callbacks do not run on cancellations—only on natural completion—to avoid duplicates.</li>
+                    <li>Works with <code>x-if</code>: entering branches animate in; leaving branches animate out and are removed after completion. The original display is restored (including <code>display: contents</code> for template wrappers).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <!-- x-if/x-else-if/x-else -->
             <div class="directive-section">
               <h3 class="text-2xl font-black mb-4 text-black flex items-center gap-3">

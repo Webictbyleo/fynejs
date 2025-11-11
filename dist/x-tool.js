@@ -1,4 +1,5 @@
-"use strict";
+import stripTypes from './src/strip-ts';
+import { caseKebabToCamel } from './src/util';
 const ARRAY_ISARRAY = Array.isArray;
 const WkMap = WeakMap;
 const quMct = queueMicrotask;
@@ -6,6 +7,9 @@ const FT_C = true;
 const FT_TI = typeof __FEAT_TEXT_INTERP__ === 'boolean' ? __FEAT_TEXT_INTERP__ : true;
 const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ === 'boolean' ? __FEAT_DEEP_REACTIVE__ : true;
 const FT_IFB = typeof __FEAT_IF_BRANCHES__ === 'boolean' ? __FEAT_IF_BRANCHES__ : true;
+const FT_RT = typeof __FEAT_ROUTER__ === 'boolean' ? __FEAT_ROUTER__ : true;
+const FT_TS = typeof __FEAT_TS__ === 'boolean' ? __FEAT_TS__ : true;
+const FT_EXT_DIRS = typeof __FEAT_EXT_DIRECTIVES__ === 'boolean' ? __FEAT_EXT_DIRECTIVES__ : true;
 const XToolFramework = function () {
     const _se = (fn) => { try {
         fn();
@@ -48,537 +52,6 @@ const XToolFramework = function () {
         attrCache.set(name, value);
         return value;
     };
-    let TokenType;
-    (function (TokenType) {
-        TokenType[TokenType["Identifier"] = 0] = "Identifier";
-        TokenType[TokenType["Keyword"] = 1] = "Keyword";
-        TokenType[TokenType["Punctuation"] = 2] = "Punctuation";
-        TokenType[TokenType["String"] = 3] = "String";
-        TokenType[TokenType["Comment"] = 4] = "Comment";
-        TokenType[TokenType["Whitespace"] = 5] = "Whitespace";
-        TokenType[TokenType["Number"] = 6] = "Number";
-        TokenType[TokenType["Arrow"] = 7] = "Arrow";
-    })(TokenType || (TokenType = {}));
-    const keywords = new Set([
-        'as', 'interface', 'type', 'import', 'export', 'from', 'extends', 'implements',
-        'declare', 'namespace', 'module', 'any', 'unknown', 'never', 'void',
-        'number', 'string', 'boolean', 'symbol', 'bigint', 'object', 'enum', 'function'
-    ]);
-    const visibility = ['public', 'private', 'protected', 'static', 'abstract', 'readonly'];
-    const WS_RE = /\s/;
-    const NUM_RE = /\d/;
-    function stripTypes(source) {
-        const ID_START_RE = /[a-zA-Z_$]/;
-        const ID_PART_RE = /[a-zA-Z0-9_$]/;
-        function isIdentifierStart(ch) { return ID_START_RE.test(ch); }
-        function isIdentifierPart(ch) { return ID_PART_RE.test(ch); }
-        const isWhitespace = (ch) => WS_RE.test(ch);
-        const isNumber = (ch) => NUM_RE.test(ch);
-        function isGenericStartEnd(startIndex, tokens) {
-            const token = tokens[startIndex];
-            const ch = token.value == '<' ? '<' : '>';
-            return token.value == ch && (token.next?.value !== ch && token.prev?.value !== ch);
-        }
-        const skipUntil = (tokens, index, pred) => {
-            const context = { index, depth: 0 };
-            while (index < tokens.length && !pred(tokens[index], context))
-                index++;
-            return index;
-        };
-        const hasItem = (item, collection) => {
-            return collection.indexOf(item) !== -1;
-        };
-        function skipType(tokens, startIndex, standalone = true) {
-            let i = startIndex;
-            const ctx = {};
-            i = skipUntil(tokens, i, t => t.type !== TokenType.Whitespace && !(t.type === TokenType.Punctuation && hasItem(t.value, '|?&:')));
-            let isSimple = hasItem(tokens[i].type, [TokenType.Keyword, TokenType.Identifier]);
-            if (isSimple && tokens[i] && tokens[i].next?.type === TokenType.Punctuation && hasItem(tokens[i].next?.value, '<[{(')) {
-                i = skipUntil(tokens, i, t => t.type === TokenType.Punctuation);
-            }
-            let isComplex = tokens[i].type === TokenType.Punctuation && hasItem(tokens[i].value, '<[{(');
-            while (i < tokens.length) {
-                if (isComplex) {
-                    i = skipUntil(tokens, i, (t, ctx) => {
-                        if (t.type === TokenType.Punctuation) {
-                            if (hasItem(t.value, ']})>'))
-                                ctx.depth--;
-                            else if (hasItem(t.value, '<[{('))
-                                ctx.depth++;
-                        }
-                        return ctx.depth <= 0;
-                    });
-                    i++;
-                }
-                else {
-                    i = skipUntil(tokens, i, t => (TokenType.Whitespace === t.type && t.value !== " ") || (t.type === TokenType.Punctuation && t.value !== '.'));
-                    if (standalone && tokens[i] && tokens[i].type === TokenType.Punctuation && hasItem(tokens[i].value, '<[{(')) {
-                        let hasNewline = false;
-                        skipUntil(tokens, i, t => { if (t.type === TokenType.Whitespace && hasItem("\n", t.value))
-                            hasNewline = true; return hasNewline || t.start >= tokens[i].start; });
-                        if (!hasNewline) {
-                            i = skipUntil(tokens, i, (t, ctx) => {
-                                if (t.type === TokenType.Punctuation) {
-                                    if (hasItem(t.value, ']})>'))
-                                        ctx.depth--;
-                                    else if (hasItem(t.value, '<[{('))
-                                        ctx.depth++;
-                                }
-                                return ctx.depth <= 0;
-                            });
-                            i++;
-                        }
-                    }
-                }
-                if (i >= tokens.length) {
-                    break;
-                }
-                if (tokens[i].type === TokenType.Whitespace && hasItem("\n", tokens[i].value) && tokens[i].prev?.next && tokens[i].prev?.next?.type === TokenType.Punctuation && hasItem(tokens[i].prev?.next?.value, '?&|:')) {
-                    i = skipUntil(tokens, i, t => t.type == TokenType.Punctuation);
-                }
-                if (tokens[i].type === TokenType.Whitespace)
-                    i = skipUntil(tokens, i, t => !t.value.startsWith(' '));
-                let cur = tokens[i];
-                const isContinued = cur.type === TokenType.Punctuation && hasItem(cur.value, "?&|:") || (cur.type === TokenType.Arrow && cur.prev?.value === ')');
-                if (!isContinued && (isSimple && cur.type === TokenType.Punctuation && (hasItem(cur.value, '(<[') || standalone && cur.value == '{'))) {
-                    isComplex = true;
-                    i = skipUntil(tokens, i, t => t.type !== TokenType.Whitespace);
-                    continue;
-                }
-                if (isContinued) {
-                    i++;
-                    i = skipUntil(tokens, i, t => !t.value.startsWith(' '));
-                }
-                ctx.isContinued = isContinued;
-                ctx.token = tokens[i];
-                if (!isContinued) {
-                    if (standalone) {
-                        i++;
-                    }
-                    break;
-                }
-                else {
-                    isSimple = hasItem(tokens[i].type, [TokenType.Keyword, TokenType.Identifier]);
-                    isComplex = tokens[i].type === TokenType.Punctuation && hasItem(tokens[i].value, '<[{(');
-                }
-            }
-            return i;
-        }
-        function tokenize(input) {
-            const tokens = [];
-            let pos = 0;
-            const length = input.length;
-            let prevToken;
-            const createToken = (type, start, end) => {
-                const token = {
-                    type,
-                    value: input.slice(start, end),
-                    start,
-                    end
-                };
-                if (prevToken) {
-                    token.prev = prevToken;
-                    prevToken.next = token;
-                }
-                if (type !== TokenType.Whitespace && type !== TokenType.Comment) {
-                    prevToken = token;
-                }
-                return token;
-            };
-            while (pos < length) {
-                const ch = input[pos];
-                let start = pos;
-                if (isWhitespace(ch)) {
-                    do {
-                        pos++;
-                    } while (pos < length && isWhitespace(input[pos]));
-                    tokens.push(createToken(TokenType.Whitespace, start, pos));
-                    continue;
-                }
-                if (isIdentifierStart(ch)) {
-                    pos++;
-                    while (pos < length && isIdentifierPart(input[pos]))
-                        pos++;
-                    const value = input.slice(start, pos);
-                    tokens.push(createToken(keywords.has(value) || hasItem(value, visibility) ? TokenType.Keyword : TokenType.Identifier, start, pos));
-                    continue;
-                }
-                if (isNumber(ch)) {
-                    do {
-                        pos++;
-                    } while (pos < length && isNumber(input[pos]));
-                    tokens.push(createToken(TokenType.Number, start, pos));
-                    continue;
-                }
-                if (ch === '"' || ch === "'" || ch === '`') {
-                    const quoteType = ch;
-                    pos++;
-                    if (quoteType !== '`') {
-                        while (pos < length) {
-                            if (input[pos] === '\\')
-                                pos += 2;
-                            else if (input[pos] === quoteType) {
-                                pos++;
-                                break;
-                            }
-                            else
-                                pos++;
-                        }
-                        tokens.push(createToken(TokenType.String, start, pos));
-                        continue;
-                    }
-                    let tplExprDepth = 0;
-                    while (pos < length) {
-                        const c = input[pos];
-                        if (c === '\\') {
-                            pos += 2;
-                            continue;
-                        }
-                        if (c === '`' && tplExprDepth === 0) {
-                            pos++;
-                            break;
-                        }
-                        if (c === '$' && pos + 1 < length && input[pos + 1] === '{') {
-                            tplExprDepth++;
-                            pos += 2;
-                            while (pos < length && tplExprDepth > 0) {
-                                const e = input[pos];
-                                if (e === '\\') {
-                                    pos += 2;
-                                    continue;
-                                }
-                                if (e === '"' || e === "'") {
-                                    const q = e;
-                                    pos++;
-                                    while (pos < length) {
-                                        if (input[pos] === '\\')
-                                            pos += 2;
-                                        else if (input[pos] === q) {
-                                            pos++;
-                                            break;
-                                        }
-                                        else
-                                            pos++;
-                                    }
-                                    continue;
-                                }
-                                if (e === '`') {
-                                    pos++;
-                                    let nestedDepth = 0;
-                                    while (pos < length) {
-                                        const n = input[pos];
-                                        if (n === '\\') {
-                                            pos += 2;
-                                            continue;
-                                        }
-                                        if (n === '`' && nestedDepth === 0) {
-                                            pos++;
-                                            break;
-                                        }
-                                        if (n === '$' && pos + 1 < length && input[pos + 1] === '{') {
-                                            nestedDepth++;
-                                            pos += 2;
-                                            continue;
-                                        }
-                                        if (n === '}' && nestedDepth > 0) {
-                                            nestedDepth--;
-                                            pos++;
-                                            continue;
-                                        }
-                                        pos++;
-                                    }
-                                    continue;
-                                }
-                                if (e === '{') {
-                                    tplExprDepth++;
-                                    pos++;
-                                    continue;
-                                }
-                                if (e === '}') {
-                                    tplExprDepth--;
-                                    pos++;
-                                    continue;
-                                }
-                                pos++;
-                            }
-                            continue;
-                        }
-                        pos++;
-                    }
-                    tokens.push(createToken(TokenType.String, start, pos));
-                    continue;
-                }
-                if (ch === '/' && pos + 1 < length) {
-                    if (input[pos + 1] === '/') {
-                        pos += 2;
-                        while (pos < length && input[pos] !== '\n')
-                            pos++;
-                        tokens.push(createToken(TokenType.Comment, start, pos));
-                        continue;
-                    }
-                    if (input[pos + 1] === '*') {
-                        pos += 2;
-                        while (pos < length && !(input[pos] === '*' && input[pos + 1] === '/'))
-                            pos++;
-                        pos += 2;
-                        tokens.push(createToken(TokenType.Comment, start, pos));
-                        continue;
-                    }
-                }
-                if (ch === '=' && pos + 1 < length && input[pos + 1] === '>') {
-                    pos += 2;
-                    tokens.push(createToken(TokenType.Arrow, start, pos));
-                    continue;
-                }
-                tokens.push(createToken(TokenType.Punctuation, pos, ++pos));
-            }
-            return tokens;
-        }
-        function isObjectLiteralStart(tokens, index) {
-            let j = index - 1;
-            while (j >= 0 && tokens[j].type === TokenType.Whitespace)
-                j--;
-            if (j < 0)
-                return false;
-            const prevToken = tokens[j];
-            if (prevToken.type === TokenType.Arrow)
-                return false;
-            return (prevToken.type === TokenType.Identifier && prevToken.value === 'return') || prevToken.type === TokenType.Punctuation && (prevToken.value === '=' || prevToken.value === '(' || prevToken.value === '[' ||
-                prevToken.value === ',' || prevToken.value === ':' || prevToken.value === '?');
-        }
-        const tokens = tokenize(source);
-        let i = 0;
-        const context = {
-            isObjectLiteral: false,
-            isClassBody: false,
-            braceDepth: 0,
-            lastIdentifier: undefined,
-            lastKeyword: undefined
-        };
-        let objectBraceDepth = 0;
-        let outputString = '';
-        while (i < tokens.length) {
-            const token = tokens[i];
-            const tt = token.type;
-            const v = token.value;
-            if (tt === TokenType.Comment) {
-                i++;
-                continue;
-            }
-            if (tt === TokenType.Identifier) {
-                context.lastIdentifier = v;
-            }
-            if ((tt == TokenType.Identifier || tt == TokenType.Keyword) && ((token.next?.type === TokenType.Keyword && token.next.value == 'enum') || (v == 'enum'))) {
-                i = skipUntil(tokens, i, t => t.value == '}');
-                i++;
-                continue;
-            }
-            if (tt == TokenType.String || (tt != TokenType.Punctuation && TokenType.Whitespace != tt && TokenType.Keyword != tt)) {
-                i++;
-                outputString += v;
-                continue;
-            }
-            if (tt === TokenType.Whitespace) {
-                outputString += (v.includes('\n') ? '\n' : v);
-                i++;
-                continue;
-            }
-            if (context.lastIdentifier === 'class') {
-                context.isClassBody = true;
-            }
-            if (tt === TokenType.Punctuation && v === '{') {
-                context.braceDepth++;
-                if (isObjectLiteralStart(tokens, i)) {
-                    objectBraceDepth++;
-                    context.isObjectLiteral = true;
-                }
-                outputString += token.value;
-                i++;
-                continue;
-            }
-            if (tt === TokenType.Punctuation && v === '}') {
-                context.braceDepth--;
-                if (context.isObjectLiteral) {
-                    objectBraceDepth--;
-                    if (objectBraceDepth <= 0)
-                        context.isObjectLiteral = false;
-                }
-                if (context.braceDepth <= 0) {
-                    context.isClassBody = false;
-                }
-                outputString += token.value;
-                i++;
-                continue;
-            }
-            if (tt === TokenType.Keyword) {
-                if (!context.isObjectLiteral && v === 'import') {
-                    i = skipUntil(tokens, i, t => (t.type === TokenType.Keyword && t.value === 'from'));
-                    i = skipUntil(tokens, i, t => t.value === ';' || (t.type === TokenType.Whitespace && t.value.includes("\n")));
-                    if (i < tokens.length && tokens[i].value === ';')
-                        i++;
-                    continue;
-                }
-                if (v === 'as' && !isObjectLiteralStart(tokens, i)) {
-                    i++;
-                    i = skipUntil(tokens, i, t => t.type !== TokenType.Whitespace);
-                    i = skipType(tokens, i, false);
-                    continue;
-                }
-                if (v === 'export' && !context.isObjectLiteral && (String(token.next?.value + token.next?.next?.value).match(/(const\s+)?(type|interface|enum|namespace|function)/))) {
-                    i++;
-                    i = skipUntil(tokens, i, t => t.type !== TokenType.Whitespace);
-                    continue;
-                }
-                if (v === 'function' && token.next?.type === TokenType.Identifier && token.next?.next?.type === TokenType.Punctuation && token.next?.next?.value === '(' && token.next?.next?.next && token.next?.next?.next?.type === TokenType.Identifier) {
-                    let j = i + 4;
-                    let depth = 1;
-                    while (j < tokens.length && depth > 0) {
-                        const t = tokens[j];
-                        if (t.type === TokenType.Punctuation) {
-                            if (t.value === '(')
-                                depth++;
-                            else if (t.value === ')')
-                                depth--;
-                        }
-                        j++;
-                    }
-                    j = skipUntil(tokens, j, t => t.type !== TokenType.Whitespace);
-                    if (j < tokens.length && tokens[j].type === TokenType.Punctuation && tokens[j].value === ':') {
-                        j++;
-                        j = skipType(tokens, j, false);
-                        j = skipUntil(tokens, j, t => t.type !== TokenType.Whitespace);
-                    }
-                    if (j < tokens.length && tokens[j].type === TokenType.Punctuation && tokens[j].value === ';') {
-                        i = j + 1;
-                        continue;
-                    }
-                }
-            }
-            if (!context.isObjectLiteral && tt === TokenType.Keyword && !isObjectLiteralStart(tokens, i) && hasItem(v, ['interface', 'type', 'declare', 'namespace', 'module'])) {
-                if (v === 'type')
-                    i = skipUntil(tokens, i, (t, ctx) => {
-                        if (t.type === TokenType.Punctuation) {
-                            if (hasItem(t.value, '<[({')) {
-                                ctx.depth++;
-                            }
-                            else if (hasItem(t.value, '>])}')) {
-                                ctx.depth--;
-                            }
-                        }
-                        return ctx.depth <= 0 && t.type === TokenType.Punctuation && t.value == '=';
-                    }), i++;
-                else
-                    i++;
-                i = skipType(tokens, i, true);
-                continue;
-            }
-            if (!context.isObjectLiteral && tt === TokenType.Keyword && v === 'implements' && token.next?.type !== TokenType.Punctuation && !context.isObjectLiteral) {
-                i++;
-                i = skipUntil(tokens, i, t => t.type === TokenType.Punctuation && t.value == '{');
-                continue;
-            }
-            if (tt === TokenType.Punctuation && v === '!' && token.prev?.type !== TokenType.Punctuation && token.prev?.type !== TokenType.Arrow) {
-                i++;
-                continue;
-            }
-            if (tt === TokenType.Punctuation && v === '(') {
-                if (token.next && token.next.value === '{') {
-                    outputString += token.value;
-                    i++;
-                    continue;
-                }
-                outputString += v;
-                i++;
-                let depth = 1;
-                while (i < tokens.length && depth > 0) {
-                    const paramToken = tokens[i];
-                    const pt = paramToken.type;
-                    const pv = paramToken.value;
-                    if (pt == TokenType.Punctuation && pv == '{' && isObjectLiteralStart(tokens, i)) {
-                        skipUntil(tokens, i, (t, ctx) => {
-                            if (t.type === TokenType.Punctuation) {
-                                if (t.value === '{')
-                                    ctx.depth++;
-                                else if (t.value === '}')
-                                    ctx.depth--;
-                            }
-                            outputString += tokens[i].value;
-                            i++;
-                            return ctx.depth <= 0;
-                        });
-                        continue;
-                    }
-                    if (pt == TokenType.Comment) {
-                        i++;
-                        continue;
-                    }
-                    if (pt === TokenType.Punctuation && pv === '(') {
-                        depth++;
-                    }
-                    else if (pt === TokenType.Punctuation && pv === ')') {
-                        depth--;
-                    }
-                    if (pt === TokenType.Keyword && hasItem(pv, visibility)) {
-                        i++;
-                        if (tokens[i].type === TokenType.Whitespace)
-                            i = skipUntil(tokens, i, t => t.type !== TokenType.Whitespace);
-                        continue;
-                    }
-                    if (pt === TokenType.Punctuation && pv === '!' && paramToken.prev && paramToken.prev.type === TokenType.Identifier) {
-                        i++;
-                        continue;
-                    }
-                    if (pt === TokenType.Punctuation && (pv === ':' || (pv == '?' && paramToken.next?.type == TokenType.Punctuation && paramToken.next?.value == ':')) || (TokenType.Keyword === pt && pv == 'as')) {
-                        i++;
-                        i = skipType(tokens, i, false);
-                        continue;
-                    }
-                    if (i < tokens.length && tokens[i].type === TokenType.Punctuation && tokens[i].value === ')') {
-                        outputString += tokens[i].value;
-                        i++;
-                        if (i < tokens.length && tokens[i].type === TokenType.Punctuation && tokens[i].value === ':') {
-                            i++;
-                            i = skipType(tokens, i, false);
-                        }
-                        continue;
-                    }
-                    outputString += paramToken.value;
-                    i++;
-                }
-                continue;
-            }
-            if (tt === TokenType.Punctuation && (v === ':' || (v === '?' && token.next?.type === TokenType.Punctuation && token.next.value == ':'))) {
-                if (token.prev && token.prev.type === TokenType.Identifier && !context.isObjectLiteral) {
-                    i++;
-                    i = skipType(tokens, i, false);
-                    continue;
-                }
-            }
-            if (tt === TokenType.Punctuation && v === '<' && isGenericStartEnd(i, tokens)) {
-                if (i < tokens.length) {
-                    let j = skipType(tokens, i, false);
-                    if (tokens[j] && tokens[j].type === TokenType.Whitespace)
-                        j = skipUntil(tokens, j, t => t.type !== TokenType.Whitespace);
-                    let gt = tokens[j];
-                    if (gt && gt.type == TokenType.Punctuation && '({['.indexOf(gt.value) !== -1) {
-                        i = j;
-                        continue;
-                    }
-                }
-            }
-            if (!context.isObjectLiteral && tt === TokenType.Keyword &&
-                hasItem(v, visibility)) {
-                i++;
-                continue;
-            }
-            if (tt === TokenType.Keyword) {
-                context.lastKeyword = token.value;
-            }
-            outputString += v;
-            i++;
-        }
-        return outputString;
-    }
     class XToolFramework {
         constructor() {
             this._components = new Map();
@@ -593,6 +66,50 @@ const XToolFramework = function () {
             this._prefetched = new Set();
             this._currentDocURL = '';
             this._scrollPositions = new Map();
+            this._refsRegistry = new WkMap();
+            this._refCleanupRegistry = new WkMap();
+            this._getComponentRefs = (comp, refName) => {
+                const compRefs = this._refsRegistry.get(comp);
+                return compRefs?.get(refName);
+            };
+            this._registerComponentRef = (comp, refName, el) => {
+                if (!FT_EXT_DIRS)
+                    return;
+                let compRefs = this._refsRegistry.get(comp);
+                if (!compRefs) {
+                    compRefs = new Map();
+                    this._refsRegistry.set(comp, compRefs);
+                }
+                let refSet = compRefs.get(refName);
+                if (!refSet) {
+                    refSet = new Set();
+                    compRefs.set(refName, refSet);
+                }
+                if (refSet.has(el))
+                    return;
+                refSet.add(el);
+                if (el instanceof Element === false)
+                    return;
+                this._refCleanupRegistry.set(el, () => {
+                    refSet.delete(el);
+                    if (refSet.size === 0) {
+                        compRefs.delete(refName);
+                    }
+                    if (compRefs.size === 0) {
+                        this._refsRegistry.delete(comp);
+                    }
+                });
+            };
+            this._runRefCleanup = (el) => {
+                const cleanup = this._refCleanupRegistry.get(el);
+                if (cleanup) {
+                    cleanup();
+                    this._refCleanupRegistry.delete(el);
+                }
+            };
+            this._clearComponentRefs = (comp) => {
+                this._refsRegistry.delete(comp);
+            };
             this.directive = (name, directive) => {
                 if (name.startsWith(PFX + '-')) {
                     throw new Error(`Custom directive names should not start with "${PFX}-". Use: XTool.directive("my-directive", ...)`);
@@ -641,7 +158,7 @@ const XToolFramework = function () {
                         this._ensureRootObserver(c);
                         if (this._config.delegate)
                             this._ensureDelegation(c);
-                        if (this._routerEnabled())
+                        if (FT_RT && this._routerEnabled())
                             this._installRouting(c);
                     }
                     try {
@@ -725,7 +242,14 @@ const XToolFramework = function () {
             this._processPending = () => {
                 if (!this._pending[STR_LENGTH])
                     return;
+                const remaining = [];
+                const ready = [];
+                const containerEl = (this._config.container ? d?.querySelector(this._config.container) : null);
                 for (const p of this._pending) {
+                    if (!p.el.isConnected) {
+                        remaining.push(p);
+                        continue;
+                    }
                     let cur = p.el.parentElement;
                     let parent;
                     while (cur && !parent) {
@@ -737,11 +261,18 @@ const XToolFramework = function () {
                     }
                     if (parent) {
                         p.comp.attachToParent(parent);
+                        ready.push(p.comp);
+                    }
+                    else if (containerEl && (containerEl === p.el || containerEl.contains(p.el))) {
+                        ready.push(p.comp);
+                    }
+                    else {
+                        remaining.push(p);
                     }
                 }
-                for (const p of this._pending)
-                    p.comp.completeBinding();
-                this._pending = [];
+                for (const c of ready)
+                    c.completeBinding();
+                this._pending = remaining;
             };
             this._bindElementAsComponent = (element, parentForEval) => {
                 const dataExpression = element.getAttribute(attrName('data'));
@@ -800,6 +331,21 @@ const XToolFramework = function () {
                 const counter = (this._components.size + 1).toString(36);
                 return `component_${now}_${counter}_${random}`;
             };
+            this._discoverNestedNamed = (root, parentHint) => {
+                try {
+                    const hosts = [];
+                    if (root[STR_TAGNAME] === 'COMPONENT' && root.hasAttribute('source'))
+                        hosts.push(root);
+                    const found = root.querySelectorAll('component[source]');
+                    for (const el of found)
+                        hosts.push(el);
+                    for (const host of hosts) {
+                        if (!this._getComponentByElement(host))
+                            this._instantiateNamedComponent(host, parentHint);
+                    }
+                }
+                catch { }
+            };
             this._parseDataExpression = (expression) => {
                 try {
                     return new Function('return ' + expression.trim())();
@@ -821,6 +367,8 @@ const XToolFramework = function () {
         _routerEnabled() { const c = this._config; return !!(c.router?.enabled); }
         _routerTransitionName() { const c = this._config; return (c.router?.transitionName ?? 'route'); }
         _isSameOrigin(href) {
+            if (!FT_RT)
+                return false;
             try {
                 const u = new URL(href, d?.baseURI || location.href);
                 const cur = new URL(location.href);
@@ -831,6 +379,8 @@ const XToolFramework = function () {
             }
         }
         _isSameDocument(target) {
+            if (!FT_RT)
+                return false;
             try {
                 const u = typeof target === 'string' ? new URL(target, d?.baseURI || location.href) : target;
                 const cur = new URL(location.href);
@@ -845,6 +395,8 @@ const XToolFramework = function () {
             return `${u.origin}${u.pathname}${u.search}`;
         }
         _scrollToHash(hash) {
+            if (FT_RT === false)
+                return false;
             try {
                 if (!hash || hash === '#')
                     return false;
@@ -859,6 +411,8 @@ const XToolFramework = function () {
             return false;
         }
         _installRouting(root) {
+            if (!FT_RT)
+                return;
             const self = this;
             const preload = (href) => {
                 try {
@@ -934,6 +488,8 @@ const XToolFramework = function () {
             window.addEventListener('popstate', () => { self._navigate(location.href, false, 'popstate').catch(() => { }); });
         }
         async _navigate(url, push, source = 'program') {
+            if (!FT_RT)
+                return;
             if (!this._routerEnabled())
                 return Promise.resolve();
             if (!this._isSameOrigin(url)) {
@@ -1006,6 +562,8 @@ const XToolFramework = function () {
             }
         }
         async _fetchHTML(url) {
+            if (!FT_RT)
+                return Promise.reject();
             const res = await fetch(url, { credentials: 'same-origin', cache: 'default', redirect: 'follow' });
             if (res.redirected) {
                 const finalUrl = res.url;
@@ -1025,6 +583,8 @@ const XToolFramework = function () {
             return await res.text();
         }
         async _swapDocument(html) {
+            if (!FT_RT)
+                return;
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const newHead = doc.head;
@@ -1083,6 +643,8 @@ const XToolFramework = function () {
                 applySwap();
         }
         _setAttributes(cur, next) {
+            if (!FT_RT)
+                return;
             const curAttrs = cur.getAttributeNames();
             for (let i = 0; i < curAttrs.length; i++) {
                 const name = curAttrs[i];
@@ -1098,6 +660,8 @@ const XToolFramework = function () {
             }
         }
         _attributesEqual(a, b) {
+            if (!FT_RT)
+                return false;
             const aNames = a.getAttributeNames();
             const bNames = b.getAttributeNames();
             if (aNames.length !== bNames.length)
@@ -1125,6 +689,8 @@ const XToolFramework = function () {
             return false;
         }
         _morphElement(cur, next) {
+            if (!FT_RT)
+                return;
             if (cur.nodeName !== next.nodeName || this._isDynamicNode(next)) {
                 cur.replaceWith(next.cloneNode(true));
                 return;
@@ -1198,6 +764,9 @@ const XToolFramework = function () {
                 return existing;
             const self = this;
             const isTypeScript = /\.ts?$/.test(new URL(path, d?.baseURI || location.href).pathname);
+            if (isTypeScript && !FT_TS) {
+                throw new Error(`TypeScript component loading is not enabled in tiny builds. Loading failed for: ${path} failed.`);
+            }
             const html = (strings, ...values) => strings.reduce((acc, str, i) => acc + str + (i < values.length ? values[i] : ''), '') + `\n`;
             const attempt = (n) => {
                 return fetch(path, { cache: 'no-cache' }).then(res => {
@@ -1205,7 +774,7 @@ const XToolFramework = function () {
                         throw new Error(res.status + ' ' + res.statusText);
                     return res.text();
                 }).then(code => {
-                    if (isTypeScript) {
+                    if (FT_TS && isTypeScript) {
                         code = stripTypes(code);
                     }
                     const wrapped = code + `\n//# sourceURL=${path}`;
@@ -1264,12 +833,14 @@ const XToolFramework = function () {
                             quMct(() => {
                                 if (el.isConnected)
                                     return;
+                                this._runRefCleanup(el);
                                 const stack = [el];
                                 while (stack.length) {
                                     const cur = stack.pop();
                                     const comp = this._getComponentByElement(cur);
                                     if (comp && !comp.isDestroyed) {
                                         try {
+                                            this._clearComponentRefs(comp);
                                             comp.destroy();
                                         }
                                         catch { }
@@ -1307,6 +878,8 @@ const XToolFramework = function () {
             this._rootObserver.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: [STR_SOURCE, STR_READONLY] });
         }
         _ensureIO(rootMargin) {
+            if (!FT_EXT_DIRS)
+                return null;
             if (typeof IntersectionObserver === 'undefined')
                 return null;
             if (!this._ioObservers)
@@ -1349,6 +922,8 @@ const XToolFramework = function () {
             return io;
         }
         _ioObserve(el, rootMargin, onEnter, onLeave) {
+            if (!FT_EXT_DIRS)
+                return () => { };
             const io = this._ensureIO(rootMargin);
             if (!io)
                 return () => { };
@@ -1398,29 +973,10 @@ const XToolFramework = function () {
             this._registerElement(comp.element, comp);
             this._pending.push({ el, comp });
             if (opts?.xInitExpr) {
-                const initExpr = opts.xInitExpr;
-                const existingMounted = comp._lifecycle?.mounted;
-                comp._lifecycle.mounted = function () {
-                    if (existingMounted) {
-                        _se(() => existingMounted.call(this));
-                    }
-                    const evaluator = new Function('ctx', 'with(ctx){' + initExpr + '} ');
-                    quMct(() => {
-                        if (comp.isDestroyed || !comp.element || !comp.element.isConnected)
-                            return;
-                        try {
-                            const ctx = comp._createMethodContext?.() || comp.getContext?.() || {};
-                            const result = evaluator(ctx);
-                            if (typeof result === 'function') {
-                                _se(() => result());
-                            }
-                        }
-                        catch { }
-                    });
-                };
+                comp._setXInitExpr(opts.xInitExpr);
             }
         }
-        _instantiateNamedComponent(el) {
+        _instantiateNamedComponent(el, parentHint) {
             const source = el.getAttribute('source');
             if (!source)
                 return;
@@ -1440,14 +996,16 @@ const XToolFramework = function () {
                 }
                 return;
             }
-            let parentComp;
-            let par = el.parentElement;
-            while (par && !parentComp) {
-                const maybe = this._getComponentByElement(par);
-                if (maybe)
-                    parentComp = maybe;
-                else
-                    par = par.parentElement;
+            let parentComp = parentHint;
+            if (!parentComp) {
+                let par = el.parentElement;
+                while (par && !parentComp) {
+                    const maybe = this._getComponentByElement(par);
+                    if (maybe)
+                        parentComp = maybe;
+                    else
+                        par = par.parentElement;
+                }
             }
             let props = null;
             let dynamicPropObj = null;
@@ -1455,6 +1013,40 @@ const XToolFramework = function () {
             if (!props)
                 props = {};
             const propExpr = el.getAttribute(attrName('prop'));
+            const propBase = attrName('prop');
+            const propPrefix = propBase + ':';
+            const modifierPropExpressions = {};
+            const resolvePropName = (raw) => {
+                if (!raw)
+                    return raw;
+                const lower = raw.toLowerCase();
+                const tryMatch = (obj) => {
+                    if (!obj)
+                        return null;
+                    for (const k of Object.keys(obj)) {
+                        if (k.toLowerCase() === lower)
+                            return k;
+                    }
+                    return null;
+                };
+                const fromPropEff = tryMatch(def?.propEffects);
+                if (fromPropEff)
+                    return fromPropEff;
+                if (raw.includes('-')) {
+                    return caseKebabToCamel(raw);
+                }
+                return raw;
+            };
+            for (const attr of Array.from(el.attributes)) {
+                const name = attr.name;
+                if (name.startsWith(propPrefix)) {
+                    const rawKey = name.substring(propPrefix.length);
+                    const key = resolvePropName(rawKey);
+                    if (key)
+                        modifierPropExpressions[key] = attr.value;
+                    el.removeAttribute(name);
+                }
+            }
             if (propExpr) {
                 rawPropExpression = propExpr;
                 if (parentComp) {
@@ -1478,8 +1070,60 @@ const XToolFramework = function () {
                 if (dynamicPropObj && typeof dynamicPropObj === 'object')
                     for (const k in dynamicPropObj)
                         if (!(k in props))
-                            props[k] = String(dynamicPropObj[k]);
+                            props[k] = dynamicPropObj[k];
                 el.removeAttribute(attrName('prop'));
+            }
+            if (Object.keys(modifierPropExpressions).length) {
+                const evaluated = {};
+                for (const [k, expr] of Object.entries(modifierPropExpressions)) {
+                    let val;
+                    if (parentComp) {
+                        try {
+                            const fn = new Function('ctx', 'with(ctx){return (' + expr + ')}');
+                            val = fn(parentComp.getContext(true));
+                        }
+                        catch {
+                            val = undefined;
+                        }
+                    }
+                    else {
+                        try {
+                            val = new Function('return (' + expr + ')')();
+                        }
+                        catch {
+                            val = undefined;
+                        }
+                    }
+                    evaluated[k] = val;
+                    if (!(k in props))
+                        props[k] = String(val);
+                }
+                const existingDynamic = dynamicPropObj ? { ...dynamicPropObj } : {};
+                dynamicPropObj = { ...existingDynamic };
+                for (const k in evaluated)
+                    if (!(k in existingDynamic))
+                        dynamicPropObj[k] = evaluated[k];
+                const modifierKeysToAppend = Object.keys(evaluated).filter(k => !(k in existingDynamic));
+                if (modifierKeysToAppend.length) {
+                    if (rawPropExpression && /}\s*$/.test(rawPropExpression.trim())) {
+                        const trimmed = rawPropExpression.trim();
+                        const closeIndex = trimmed.lastIndexOf('}');
+                        if (closeIndex > -1) {
+                            const head = trimmed.slice(0, closeIndex);
+                            const needsComma = /{\s*$/.test(head) ? false : true;
+                            const appended = modifierKeysToAppend.map(k => `${k}: ${modifierPropExpressions[k]}`).join(', ');
+                            rawPropExpression = head + (needsComma ? ', ' : ' ') + appended + '}';
+                        }
+                    }
+                    else {
+                        rawPropExpression = '{ ' + modifierKeysToAppend.map(k => `${k}: ${modifierPropExpressions[k]}`).join(', ') + ' }';
+                    }
+                }
+                else if (!rawPropExpression) {
+                    const allKeys = Object.keys(modifierPropExpressions);
+                    if (allKeys.length)
+                        rawPropExpression = '{ ' + allKeys.map(k => `${k}: ${modifierPropExpressions[k]}`).join(', ') + ' }';
+                }
             }
             let baseData = {};
             if (def.makeData) {
@@ -1491,9 +1135,15 @@ const XToolFramework = function () {
                     baseData[k] = def.data[k];
                 }
             }
-            for (const k in props) {
-                if (!(k in baseData))
+            if (dynamicPropObj && typeof dynamicPropObj === 'object') {
+                for (const k in dynamicPropObj) {
+                    baseData[k] = dynamicPropObj[k];
+                }
+            }
+            else {
+                for (const k in props) {
                     baseData[k] = props[k];
+                }
             }
             baseData.$props = props;
             let initDef;
@@ -1573,6 +1223,10 @@ const XToolFramework = function () {
                     if (!this._getComponentByElement(node))
                         this._bindElementAsComponent(node, comp);
                 }
+            }
+            catch { }
+            try {
+                this._discoverNestedNamed(el, comp);
             }
             catch { }
             if (rawPropExpression && parentComp) {
@@ -1845,6 +1499,29 @@ const XToolFramework = function () {
                 const hook = this._lifecycle[hookName];
                 if (typeof hook === 'function') {
                     this._safeExecute(() => this._runWithGlobalInterception(hook, []));
+                }
+                if (hookName === 'mounted' && this._xInitExpr) {
+                    const expr = this._xInitExpr;
+                    if (this.isDestroyed || !this.element || !this.element.isConnected)
+                        return;
+                    const runner = () => {
+                        const trimmed = _tr(expr);
+                        const arrow = this._extractArrowFunction(trimmed);
+                        const ctx = this._createMethodContext();
+                        if (arrow) {
+                            const fn = this._compileArrowForEvent(arrow.paramsList, arrow.body, arrow.isBlock);
+                            const args = arrow.paramsList.length ? [this.element] : [];
+                            const out = fn.call(this._createContextProxy(undefined, this.element || undefined), ctx, ...args.slice(0, arrow.paramsList.length));
+                            if (typeof out === 'function')
+                                this._addCleanupFunction(out);
+                            return;
+                        }
+                        const compiled = this._createEvaluator(trimmed, trimmed.indexOf(';') !== -1);
+                        const result = compiled.call(ctx, this._createContextProxy(undefined, this.element || undefined));
+                        if (typeof result === 'function')
+                            this._addCleanupFunction(result);
+                    };
+                    this._safeExecute(() => this._runWithGlobalInterception(runner, []));
                 }
             };
             this._addCleanupFunction = (fn) => {
@@ -2167,6 +1844,7 @@ const XToolFramework = function () {
                 this._children.splice(index, 1);
             }
         }
+        _setXInitExpr(expr) { this._xInitExpr = expr || undefined; }
         _runWithGlobalInterception(fn, args) {
             try {
                 const src = String(fn);
@@ -2224,6 +1902,7 @@ const XToolFramework = function () {
             }
             if (self._element)
                 self._framework._unregisterElement(self._element);
+            self._framework._clearComponentRefs(self);
             if (self._changeFrameId != null) {
                 _se(() => cancelAnimationFrame(self._changeFrameId));
                 self._changeFrameId = null;
@@ -2341,6 +2020,8 @@ const XToolFramework = function () {
             self._walkElements(element, processElement);
         }
         _bindTextInterpolationsIn(el) {
+            if (!FT_EXT_DIRS)
+                return;
             const nodes = Array.from(el.childNodes);
             for (const node of nodes) {
                 if (node.nodeType !== Node.TEXT_NODE)
@@ -2450,9 +2131,21 @@ const XToolFramework = function () {
                 element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, type, expression);
             }
-            if (!isAtEvent && (type === 'text' || type === 'html' || type === 'show')) {
+            if (FT_EXT_DIRS && !isAtEvent && (type === 'transition' || type.startsWith('transition.'))) {
+                let modifiers;
+                if (type.startsWith('transition.')) {
+                    const modList = type.slice('transition.'.length).split('.').filter(Boolean);
+                    modifiers = modList.reduce((acc, m) => { acc[m] = true; return acc; }, {});
+                }
                 element.removeAttribute(directiveName);
-                return self._bindSimpleDirective(element, expression, type);
+                return self._bindTransitionDirective(element, expression, undefined, modifiers);
+            }
+            if (!isAtEvent && (type === 'text' || type === 'html' || type === 'show')) {
+                return self._bindSimpleDirective(element, expression, type, directiveName);
+            }
+            if (!isAtEvent && type === 'ref') {
+                element.removeAttribute(directiveName);
+                return self._bindRefDirective(element, expression);
             }
             const handled = (!isAtEvent && type === 'model') ? (element.removeAttribute(directiveName), self._bindModelDirective(element, expression), true)
                 : type === 'if' ? (element.removeAttribute(directiveName), self._bindIfDirective(element, expression), true)
@@ -2465,6 +2158,9 @@ const XToolFramework = function () {
                 const [suffix, ...mods] = rest.split('.');
                 const modifiers = mods.reduce((acc, m) => { if (m)
                     acc[m] = true; return acc; }, {});
+                if (!isAtEvent && element[STR_TAGNAME] === 'COMPONENT' && prefix === 'prop') {
+                    return;
+                }
                 if (prefix === 'on') {
                     element.removeAttribute(directiveName);
                     const customDirective = self.framework._getCustomDirective(suffix);
@@ -2472,7 +2168,18 @@ const XToolFramework = function () {
                         ? self._bindCustomDirective(element, suffix, expression, customDirective, modifiers)
                         : self._bindEventDirective(element, suffix, expression, modifiers);
                 }
-                if (prefix === 'intersect') {
+                if (prefix === 'transition' && FT_EXT_DIRS) {
+                    element.removeAttribute(directiveName);
+                    const map = {
+                        'enter': 'enter', 'enter-from': 'enterFrom', 'enter-to': 'enterTo',
+                        'leave': 'leave', 'leave-from': 'leaveFrom', 'leave-to': 'leaveTo',
+                        'enter-start': 'enterFrom', 'enter-end': 'enterTo',
+                        'leave-start': 'leaveFrom', 'leave-end': 'leaveTo',
+                    };
+                    const part = map[suffix] || 'toggle';
+                    return self._bindTransitionDirective(element, expression, part, modifiers);
+                }
+                if (prefix === 'intersect' && FT_EXT_DIRS) {
                     element.removeAttribute(directiveName);
                     return self._bindIntersectDirective(element, expression, modifiers, suffix);
                 }
@@ -2480,7 +2187,44 @@ const XToolFramework = function () {
                 return self._bindAttributeDirective(element, suffix, expression);
             }
         }
+        _bindRefDirective(element, expression) {
+            if (!FT_EXT_DIRS)
+                return;
+            const refName = _tr(expression);
+            if (!refName)
+                return;
+            const self = this;
+            self.framework._registerComponentRef(self, refName, element);
+            const dir = { type: 'ref', expression };
+            this._addDirective(element, dir);
+        }
+        _getSharedRef(refName) {
+            if (!refName || !FT_EXT_DIRS)
+                return undefined;
+            let ref = this.framework._getComponentRefs(this, refName);
+            if (!ref && this._parent) {
+                let parent = this._parent;
+                while (parent) {
+                    ref = parent.framework._getComponentRefs(parent, refName);
+                    if (ref || !parent._parent)
+                        break;
+                    parent = parent._parent;
+                }
+            }
+            if (ref) {
+                if (ref.size > 1) {
+                    const arr = [];
+                    ref.forEach((el) => arr.push(el));
+                    return arr;
+                }
+                else {
+                    return ref.values().next().value;
+                }
+            }
+        }
         _bindIntersectDirective(element, expression, modifiers, phase) {
+            if (!FT_EXT_DIRS)
+                return;
             const self = this;
             const trimmed = _tr(expression);
             const runExpr = self._compileHandler(trimmed, element, (payload) => [payload, element]);
@@ -2528,11 +2272,316 @@ const XToolFramework = function () {
             }
             return effect;
         }
-        _bindSimpleDirective(element, expression, type) {
+        _bindTransitionDirective(element, expression, part, modifiers) {
+            if (!FT_EXT_DIRS)
+                return;
+            let config = element.__x_transition || null;
+            const trimmed = _tr(expression);
+            if (trimmed) {
+                try {
+                    const evalFn = this._createElementEvaluator(trimmed, element);
+                    const val = this._safeExecute(() => evalFn());
+                    if (!config)
+                        config = {};
+                    if (val && typeof val === 'object') {
+                        for (const k in val)
+                            config[k] = val[k];
+                    }
+                    else if (typeof val === 'string') {
+                        if (part)
+                            config[part] = val;
+                        else
+                            config.toggle = val;
+                    }
+                }
+                catch { }
+            }
+            if (modifiers && (modifiers.after || modifiers.end)) {
+                const exprStr = trimmed;
+                if (exprStr) {
+                    const runExpr = this._compileHandler(exprStr, element, (payload) => [payload, element]);
+                    const call = (payload) => { if (runExpr)
+                        this._safeExecute(() => runExpr(payload)); };
+                    if (part === 'enter' || part === 'enterFrom' || part === 'enterTo')
+                        config.afterEnterRunner = call;
+                    else if (part === 'leave' || part === 'leaveFrom' || part === 'leaveTo')
+                        config.afterLeaveRunner = call;
+                    else
+                        config.afterRunner = call;
+                }
+            }
+            if (!config)
+                config = {};
+            element.__x_transition = config;
+            this._addDirective(element, { type: 'transition', expression });
+        }
+        _applyShowWithTransition(el, show, originalDisplay, onDone) {
+            if (!FT_EXT_DIRS) {
+                if (show) {
+                    if (originalDisplay)
+                        el.style.setProperty('display', originalDisplay, 'important');
+                    else
+                        el.style.removeProperty('display');
+                }
+                else {
+                    el.style.setProperty('display', STR_NONE, 'important');
+                }
+                if (onDone)
+                    onDone();
+                return;
+            }
+            const cfg = el.__x_transition;
+            const imp = 'important';
+            if (!cfg) {
+                if (show) {
+                    if (originalDisplay)
+                        el.style.setProperty('display', originalDisplay, imp);
+                    else
+                        el.style.removeProperty('display');
+                }
+                else {
+                    el.style.setProperty('display', STR_NONE, imp);
+                }
+                if (onDone)
+                    onDone();
+                return;
+            }
+            const prev = el.__x_t;
+            if (prev && typeof prev.cancel === 'function') {
+                try {
+                    prev.cancel();
+                }
+                catch { }
+            }
+            const duration = typeof cfg.duration === 'number' ? cfg.duration : 150;
+            const easing = typeof cfg.easing === 'string' ? cfg.easing : 'ease';
+            const add = (cls) => { if (!cls)
+                return; cls.split(/\s+/).forEach(c => c && el.classList.add(c)); };
+            const rm = (cls) => { if (!cls)
+                return; cls.split(/\s+/).forEach(c => c && el.classList.remove(c)); };
+            const effectiveMs = (fallbackMs) => {
+                try {
+                    const cs = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(el) : null;
+                    if (!cs)
+                        return fallbackMs;
+                    const parseTimes = (s) => {
+                        if (!s)
+                            return [];
+                        return s.split(',').map(x => x.trim()).filter(Boolean).map(x => {
+                            if (x.endsWith('ms'))
+                                return parseFloat(x);
+                            if (x.endsWith('s'))
+                                return parseFloat(x) * 1000;
+                            const n = parseFloat(x);
+                            return isNaN(n) ? 0 : n;
+                        });
+                    };
+                    const sumMax = (durations, delays) => {
+                        const n = Math.max(durations.length, delays.length);
+                        let max = 0;
+                        for (let i = 0; i < n; i++) {
+                            const d = durations[i % durations.length] || 0;
+                            const dl = delays[i % delays.length] || 0;
+                            const t = d + dl;
+                            if (t > max)
+                                max = t;
+                        }
+                        return max;
+                    };
+                    const tDur = parseTimes(cs.transitionDuration || '');
+                    const tDel = parseTimes(cs.transitionDelay || '');
+                    let maxT = sumMax(tDur, tDel);
+                    const aDur = parseTimes(cs.animationDuration || '');
+                    const aDel = parseTimes(cs.animationDelay || '');
+                    const itersRaw = (cs.animationIterationCount || '').split(',').map(s => s.trim());
+                    const iters = itersRaw.map(v => (v === 'infinite' ? 0 : (parseFloat(v) || 1)));
+                    const nA = Math.max(aDur.length, aDel.length, iters.length);
+                    let maxA = 0;
+                    for (let i = 0; i < nA; i++) {
+                        const d = aDur[i % aDur.length] || 0;
+                        const dl = aDel[i % aDel.length] || 0;
+                        const it = iters[i % iters.length] || 1;
+                        if (it === 0)
+                            continue;
+                        const t = dl + d * it;
+                        if (t > maxA)
+                            maxA = t;
+                    }
+                    const eff = Math.max(maxT, maxA);
+                    return eff > 0 ? eff : fallbackMs;
+                }
+                catch {
+                    return fallbackMs;
+                }
+            };
+            const finishers = [];
+            const addFinish = (cb) => finishers.push(cb);
+            const cleanup = () => { while (finishers.length) {
+                try {
+                    finishers.pop()();
+                }
+                catch { }
+            } };
+            const waitEnd = (fallbackMs, done) => {
+                let ended = false;
+                const off = () => {
+                    if (ended)
+                        return;
+                    ended = true;
+                    done();
+                    cleanup();
+                };
+                const onEnd = () => off();
+                el.addEventListener('transitionend', onEnd, { once: true, capture: true });
+                el.addEventListener('animationend', onEnd, { once: true, capture: true });
+                const to = setTimeout(off, fallbackMs + 50);
+                addFinish(() => {
+                    try {
+                        el.removeEventListener('transitionend', onEnd);
+                    }
+                    catch { }
+                    try {
+                        el.removeEventListener('animationend', onEnd);
+                    }
+                    catch { }
+                    clearTimeout(to);
+                });
+            };
+            const invokeAfter = (phase, msUsed) => {
+                const payload = { el, phase, config: { ...cfg, duration: msUsed ?? effectiveMs(duration), easing } };
+                try {
+                    if (phase === 'enter') {
+                        if (typeof cfg.afterEnterRunner === 'function')
+                            cfg.afterEnterRunner(payload);
+                        else if (typeof cfg.afterRunner === 'function')
+                            cfg.afterRunner(payload);
+                    }
+                    else {
+                        if (typeof cfg.afterLeaveRunner === 'function')
+                            cfg.afterLeaveRunner(payload);
+                        else if (typeof cfg.afterRunner === 'function')
+                            cfg.afterRunner(payload);
+                    }
+                }
+                catch { }
+            };
+            const startClassBased = (phase) => {
+                const enter = phase === 'enter';
+                const A = enter ? cfg.enter : cfg.leave;
+                const F = enter ? cfg.enterFrom : cfg.leaveFrom;
+                const T = enter ? cfg.enterTo : cfg.leaveTo;
+                if (enter) {
+                    if (originalDisplay)
+                        el.style.setProperty('display', originalDisplay, imp);
+                    else
+                        el.style.removeProperty('display');
+                }
+                if (!A && !F && !T)
+                    return false;
+                add(A);
+                add(F);
+                el.offsetWidth;
+                rm(F);
+                add(T);
+                const ms = effectiveMs(duration);
+                waitEnd(ms, () => {
+                    rm(A);
+                    rm(T);
+                    if (!enter)
+                        el.style.setProperty('display', STR_NONE, imp);
+                    if (onDone)
+                        onDone();
+                    invokeAfter(phase, ms);
+                });
+                el.__x_t = { cancel: () => { rm(A); rm(F); rm(T); if (!enter)
+                        el.style.setProperty('display', STR_NONE, imp); if (onDone)
+                        onDone(); } };
+                return true;
+            };
+            const startStyleFade = (phase) => {
+                const enter = phase === 'enter';
+                const prevTransition = el.style.transition;
+                const prevOpacity = el.style.opacity;
+                if (enter) {
+                    if (originalDisplay)
+                        el.style.setProperty('display', originalDisplay, imp);
+                    else
+                        el.style.removeProperty('display');
+                    el.style.setProperty('opacity', '0', imp);
+                }
+                else {
+                    el.style.setProperty('opacity', '1', imp);
+                }
+                el.offsetWidth;
+                const ms = effectiveMs(duration);
+                el.style.setProperty('transition', `opacity ${ms}ms ${easing}`, imp);
+                if (enter)
+                    el.style.setProperty('opacity', '1', imp);
+                else
+                    el.style.setProperty('opacity', '0', imp);
+                waitEnd(ms, () => {
+                    if (prevTransition)
+                        el.style.setProperty('transition', prevTransition, imp);
+                    else
+                        el.style.removeProperty('transition');
+                    if (prevOpacity)
+                        el.style.setProperty('opacity', prevOpacity, imp);
+                    else
+                        el.style.removeProperty('opacity');
+                    if (!enter)
+                        el.style.setProperty('display', STR_NONE, imp);
+                    if (onDone)
+                        onDone();
+                    invokeAfter(phase, ms);
+                });
+                el.__x_t = { cancel: () => { if (prevTransition)
+                        el.style.setProperty('transition', prevTransition, imp);
+                    else
+                        el.style.removeProperty('transition'); if (prevOpacity)
+                        el.style.setProperty('opacity', prevOpacity, imp);
+                    else
+                        el.style.removeProperty('opacity'); if (!enter)
+                        el.style.setProperty('display', STR_NONE, imp); if (onDone)
+                        onDone(); } };
+            };
+            if (typeof cfg.toggle === 'string') {
+                if (show) {
+                    if (originalDisplay)
+                        el.style.setProperty('display', originalDisplay, imp);
+                    else
+                        el.style.removeProperty('display');
+                    add(cfg.toggle);
+                    const ms = effectiveMs(duration);
+                    waitEnd(ms, () => { if (onDone)
+                        onDone(); invokeAfter('enter', ms); });
+                    el.__x_t = { cancel: () => { if (onDone)
+                            onDone(); } };
+                }
+                else {
+                    rm(cfg.toggle);
+                    const ms = effectiveMs(duration);
+                    waitEnd(ms, () => { el.style.setProperty('display', STR_NONE, imp); if (onDone)
+                        onDone(); invokeAfter('leave', ms); });
+                    el.__x_t = { cancel: () => { el.style.setProperty('display', STR_NONE, imp); if (onDone)
+                            onDone(); } };
+                }
+                return;
+            }
+            if (show) {
+                if (!startClassBased('enter'))
+                    startStyleFade('enter');
+            }
+            else {
+                if (!startClassBased('leave'))
+                    startStyleFade('leave');
+            }
+        }
+        _bindSimpleDirective(element, expression, type, directiveName) {
             if (type === 'class' || type === STR_STYLE) {
                 return this._bindAttributeDirective(element, type, expression);
             }
             const evaluator = this._createElementEvaluator(expression, element);
+            let isDirty = directiveName ? element.getAttribute(directiveName) !== null : false;
             let originalDisplay;
             if (type === 'show') {
                 const el = element;
@@ -2542,6 +2591,10 @@ const XToolFramework = function () {
             const update = () => {
                 const value = evaluator();
                 const el = element;
+                if (isDirty && directiveName) {
+                    element.removeAttribute(directiveName);
+                    isDirty = false;
+                }
                 switch (type) {
                     case 'text':
                         el.textContent = String(value);
@@ -2554,7 +2607,7 @@ const XToolFramework = function () {
                         if (_prevShown === next)
                             return;
                         _prevShown = next;
-                        el.style[STR_DISPLAY] = next ? (originalDisplay || '') : STR_NONE;
+                        this._applyShowWithTransition(el, next, originalDisplay);
                         break;
                 }
             };
@@ -2673,8 +2726,9 @@ const XToolFramework = function () {
                 return { el: el, isTemplate: false };
             };
             const first = makeActualElement(element);
+            const firstOD = (first.el.style[STR_DISPLAY] !== STR_NONE) ? first.el.style[STR_DISPLAY] : undefined;
             const firstEval = self._createElementEvaluator(expression, element);
-            branches.push({ el: first.el, test: firstEval, isTemplate: first.isTemplate });
+            branches.push({ el: first.el, test: firstEval, isTemplate: first.isTemplate, originalDisplay: firstOD });
             if (!first.isTemplate)
                 first.el.__x_tool_bound = true;
             const originalNodes = [element];
@@ -2688,14 +2742,16 @@ const XToolFramework = function () {
                     if (sib.hasAttribute(attrName('else-if'))) {
                         const attr = sib.getAttribute(attrName('else-if')) || '';
                         const branch = makeActualElement(sib);
+                        const od = (branch.el.style[STR_DISPLAY] !== STR_NONE) ? branch.el.style[STR_DISPLAY] : undefined;
                         const evalFn = self._createElementEvaluator(_tr(attr), sib);
-                        branches.push({ el: branch.el, test: evalFn, isTemplate: branch.isTemplate });
+                        branches.push({ el: branch.el, test: evalFn, isTemplate: branch.isTemplate, originalDisplay: od });
                         if (!branch.isTemplate)
                             branch.el.__x_tool_bound = true;
                     }
                     else {
                         const branch = makeActualElement(sib);
-                        branches.push({ el: branch.el, test: null, isTemplate: branch.isTemplate });
+                        const od = (branch.el.style[STR_DISPLAY] !== STR_NONE) ? branch.el.style[STR_DISPLAY] : undefined;
+                        branches.push({ el: branch.el, test: null, isTemplate: branch.isTemplate, originalDisplay: od });
                         if (!branch.isTemplate)
                             branch.el.__x_tool_bound = true;
                     }
@@ -2723,6 +2779,11 @@ const XToolFramework = function () {
                     placeholder.parentNode?.insertBefore(b.el, placeholder.nextSibling);
                 }
                 element.__x_if_current = b.el;
+                self._applyShowWithTransition(b.el, true, b.originalDisplay);
+                try {
+                    self.framework._discoverNestedNamed(b.el, self);
+                }
+                catch { }
                 active = idx;
             };
             const unmountBranch = (idx, cb) => {
@@ -2733,10 +2794,12 @@ const XToolFramework = function () {
                 }
                 const b = branches[idx];
                 if (b.el.parentNode) {
-                    if (b.el.parentNode)
-                        b.el.parentNode.removeChild(b.el);
-                    if (cb)
-                        cb();
+                    self._applyShowWithTransition(b.el, false, b.originalDisplay, () => {
+                        if (b.el.parentNode)
+                            b.el.parentNode.removeChild(b.el);
+                        if (cb)
+                            cb();
+                    });
                 }
                 else if (cb)
                     cb();
@@ -2952,6 +3015,8 @@ const XToolFramework = function () {
             }
         }
         _wrapData(data, parentKey) {
+            if (!_FT_DR)
+                return data;
             const isArr = ARRAY_ISARRAY(data);
             const isSet = (typeof Set !== 'undefined') && (data instanceof Set);
             const isMap = (typeof Map !== 'undefined') && (data instanceof Map);
@@ -3073,7 +3138,7 @@ const XToolFramework = function () {
                     if (typeof property !== 'symbol') {
                         self._trackDependency(property);
                     }
-                    if (value && typeof value === 'object') {
+                    if (value && typeof value === 'object' && _FT_DR) {
                         return self._wrapData(value, property);
                     }
                     return value;
@@ -3124,90 +3189,105 @@ const XToolFramework = function () {
             });
         }
         _createMethodContext(_includeComputed = true) {
+            const self = this;
             const specials = {
                 '$log': (..._args) => { },
-                '$destroy': () => this.destroy(),
-                '$forceUpdate': () => this._scheduleRender(),
-                '$addCleanupFunction': (fn) => this._addCleanupFunction(fn),
+                '$destroy': () => self.destroy(),
+                '$forceUpdate': () => self._scheduleRender(),
+                '$addCleanupFunction': (fn) => self._addCleanupFunction(fn),
                 '$nextTick': (cb) => {
                     if (cb) {
-                        this._nextTickQueue.push(cb);
-                        if (!this._renderScheduled)
+                        self._nextTickQueue.push(cb);
+                        if (!self._renderScheduled)
                             quMct(() => {
-                                if (!this._renderScheduled && this._nextTickQueue.length) {
-                                    const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
+                                if (!self._renderScheduled && self._nextTickQueue.length) {
+                                    const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
                                     for (const fn of q) {
-                                        this._safeExecute(() => fn());
+                                        self._safeExecute(() => fn());
                                     }
                                 }
                             });
                         return;
                     }
                     return new Promise(resolve => {
-                        this._nextTickQueue.push(() => resolve());
-                        if (!this._renderScheduled)
+                        self._nextTickQueue.push(() => resolve());
+                        if (!self._renderScheduled)
                             quMct(() => {
-                                if (!this._renderScheduled && this._nextTickQueue.length) {
-                                    const q = this._nextTickQueue.splice(0, this._nextTickQueue.length);
+                                if (!self._renderScheduled && self._nextTickQueue.length) {
+                                    const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
                                     for (const fn of q) {
-                                        this._safeExecute(() => fn());
+                                        self._safeExecute(() => fn());
                                     }
                                 }
                             });
                     });
                 },
-                '$el': this._element,
-                '$id': this._id,
-                '$isMounted': this._isMounted,
-                '$isDestroyed': this._isDestroyed,
-                '$isSealed': this._isSealed,
-                '$isFrozen': this._isFrozen,
-                '$parent': this._parent,
-                '$children': this._children,
-                '$seal': (on = true) => { this._setSealed(!!on); },
+                '$el': self._element,
+                '$id': self._id,
+                ...(FT_EXT_DIRS ? {
+                    '$refs': new Proxy({}, {
+                        get: (_t, refName) => {
+                            if (!refName)
+                                return null;
+                            return self._getSharedRef(refName);
+                        }
+                    }),
+                    '$ref': (refName, value) => {
+                        if (value === undefined)
+                            return self._getSharedRef(refName);
+                        self._framework._registerComponentRef(self, refName, value);
+                    }
+                } : {}),
+                '$isMounted': self._isMounted,
+                '$isDestroyed': self._isDestroyed,
+                '$isSealed': self._isSealed,
+                '$isFrozen': self._isFrozen,
+                '$parent': self._parent,
+                '$children': self._children,
+                '$seal': (on = true) => { self._setSealed(!!on); },
                 '$mutate': (fn) => {
-                    const prevMethod = this._isInMethodExecution;
-                    this._isMutationEnabled = false;
-                    if (this._isInComputedEvaluation) {
+                    const prevMethod = self._isInMethodExecution;
+                    self._isMutationEnabled = false;
+                    if (self._isInComputedEvaluation) {
                         throw new Error('[x-tool] $mutate cannot be used inside computed evaluation; computed getters must be pure.');
                     }
-                    this._isInMethodExecution = false;
+                    self._isInMethodExecution = false;
                     try {
                         return typeof fn === 'function' ? fn() : undefined;
                     }
                     finally {
-                        this._isInMethodExecution = prevMethod;
-                        this._isMutationEnabled = true;
-                        this._scheduleRender();
+                        self._isInMethodExecution = prevMethod;
+                        self._isMutationEnabled = true;
+                        self._scheduleRender();
                     }
                 }
             };
-            let data = this._data;
-            if (this._isInComputedEvaluation) {
-                data = (this._rawData);
+            let data = self._data;
+            if (self._isInComputedEvaluation) {
+                data = (self._rawData);
             }
             return new Proxy(data, {
                 get: (target, propStr) => {
                     if (propStr in target) {
-                        this._trackDependency(propStr);
+                        self._trackDependency(propStr);
                         const v = target[propStr];
                         return v;
                     }
-                    if (FT_C && (propStr in this._computed)) {
-                        return this._getComputedValue(propStr);
+                    if (FT_C && (propStr in self._computed)) {
+                        return self._getComputedValue(propStr);
                     }
                     if (propStr in specials)
                         return specials[propStr];
-                    return this._methods[propStr];
+                    return self._methods[propStr];
                 },
                 set: (_target, propStr, value) => {
-                    if (this._isInComputedEvaluation) {
+                    if (self._isInComputedEvaluation) {
                         throw new Error(`[x-tool] Mutation of '${String(propStr)}' is not allowed during computed evaluation.`);
                     }
-                    if (this._isFrozen) {
+                    if (self._isFrozen) {
                         throw new Error(`[x-tool] Mutation of '${String(propStr)}' is not allowed while component is frozen.`);
                     }
-                    this._data[propStr] = value;
+                    self._data[propStr] = value;
                     return true;
                 }
             });
@@ -3362,7 +3442,21 @@ const XToolFramework = function () {
             const specials = {
                 '$target': targetElement || null,
                 '$event': event || null,
-                ...(this.framework._routerEnabled() ? {
+                ...(FT_EXT_DIRS ? {
+                    '$refs': new Proxy({}, {
+                        get: (_t, refName) => {
+                            if (!refName)
+                                return null;
+                            return component._getSharedRef(refName);
+                        }
+                    }),
+                    '$ref': (refName, value) => {
+                        if (value === undefined)
+                            return component._getSharedRef(refName);
+                        component._framework._registerComponentRef(component, refName, value);
+                    }
+                } : {}),
+                ...(FT_RT && this.framework._routerEnabled() ? {
                     'location': new Proxy(gWindow?.location || location, {
                         get: (t, p) => t[p],
                         set: (_t, p, v) => {
@@ -3607,6 +3701,8 @@ const XToolFramework = function () {
             return _Okeys(merged).length ? merged : null;
         }
         _updateElementDirectives(root, force) {
+            if (!FT_EXT_DIRS)
+                return;
             for (const [element, directives] of this._directives) {
                 for (const directive of directives) {
                     if ((root === element || (element instanceof Element && root.contains(element))) && directive.update) {
@@ -3633,6 +3729,8 @@ const XToolFramework = function () {
             }
         }
         _cleanupElementSubtree(root) {
+            if (!FT_EXT_DIRS)
+                return;
             const toDelete = [];
             for (const [element, directives] of this._directives) {
                 if (root === element || (element instanceof Element && root.contains(element))) {
@@ -3653,6 +3751,8 @@ const XToolFramework = function () {
             }
         }
         _bindForDirective(element, expression) {
+            if (!FT_EXT_DIRS)
+                return;
             const self = this;
             const match = expression.trim().match(/^(?:\(\s*([^,\s]+)\s*(?:,\s*([^\)]+))?\s*\)|([^,\s]+))\s+(in|of)\s+(.+)$/);
             if (!match) {
@@ -3892,6 +3992,10 @@ const XToolFramework = function () {
                             hydrateFromBlueprint(clone, blueprint);
                         }
                         catch { }
+                        try {
+                            self.framework._discoverNestedNamed(clone, self);
+                        }
+                        catch { }
                         node = clone;
                         node.__x_for_key = (nodeKey !== undefined) ? nodeKey : ('n#' + (++objSeq));
                     }
@@ -3977,6 +4081,8 @@ const XToolFramework = function () {
             self._addDirective(placeholder, dir);
         }
         _resolveNodeByPath(root, path) {
+            if (!FT_EXT_DIRS)
+                return root;
             let node = root;
             for (let i = 0; i < path.length; i++) {
                 let idx = 0;
@@ -3990,6 +4096,8 @@ const XToolFramework = function () {
             return node;
         }
         _computeLISMask(seq) {
+            if (!FT_EXT_DIRS)
+                return { lisMask: [], lisLen: 0 };
             const predecessors = new Array(seq.length);
             const tails = [];
             const tailIdx = [];

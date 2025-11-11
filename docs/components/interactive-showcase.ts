@@ -579,7 +579,7 @@ XTool.registerComponent({
     totalActivity: 420,
     isActive: true,
     currentFace: 'activity', // 'activity', 'digital', 'news', 'weather', 'music'
-    timeTimer: null as number | null,
+  timeTimer: null as ReturnType<typeof setInterval> | null,
     faces: ['activity', 'digital', 'news', 'weather', 'music', 'timer', 'messages', 'photos'],
     currentFaceIndex: 0,
     // News data
@@ -592,7 +592,7 @@ XTool.registerComponent({
     currentNewsIndex: 0,
     currentStatsIndex: 0,
     isActivityRunning: false,
-    activityTimer: null as number | null,
+  activityTimer: null as ReturnType<typeof setInterval> | null,
     // Weather data
     currentWeather: 'sunny',
     temperature: 24,
@@ -607,7 +607,7 @@ XTool.registerComponent({
     // Music data
     isPlaying: false,
     currentTrackIndex: 0,
-    playbackTimer: null as number | null,
+  playbackTimer: null as ReturnType<typeof setInterval> | null,
     musicTracks: [
       { title: 'Digital Dreams', artist: 'X-Tool Orchestra', duration: 180 },
       { title: 'Code Symphony', artist: 'Dev Harmonics', duration: 200 },
@@ -619,7 +619,7 @@ XTool.registerComponent({
     timerDuration: 60,
     timerRunning: false,
     timerProgress: 0,
-    timerInterval: null as number | null,
+  timerInterval: null as ReturnType<typeof setInterval> | null,
     // Messages data
     messages: [
       { sender: 'Sarah Chen', text: 'Hey! Are we still on for lunch today?', time: '2m ago' },

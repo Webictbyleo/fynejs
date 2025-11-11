@@ -37,6 +37,12 @@
   - `x-intersect:enter` - Fire when element enters viewport
   - `x-intersect:leave` - Fire when element leaves viewport
   - `x-intersect:enter.once` - Fire only once when entering
+ - `x-transition` - Animate enter/leave with class phases or config object; supports end hooks
+   - Simple: `x-transition="class tokens"`
+   - Object: `x-transition="{ duration, easing, enter, enterFrom, enterTo, leave, leaveFrom, leaveTo, toggle }"`
+   - Phases: `x-transition:enter`, `:enter-from`, `:enter-to`, `:leave`, `:leave-from`, `:leave-to` (aliases: `enter-start`, `enter-end`, `leave-start`, `leave-end`)
+   - End hook: add `.after` (or `.end`) to base or phase: `x-transition:enter.after="({ el, phase, config }) => ...`"
+   - After payload: `{ el, phase, config }` with `config.duration` resolved from CSS timings and `easing`
 
 ## Event Modifiers
 
