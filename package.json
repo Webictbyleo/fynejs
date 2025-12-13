@@ -1,6 +1,6 @@
 {
   "name": "fynejs",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "description": "A tiny, fast, zero-dependency reactive UI framework for the browser",
   "main": "index.cjs",
   "module": "index.mjs",
