@@ -79,11 +79,10 @@ XTool.registerComponent({
       <!-- Virtual List Container -->
       <div class="border rounded-lg">
         <div class="max-h-96 overflow-y-auto" x-ref="listContainer">
-          <div class="divide-y">
+          <div class="divide-y" style="content-visibility: auto; contain-intrinsic-size: 3rem;">
             <div x-for="item in visibleItems" 
                  x-key="item.id"
-                 class="flex items-center p-3 hover:bg-gray-50"
-                 style="content-visibility: auto; contain-intrinsic-size: 3rem;">
+                 class="flex items-center p-3 hover:bg-gray-50">
                  
               <input type="checkbox" 
                      x-bind:checked="selectedItems.includes(item.id)"

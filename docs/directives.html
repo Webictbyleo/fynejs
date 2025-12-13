@@ -343,16 +343,30 @@
                 List Rendering
               </h3>
               <p class="text-gray-600 mb-6 text-lg">
-                Renders a list of elements from an array. Supports complex iteration patterns with stable diffing via x-key.
+                Renders a list of elements from arrays, objects, iterables, or numeric ranges. Supports complex iteration patterns with stable diffing via x-key.
               </p>
               <div class="code-example">
                 <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ items: ['Apple', 'Banana', 'Cherry'] }"&gt;
   &lt;ul&gt;
-    &lt;!-- Basic loop with index key --&gt;
+    &lt;!-- Basic array loop with index --&gt;
     &lt;li x-for="(item, index) in items" :key="index"&gt;
       &lt;span x-text="`${index + 1}. ${item}`"&gt;&lt;/span&gt;
     &lt;/li&gt;
   &lt;/ul&gt;
+&lt;/div&gt;
+
+&lt;!-- Numeric range: iterate n times --&gt;
+&lt;div x-data&gt;
+  &lt;template x-for="star in 5"&gt;
+    &lt;span&gt;⭐&lt;/span&gt;  &lt;!-- Renders 5 stars --&gt;
+  &lt;/template&gt;
+&lt;/div&gt;
+
+&lt;!-- Object iteration: (value, key, index) --&gt;
+&lt;div x-data="{ user: { name: 'Alice', role: 'Admin', status: 'Active' } }"&gt;
+  &lt;template x-for="(value, key, index) in user"&gt;
+    &lt;p&gt;&lt;strong x-text="key"&gt;&lt;/strong&gt;: &lt;span x-text="value"&gt;&lt;/span&gt;&lt;/p&gt;
+  &lt;/template&gt;
 &lt;/div&gt;
 
 &lt;!-- Advanced: Using x-key for stable diffing with objects --&gt;
@@ -369,6 +383,23 @@
     &lt;/div&gt;
   &lt;/template&gt;
 &lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-purple-800 font-medium mb-1">Supported Iterable Types</p>
+                    <div class="text-purple-700 text-sm space-y-1">
+                      <p><strong>Arrays:</strong> <code class="bg-purple-100 px-1 rounded">item in items</code> or <code class="bg-purple-100 px-1 rounded">(item, index) in items</code></p>
+                      <p><strong>Objects:</strong> <code class="bg-purple-100 px-1 rounded">(value, key) in obj</code> or <code class="bg-purple-100 px-1 rounded">(value, key, index) in obj</code></p>
+                      <p><strong>Numbers:</strong> <code class="bg-purple-100 px-1 rounded">n in 5</code> iterates 5 times (n = 0, 1, 2, 3, 4)</p>
+                      <p><strong>Iterables:</strong> Map, Set, and other iterable objects</p>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div class="bg-green-50 border border-green-200 rounded-xl p-6 mt-6">
@@ -491,6 +522,57 @@
                 </div>
               </div>
             </div>
+
+            <!-- x-ref -->
+            <div class="directive-section">
+              <h3 class="text-2xl font-black mb-4 text-black flex items-center gap-3">
+                <span class="directive-badge">x-ref</span>
+                Element References
+              </h3>
+              <p class="text-gray-600 mb-6 text-lg">
+                Create named references to DOM elements for direct access in your component logic via <code class="bg-gray-100 px-2 py-1 rounded">$refs</code>.
+              </p>
+              <div class="code-example">
+                <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ focusInput() { $refs.myInput.focus(); } }"&gt;
+  &lt;input x-ref="myInput" type="text" placeholder="Click button to focus me"&gt;
+  &lt;button x-on:click="focusInput()"&gt;Focus Input&lt;/button&gt;
+  
+  &lt;!-- Access ref in expressions --&gt;
+  &lt;p x-text="$refs.myInput?.value || 'Empty'"&gt;&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-green-50 border border-green-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-green-800 font-medium mb-1">Multiple Refs & Shared Access</p>
+                    <p class="text-green-700 text-sm mb-2">
+                      Multiple elements can share the same ref name—<code class="bg-green-100 px-1 rounded">$refs.name</code> returns an array when multiple elements match.
+                    </p>
+                    <p class="text-green-700 text-sm">
+                      Refs are also accessible from child components, bubbling up the component tree until found.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-4">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-blue-800 font-medium mb-1">Programmatic Refs</p>
+                    <p class="text-blue-700 text-sm">
+                      Use <code class="bg-blue-100 px-1 rounded">$ref(name)</code> to get a ref, or <code class="bg-blue-100 px-1 rounded">$ref(name, value)</code> to register any value (not just elements) as a ref.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -511,17 +593,40 @@
               <h3 class="text-2xl font-black mb-4 text-black flex items-center gap-3">
                 <span class="directive-badge">x-bind:attr</span>
                 <span class="directive-badge">x:attr</span>
+                <span class="directive-badge">:attr</span>
                 Dynamic Attributes
               </h3>
               <p class="text-gray-600 mb-6 text-lg">
-                Dynamically bind any HTML attribute. Supports shorthand syntax with x: prefix.
+                Dynamically bind any HTML attribute. Supports multiple shorthand syntaxes for convenience.
               </p>
               <div class="code-example">
                 <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ disabled: false, url: 'https://fynejs.com' }"&gt;
+  &lt;!-- Full syntax --&gt;
   &lt;button x-bind:disabled="disabled"&gt;Button&lt;/button&gt;
+  
+  &lt;!-- x: shorthand --&gt;
   &lt;a x:href="url"&gt;Visit FyneJS&lt;/a&gt;
-  &lt;img x:src="`/images/${imageFile}`" x:alt="description"&gt;
+  
+  &lt;!-- : shorthand (shortest!) --&gt;
+  &lt;img :src="`/images/${imageFile}`" :alt="description"&gt;
+  &lt;input :placeholder="dynamicPlaceholder" :value="inputValue"&gt;
 &lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-purple-800 font-medium mb-1">Syntax Options</p>
+                    <div class="text-purple-700 text-sm space-y-1">
+                      <p><code class="bg-purple-100 px-1 rounded">x-bind:attr="expr"</code> - Full syntax</p>
+                      <p><code class="bg-purple-100 px-1 rounded">x:attr="expr"</code> - Short syntax</p>
+                      <p><code class="bg-purple-100 px-1 rounded">:attr="expr"</code> - Shortest syntax (Vue-style)</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -1,4 +1,3 @@
-"use strict";
 var TokenType;
 (function (TokenType) {
     TokenType[TokenType["Identifier"] = 0] = "Identifier";
@@ -547,25 +546,664 @@ stripTypes;
 function caseKebabToCamel(str) {
     return str.replace(/-([a-z])/g, (_match, p1) => p1.toUpperCase());
 }
+function silentError(fn, defaultValue = null) {
+    try {
+        return fn();
+    }
+    catch (e) {
+        console.error(e);
+        return defaultValue;
+    }
+}
+const ReactiveSymbol = Symbol('$_xtoolfynjsisReactive');
+function isReactive(data) {
+    return data && data[ReactiveSymbol] === true;
+}
+function isObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+function isPlainObject(value) {
+    if (!isObject(value))
+        return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+}
+function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+        const later = () => {
+            timeout = undefined;
+            func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = window.setTimeout(later, wait);
+    };
+}
+function makeReactive(data, control) {
+    if (isReactive(data)) {
+        return data;
+    }
+    const isArr = Array.isArray(data);
+    const isSet = (typeof Set !== 'undefined') && (data instanceof Set);
+    const isMap = (typeof Map !== 'undefined') && (data instanceof Map);
+    if (!isArr && !isSet && !isMap && !isPlainObject(data)) {
+        return data;
+    }
+    if (!control) {
+        control = {
+            maxReactiveDepth: Number.POSITIVE_INFINITY,
+        };
+    }
+    if (control && control.maxReactiveDepth && control.maxReactiveDepth <= 0) {
+        return data;
+    }
+    if (data[ReactiveSymbol]) {
+        return data;
+    }
+    Object.defineProperty(data, ReactiveSymbol, {
+        value: true,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+    });
+    Object.defineProperty(data, Symbol.for('ReactiveControl'), {
+        value: control,
+        enumerable: false,
+        configurable: false,
+        writable: true,
+    });
+    const onChange = (oldValue, newValue) => {
+        if (control && control.baseChangeListener) {
+            control.baseChangeListener(oldValue, newValue);
+        }
+        if (control && control.changeListeners && control.changeListeners.length > 0) {
+            const call = () => {
+                for (const listener of control.changeListeners) {
+                    listener(oldValue, newValue);
+                }
+            };
+            if (control.signal?.aborted) {
+                return;
+            }
+            debounce(call, 10)();
+        }
+    };
+    return new Proxy(data, {
+        set(target, prop, value) {
+            const oldValue = target[prop];
+            if (typeof value === 'object' && value !== null) {
+                if (control && control.maxReactiveDepth && control.maxReactiveDepth > 0) {
+                    control.maxReactiveDepth -= 1;
+                }
+                value = makeReactive(value, control);
+            }
+            Reflect.set(target, prop, value);
+            if (oldValue !== value) {
+                onChange(oldValue, value);
+            }
+            return true;
+        },
+        get(target, prop, receiver) {
+            const value = Reflect.get(target, prop, receiver);
+            if (prop === Symbol.for('ReactiveControl')) {
+                return value;
+            }
+            if (control && control.depTracker && (Symbol.iterator === prop || (isArr || isMap || isSet && ['size', 'length', 'size', 'keys', 'entries', 'values'].includes(String(prop))) || typeof prop === 'string' || typeof prop === 'number')) {
+                control.depTracker(control.trackerId ?? prop);
+            }
+            if (prop === Symbol.toPrimitive) {
+                return (hint) => {
+                    if (hint === 'number') {
+                        return NaN;
+                    }
+                    if (isReactive(target)) {
+                        const value = target['value'];
+                        if (value !== undefined) {
+                            return value;
+                        }
+                    }
+                    else {
+                        const value = target['value'];
+                        if (value !== undefined && isReactive(value)) {
+                            return value;
+                        }
+                    }
+                    if (hint === 'string') {
+                        return isArr ? '[]' : isSet ? 'Set {}' : isMap ? 'Map {}' : '[object Object]';
+                    }
+                    return null;
+                };
+            }
+            if (typeof value === 'object' && value !== null && value[ReactiveSymbol] === true && value.value !== undefined) {
+                return value.value;
+            }
+            if (typeof value == 'function') {
+                if (isArr && ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin'].includes(prop)) {
+                    return function (...args) {
+                        const oldArray = target.slice();
+                        const result = Array.prototype[prop].apply(target, args);
+                        if (control) {
+                            onChange(oldArray, target);
+                        }
+                        return result;
+                    };
+                }
+                if ((isSet || isMap) && ['add', 'delete', 'clear', 'set'].includes(prop)) {
+                    return function (...args) {
+                        const oldCollection = isSet ? new Set(target) : new Map(target);
+                        const result = (isSet ? Set.prototype : Map.prototype)[prop].apply(target, args);
+                        if (control) {
+                            onChange(oldCollection, target);
+                        }
+                        return result;
+                    };
+                }
+                return value;
+            }
+            if (typeof value === 'object' && value !== null) {
+                if (control && control.maxReactiveDepth && control.maxReactiveDepth > 0) {
+                    control.maxReactiveDepth -= 1;
+                }
+                return makeReactive(value, control);
+            }
+            return value;
+        },
+        deleteProperty(target, p) {
+            const oldValue = target[p];
+            const result = Reflect.deleteProperty(target, p);
+            if (result) {
+                onChange(oldValue, undefined);
+            }
+            return result;
+        },
+    });
+}
+const ComputedSymbol = Symbol('$_xtoolfynjsisComputed');
+function generateRandomId(length = 8) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+function makeComputed(getter, control) {
+    let cachedValue;
+    let isDirty = true;
+    const computeValue = () => {
+        cachedValue = getter();
+        isDirty = false;
+    };
+    const reactiveControl = {
+        ...control,
+        depTracker: (_key) => {
+            isDirty = true;
+        },
+    };
+    const target = {
+        get value() {
+            if (isDirty) {
+                computeValue();
+            }
+            return cachedValue;
+        }
+    };
+    Object.defineProperty(target, ComputedSymbol, {
+        value: true,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+    });
+    Object.defineProperty(target, Symbol.for(`_computedID`), {
+        value: generateRandomId(12),
+        enumerable: false,
+        configurable: false,
+        writable: true,
+    });
+    console.log('Created computed property with ID:', target[Symbol.for(`_computedID`)]);
+    return makeReactive(target, reactiveControl);
+}
+function isComputedRef(value) {
+    return !!(value && value[ComputedSymbol] === true);
+}
+function getReactiveControl(data) {
+    if (!isReactive(data)) {
+        return undefined;
+    }
+    return data[Symbol.for('ReactiveControl')];
+}
+function setReactiveControl(data, control) {
+    if (!isReactive(data)) {
+        return;
+    }
+    Object.defineProperty(data, Symbol.for('ReactiveControl'), {
+        value: control,
+        enumerable: false,
+        configurable: false,
+        writable: true,
+    });
+}
+function unwrapReactive(data) {
+    if (!isReactive(data)) {
+        return data;
+    }
+    const isArr = Array.isArray(data);
+    const isSet = (typeof Set !== 'undefined') && (data instanceof Set);
+    const isMap = (typeof Map !== 'undefined') && (data instanceof Map);
+    if (!isArr && !isSet && !isMap && !isPlainObject(data)) {
+        return data;
+    }
+    if (isArr) {
+        return data.map(item => unwrapReactive(item));
+    }
+    if (isSet) {
+        const newSet = new Set();
+        data.forEach(item => {
+            newSet.add(unwrapReactive(item));
+        });
+        return newSet;
+    }
+    if (isMap) {
+        const newMap = new Map();
+        data.forEach((value, key) => {
+            newMap.set(key, unwrapReactive(value));
+        });
+        return newMap;
+    }
+    const result = {};
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            result[key] = unwrapReactive(data[key]);
+        }
+    }
+    return result;
+}
+function Router(config, frameworkInstance) {
+    const d = document;
+    const _prefetched = new Set();
+    let _currentDocURL = null;
+    const _scrollPositions = new Map();
+    const _isSameOrigin = (href) => {
+        const url = href instanceof URL ? href : new URL(href, location.href);
+        return url.origin === location.origin;
+    };
+    const _isSameDocument = (target) => {
+        const url = target instanceof URL ? target : new URL(target, location.href);
+        return url.origin === location.origin && url.pathname === location.pathname && url.search === location.search;
+    };
+    const _normalizeDocURL = function (target) {
+        const u = typeof target === 'string' ? new URL(target, d?.baseURI || location.href) : target;
+        return `${u.origin}${u.pathname}${u.search}`;
+    };
+    const _routerEnabled = () => {
+        return config.router?.enabled !== false;
+    };
+    async function _fetchHTML(url) {
+        const res = await fetch(url, { credentials: 'same-origin', cache: 'default', redirect: 'follow' });
+        if (res.redirected) {
+            const finalUrl = res.url;
+            try {
+                location.assign(finalUrl);
+            }
+            catch {
+                silentError(() => location.href = finalUrl);
+            }
+            const e = new Error('XToolRedirect');
+            e.name = 'XToolRedirect';
+            e.url = finalUrl;
+            throw e;
+        }
+        if (!res.ok)
+            throw new Error(res.status + ' ' + res.statusText);
+        return await res.text();
+    }
+    async function _swapDocument(html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newHead = doc.head;
+        const newTitle = newHead?.querySelector('title');
+        const applySwap = () => {
+            if (newTitle) {
+                const t = newTitle.textContent || '';
+                if (document.title !== t)
+                    document.title = t;
+            }
+            const sel = config.container || 'body';
+            const cur = d.querySelector(sel);
+            const next = doc.querySelector(sel);
+            if (cur && next) {
+                _morphElement(cur, next);
+            }
+            else if (next) {
+                d.body.innerHTML = next.innerHTML;
+            }
+            else {
+                d.body.innerHTML = doc.body.innerHTML;
+            }
+            frameworkInstance._unregisterElement(cur);
+            frameworkInstance._autoDiscoverComponents();
+            const c = d?.querySelector(config.container);
+            if (c) {
+                frameworkInstance._ensureRootObserver(c);
+                if (config.delegate)
+                    frameworkInstance._ensureDelegation(c);
+            }
+        };
+        const vt = (document).startViewTransition?.bind(document);
+        if (vt && config.router?.transitionName) {
+            const sel = config.container || 'body';
+            const cont = d.querySelector(sel);
+            const prev = cont ? (cont.style.getPropertyValue('view-transition-name') || '') : '';
+            silentError(() => { if (cont)
+                cont.style.setProperty('view-transition-name', config.router?.transitionName ?? 'route'); });
+            try {
+                const transition = vt(applySwap);
+                await transition.finished;
+            }
+            finally {
+                try {
+                    if (cont) {
+                        if (prev)
+                            cont.style.setProperty('view-transition-name', prev);
+                        else
+                            cont.style.removeProperty('view-transition-name');
+                    }
+                }
+                catch { }
+            }
+        }
+        else
+            applySwap();
+    }
+    function _setAttributes(cur, next) {
+        const curAttrs = cur.getAttributeNames();
+        for (let i = 0; i < curAttrs.length; i++) {
+            const name = curAttrs[i];
+            if (!next.hasAttribute(name))
+                cur.removeAttribute(name);
+        }
+        const nextAttrs = next.getAttributeNames();
+        for (let i = 0; i < nextAttrs.length; i++) {
+            const name = nextAttrs[i];
+            const val = next.getAttribute(name);
+            if (cur.getAttribute(name) !== val)
+                if (val !== null) {
+                    cur.setAttribute(name, val);
+                }
+        }
+    }
+    function _attributesEqual(a, b) {
+        const aNames = a.getAttributeNames();
+        const bNames = b.getAttributeNames();
+        if (aNames.length !== bNames.length)
+            return false;
+        const map = new Map();
+        for (let i = 0; i < aNames.length; i++) {
+            const n = aNames[i];
+            map.set(n, a.getAttribute(n));
+        }
+        for (let i = 0; i < bNames.length; i++) {
+            const n = bNames[i];
+            if (!map.has(n))
+                return false;
+            if (map.get(n) !== b.getAttribute(n))
+                return false;
+        }
+        return true;
+    }
+    function _isDynamicNode(el) {
+        const tag = el.tagName;
+        if (tag === 'IFRAME' && el.hasAttribute('src'))
+            return true;
+        if (tag === 'COMPONENT' && el.hasAttribute('source'))
+            return true;
+        return false;
+    }
+    function _morphElement(cur, next) {
+        if (cur.nodeName !== next.nodeName || _isDynamicNode(next)) {
+            cur.replaceWith(next.cloneNode(true));
+            return;
+        }
+        _setAttributes(cur, next);
+        if (!cur.firstChild && !next.firstChild)
+            return;
+        const curChildren = Array.from(cur.childNodes);
+        const nextChildren = Array.from(next.childNodes);
+        const max = nextChildren.length;
+        for (let i = 0; i < max; i++) {
+            const n = nextChildren[i];
+            const c = curChildren[i];
+            if (!c) {
+                cur.appendChild(n.cloneNode(true));
+                continue;
+            }
+            if (n.nodeType === c.nodeType) {
+                if (n.nodeType === 1) {
+                    const cn = c;
+                    const nn = n;
+                    if (_isDynamicNode(nn)) {
+                        try {
+                            cn.replaceWith(nn.cloneNode(true));
+                        }
+                        catch { }
+                    }
+                    else if (cn.nodeName === nn.nodeName && _attributesEqual(cn, nn)) {
+                        _morphElement(cn, nn);
+                    }
+                    else {
+                        try {
+                            cn.replaceWith(nn.cloneNode(true));
+                        }
+                        catch { }
+                    }
+                }
+                else {
+                    try {
+                        c.replaceWith(n.cloneNode(true));
+                    }
+                    catch { }
+                }
+            }
+            else {
+                try {
+                    c.replaceWith(n.cloneNode(true));
+                }
+                catch { }
+            }
+        }
+        if (curChildren.length > max) {
+            for (let i = curChildren.length - 1; i >= max; i--) {
+                const toRemove = cur.childNodes[i];
+                try {
+                    cur.removeChild(toRemove);
+                }
+                catch { }
+            }
+        }
+    }
+    function _scrollToHash(hash) {
+        try {
+            if (!hash || hash === '#')
+                return false;
+            const id = decodeURIComponent(hash.replace(/^#/, ''));
+            const el = d.getElementById(id) || d.querySelector(`[name="${CSS.escape(id)}"]`);
+            if (el) {
+                el.scrollIntoView({ block: 'start', 'behavior': 'instant' });
+                return true;
+            }
+        }
+        catch { }
+        return false;
+    }
+    async function _navigate(url, push, source = 'program') {
+        if (!_routerEnabled())
+            return Promise.resolve();
+        if (!_isSameOrigin(url)) {
+            location.assign(url);
+            return;
+        }
+        const targetURL = new URL(url);
+        const targetKey = _normalizeDocURL(targetURL);
+        if (source !== 'popstate') {
+            if (_isSameDocument(targetURL)) {
+                location.href = url;
+                return;
+            }
+        }
+        else {
+            if (_currentDocURL && targetKey === _currentDocURL) {
+                _scrollToHash(targetURL.hash);
+                return;
+            }
+        }
+        const from = location.href;
+        try {
+            const res = await (config.router?.before?.(url, from, { source }));
+            if (res === false)
+                return;
+        }
+        catch (err) {
+            try {
+                config.router?.error?.(err, url, from);
+            }
+            catch { }
+            return;
+        }
+        const curKey = _currentDocURL || _normalizeDocURL(from);
+        _scrollPositions.set(curKey, { x: window.scrollX || 0, y: window.scrollY || 0 });
+        try {
+            const html = await _fetchHTML(url);
+            if (push)
+                history.pushState({}, '', url);
+            await _swapDocument(html);
+            _currentDocURL = targetKey;
+            silentError(() => {
+                if (source === 'popstate') {
+                    const pos = _scrollPositions.get(targetKey);
+                    if (pos)
+                        (window).scrollTo(pos.x, pos.y);
+                    else if (!_scrollToHash(targetURL.hash))
+                        (window).scrollTo(0, 0);
+                }
+                else {
+                    if (!_scrollToHash(targetURL.hash))
+                        (window).scrollTo(0, 0);
+                }
+            });
+            try {
+                await config.router?.after?.(url, from, { source });
+            }
+            catch { }
+        }
+        catch (err) {
+            if (err && (err.name === 'XToolRedirect' || err.message === 'XToolRedirect'))
+                return;
+            silentError(() => config.router?.error?.(err, url, from));
+            try {
+                location.assign(url);
+            }
+            catch {
+                silentError(() => location.href = url);
+            }
+        }
+    }
+    function _installRouting(root) {
+        const preload = (href) => {
+            try {
+                if (!_isSameOrigin(href))
+                    return;
+            }
+            catch {
+                return;
+            }
+            const u = new URL(href, location.href);
+            if (_isSameDocument(u))
+                return;
+            u.hash = '';
+            const url = u.toString();
+            if (_prefetched.has(url))
+                return;
+            const existing = d?.head?.querySelector(`link[rel="prefetch"][href="${CSS.escape(url)}"]`);
+            if (existing) {
+                _prefetched.add(url);
+                return;
+            }
+            try {
+                const link = d.createElement('link');
+                link.setAttribute('rel', 'prefetch');
+                link.setAttribute('as', 'document');
+                link.setAttribute('href', url);
+                d.head.appendChild(link);
+                _prefetched.add(url);
+            }
+            catch { }
+        };
+        const onClick = (e) => {
+            const ev = e;
+            if (ev.defaultPrevented || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey)
+                return;
+            let el = ev.target;
+            while (el && el !== root && el.tagName !== 'A')
+                el = el.parentElement;
+            if (!el || el.tagName !== 'A' || el.hasAttribute('download'))
+                return;
+            const a = el;
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#'))
+                return;
+            const target = a.getAttribute('target');
+            if (target && target.toLowerCase() === '_blank')
+                return;
+            if (!_isSameOrigin(href))
+                return;
+            const url = new URL(href, location.href);
+            if (_isSameDocument(url))
+                return;
+            ev.preventDefault();
+            _navigate(url.toString(), true, 'link').catch(() => { location.assign(url.toString()); });
+        };
+        root.addEventListener('click', onClick);
+        if (config.router?.prefetchOnHover) {
+            const preloadEventHandler = (e) => {
+                const t = e.target;
+                let el = t;
+                while (el && el !== root && el.tagName !== 'A')
+                    el = el.parentElement;
+                if (!el || el.tagName !== 'A' || el.hasAttribute('download'))
+                    return;
+                const href = el.getAttribute('href');
+                if (!href || href.startsWith('#'))
+                    return;
+                preload(href);
+            };
+            root.addEventListener('mouseover', preloadEventHandler, { passive: true });
+            root.addEventListener('touchstart', preloadEventHandler, { passive: true });
+        }
+        window.addEventListener('popstate', () => { _navigate(location.href, false, 'popstate').catch(() => { }); });
+        _currentDocURL = _normalizeDocURL(location.href);
+    }
+    return {
+        navigate: _navigate,
+        install: _installRouting
+    };
+}
 const ARRAY_ISARRAY = Array.isArray;
 const WkMap = WeakMap;
 const quMct = queueMicrotask;
 const FT_C = true;
-const FT_TI = typeof __FEAT_TEXT_INTERP__ === 'boolean' ? __FEAT_TEXT_INTERP__ : true;
-const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ === 'boolean' ? __FEAT_DEEP_REACTIVE__ : true;
-const FT_IFB = typeof __FEAT_IF_BRANCHES__ === 'boolean' ? __FEAT_IF_BRANCHES__ : true;
-const FT_RT = typeof __FEAT_ROUTER__ === 'boolean' ? __FEAT_ROUTER__ : true;
-const FT_TS = typeof __FEAT_TS__ === 'boolean' ? __FEAT_TS__ : true;
-const FT_EXT_DIRS = typeof __FEAT_EXT_DIRECTIVES__ === 'boolean' ? __FEAT_EXT_DIRECTIVES__ : true;
+const FT_TI = typeof __FEAT_TEXT_INTERP__ !== 'undefined' ? !!__FEAT_TEXT_INTERP__ : true;
+const _FT_DR = typeof __FEAT_DEEP_REACTIVE__ !== 'undefined' ? !!__FEAT_DEEP_REACTIVE__ : true;
+const FT_IFB = typeof __FEAT_IF_BRANCHES__ !== 'undefined' ? !!__FEAT_IF_BRANCHES__ : true;
+const FT_RT = typeof __FEAT_ROUTER__ !== 'undefined' ? !!__FEAT_ROUTER__ : true;
+const FT_TS = typeof __FEAT_TS__ !== 'undefined' ? !!__FEAT_TS__ : true;
+const FT_EXT_DIRS = typeof __FEAT_EXT_DIRECTIVES__ !== 'undefined' ? !!__FEAT_EXT_DIRECTIVES__ : true;
+const FT_VT = typeof __FEAT_TRANSITION__ !== 'undefined' ? !!__FEAT_TRANSITION__ : true;
 const XToolFramework = function () {
-    const _se = (fn) => { try {
-        fn();
-    }
-    catch { } };
+    const _se = silentError;
     const _tr = (s) => (s || '').trim();
     const _Afrom = Array.from;
-    const _AisArr = ARRAY_ISARRAY;
     const _Okeys = Object.keys;
+    let _globalActiveEffect = null;
     const STR_STYLE = 'style';
     const STR_DISPLAY = 'display';
     const STR_NONE = 'none';
@@ -574,6 +1212,47 @@ const XToolFramework = function () {
     const STR_LENGTH = 'length';
     const STR_SOURCE = 'source';
     const STR_READONLY = 'readonly';
+    const _RAW_TARGET = Symbol('rawTarget');
+    const _OWNER_COMPONENT = Symbol('ownerComponent');
+    const _objVersions = new WkMap();
+    const _unwrap = (obj) => (obj && obj[_RAW_TARGET]) || obj;
+    const _bumpObjVersion = (obj) => {
+        const raw = _unwrap(obj);
+        const v = (_objVersions.get(raw) ?? 0) + 1;
+        _objVersions.set(raw, v);
+        return v;
+    };
+    const _objIds = new WkMap();
+    let _objIdSeq = 0;
+    const _getObjId = (obj) => {
+        let id = _objIds.get(obj);
+        if (id === undefined) {
+            id = ++_objIdSeq;
+            _objIds.set(obj, id);
+        }
+        return id;
+    };
+    const _getDeepVersion = (obj, maxDepth = 5, seen) => {
+        if (!obj || typeof obj !== 'object' || maxDepth <= 0)
+            return 0;
+        const raw = _unwrap(obj);
+        if (!seen)
+            seen = new WeakSet();
+        if (seen.has(raw))
+            return 0;
+        seen.add(raw);
+        let sum = _getObjId(raw) + (_objVersions.get(raw) ?? 0);
+        try {
+            for (const key in raw) {
+                const val = raw[key];
+                if (val && typeof val === 'object') {
+                    sum += _getDeepVersion(val, maxDepth - 1, seen);
+                }
+            }
+        }
+        catch { }
+        return sum;
+    };
     let XTOOL_ENABLE_STATIC_DIRECTIVES = true;
     const d = (typeof document !== 'undefined' ? document : null);
     const STR_CONTENTS = 'contents';
@@ -606,15 +1285,14 @@ const XToolFramework = function () {
             this._pending = [];
             this._config = {};
             this._customDirectives = new Map();
+            this._autoMergeProps = false;
             this._currentArrayInterceptorComp = null;
             this._namedComponentDefs = new Map();
             this._delegated = new WkMap();
             this._delegatedRootBound = false;
-            this._prefetched = new Set();
-            this._currentDocURL = '';
-            this._scrollPositions = new Map();
             this._refsRegistry = new WkMap();
             this._refCleanupRegistry = new WkMap();
+            this._propExpressions = new WkMap();
             this._getComponentRefs = (comp, refName) => {
                 const compRefs = this._refsRegistry.get(comp);
                 return compRefs?.get(refName);
@@ -654,6 +1332,11 @@ const XToolFramework = function () {
                     this._refCleanupRegistry.delete(el);
                 }
             };
+            this.registerRefCleanup = (el, cleanupFn) => {
+                if (!FT_EXT_DIRS)
+                    return;
+                this._refCleanupRegistry.set(el, cleanupFn);
+            };
             this._clearComponentRefs = (comp) => {
                 this._refsRegistry.delete(comp);
             };
@@ -673,6 +1356,27 @@ const XToolFramework = function () {
                 this._namedComponentDefs.set(name, definition);
                 return this;
             };
+            this.mountComponent = (name, element, props) => {
+                if (!name || !element)
+                    return undefined;
+                const def = this._getRegisteredComponentDef(name);
+                if (!def) {
+                    if (this._config.debug)
+                        console.warn(`[XTool] Component "${name}" not registered`);
+                    return undefined;
+                }
+                if (this._getComponentByElement(element)) {
+                    if (this._config.debug)
+                        console.warn(`[XTool] Element already has a component mounted`);
+                    return this._getComponentByElement(element);
+                }
+                element.__x_mount_source = name;
+                if (props) {
+                    element.__x_mount_props = props;
+                }
+                this._instantiateNamedComponent(element);
+                return this._getComponentByElement(element);
+            };
             this._getRegisteredComponentDef = (name) => this._namedComponentDefs.get(name.toLowerCase());
             this._getCustomDirective = (name) => this._customDirectives.get(name);
             this._getConfig = () => this._config;
@@ -683,6 +1387,7 @@ const XToolFramework = function () {
                 if (typeof this._config.staticDirectives === 'boolean') {
                     XTOOL_ENABLE_STATIC_DIRECTIVES = this._config.staticDirectives;
                 }
+                this._autoMergeProps = this._config.autoMergeProps === true;
                 const _hpf = this._config.prefix;
                 if (_hpf && typeof _hpf === 'string' && _hpf[STR_LENGTH] > 0) {
                     PFX = _hpf;
@@ -694,10 +1399,7 @@ const XToolFramework = function () {
                 const start = async () => {
                     this._applyPrefixInitialCSS();
                     if (this._preDiscoveryTasks.length) {
-                        try {
-                            await Promise.allSettled(this._preDiscoveryTasks);
-                        }
-                        catch { }
+                        _se(async () => await Promise.allSettled(this._preDiscoveryTasks));
                     }
                     this._autoDiscoverComponents();
                     const c = d?.querySelector(this._config.container);
@@ -708,10 +1410,6 @@ const XToolFramework = function () {
                         if (FT_RT && this._routerEnabled())
                             this._installRouting(c);
                     }
-                    try {
-                        this._currentDocURL = this._normalizeDocURL(location.href);
-                    }
-                    catch { }
                 };
                 if (d && d.readyState === 'loading') {
                     d.addEventListener('DOMContentLoaded', () => { void start(); });
@@ -733,7 +1431,7 @@ const XToolFramework = function () {
                         tasks.push(p.then(() => { }));
                     }
                     else if (it.mode === 'lazy') {
-                        const inferredName = (it.name || it.path.split('/').pop() || '').replace(/\.(mjs|js|ts)(\?.*)?$/i, '').toLowerCase();
+                        const inferredName = (it.name || it.path.split('/').pop() || '').replace(/\.(mjs|js|ts|html)(\?.*)?$/i, '').toLowerCase();
                         if (inferredName && !this._lazyComponentSources.has(inferredName)) {
                             this._lazyComponentSources.set(inferredName, { path: it.path, status: LS_PENDING });
                         }
@@ -744,10 +1442,7 @@ const XToolFramework = function () {
                     }
                 }
                 return Promise.allSettled(tasks).then(results => {
-                    try {
-                        this._autoDiscoverComponents();
-                    }
-                    catch { }
+                    _se(() => this._autoDiscoverComponents());
                     const settled = results.length;
                     const failed = results.filter(r => r.status === 'rejected').length;
                     return { settled, failed };
@@ -764,11 +1459,27 @@ const XToolFramework = function () {
                 if (!container)
                     return;
                 const dataAttr = attrName('data');
+                const forAttr = attrName('for');
+                const ifAttr = attrName('if');
+                const ElseIfAttr = attrName('else-if');
+                const ElseAttr = attrName('else');
                 if (container.hasAttribute(dataAttr) && !this._getComponentByElement(container)) {
                     this._bindElementAsComponent(container, undefined);
                 }
+                const isInsideDynamicTemplate = (el) => {
+                    let parent = el.parentElement;
+                    while (parent && parent !== container) {
+                        if (parent.hasAttribute(forAttr) || parent.hasAttribute(ifAttr) || parent.hasAttribute(ElseIfAttr) || parent.hasAttribute(ElseAttr)) {
+                            return true;
+                        }
+                        parent = parent.parentElement;
+                    }
+                    return false;
+                };
                 const componentElements = container.querySelectorAll(`[${dataAttr}]`);
                 for (const element of componentElements) {
+                    if (isInsideDynamicTemplate(element))
+                        continue;
                     if (!this._getComponentByElement(element))
                         this._bindElementAsComponent(element);
                 }
@@ -828,13 +1539,7 @@ const XToolFramework = function () {
                     element.removeAttribute(attrName('data'));
                     try {
                         if (parentForEval) {
-                            let parentCtx = {};
-                            if (parentForEval._createMethodContext) {
-                                try {
-                                    parentCtx = parentForEval._createMethodContext();
-                                }
-                                catch { }
-                            }
+                            const parentCtx = parentForEval._createContextProxy(undefined, element);
                             const evalFn = new Function('parent', `with(parent){ return (${dataExpression}) }`);
                             data = evalFn(parentCtx);
                         }
@@ -854,8 +1559,30 @@ const XToolFramework = function () {
                             }
                         }
                         const hasOwnMethods = plainData.methods || data.methods;
-                        const methodsObj = data.methods;
-                        const def = hasOwnMethods ? { methods: methodsObj, data: plainData } : { data: plainData };
+                        const methodsObj = data.methods || {};
+                        const detectedMethods = {};
+                        for (const k of Object.keys(plainData)) {
+                            const v = plainData[k];
+                            if (typeof v === 'function' && k !== 'methods') {
+                                detectedMethods[k] = v;
+                            }
+                        }
+                        for (const k of Object.keys(detectedMethods))
+                            delete plainData[k];
+                        const lifecycleKeys = ['mounted', 'unmounted', 'beforeMount', 'beforeUnmount', 'updated', 'destroyed', 'beforeDestroy', 'setup'];
+                        const lifecycle = {};
+                        for (const lk of lifecycleKeys) {
+                            if (detectedMethods[lk]) {
+                                lifecycle[lk] = detectedMethods[lk];
+                                delete detectedMethods[lk];
+                            }
+                        }
+                        const mergedMethods = { ...methodsObj, ...detectedMethods };
+                        const def = (hasOwnMethods || Object.keys(detectedMethods).length)
+                            ? { methods: mergedMethods, data: plainData }
+                            : { data: plainData };
+                        for (const lk in lifecycle)
+                            def[lk] = lifecycle[lk];
                         if (_Okeys(computed).length)
                             def.computed = computed;
                         if (parentForEval) {
@@ -884,461 +1611,446 @@ const XToolFramework = function () {
                     if (root[STR_TAGNAME] === 'COMPONENT' && root.hasAttribute('source'))
                         hosts.push(root);
                     const found = root.querySelectorAll('component[source]');
-                    for (const el of found)
+                    for (const el of found) {
                         hosts.push(el);
+                    }
                     for (const host of hosts) {
-                        if (!this._getComponentByElement(host))
+                        if (!this._getComponentByElement(host)) {
                             this._instantiateNamedComponent(host, parentHint);
+                        }
                     }
                 }
                 catch { }
             };
-            this._parseDataExpression = (expression) => {
+            this._discoverNestedXData = (root, parentHint) => {
                 try {
-                    return new Function('return ' + expression.trim())();
+                    const dataAttr = attrName('data');
+                    const nested = root.querySelectorAll(`[${dataAttr}]`);
+                    for (const el of nested) {
+                        if (!this._getComponentByElement(el)) {
+                            this._bindElementAsComponent(el, parentHint);
+                        }
+                    }
                 }
-                catch {
-                    return {};
-                }
+                catch { }
+            };
+            this._discoverNested = (root, parentHint) => {
+                this._discoverNestedNamed(root, parentHint);
+                this._discoverNestedXData(root, parentHint);
+            };
+            this._parseDataExpression = (expression) => {
+                return _se(() => new Function('return ' + expression.trim())(), {});
             };
             this._unregisterComponent = (componentId) => { this._components.delete(componentId); };
-            this._log = (..._args) => { };
             this._registerElement = (element, component) => {
                 this._byEl.set(element, component);
             };
-            this._unregisterElement = (element) => { try {
-                this._byEl.delete(element);
-            }
-            catch { } };
+            this._unregisterElement = (element) => { this._byEl.delete(element); };
         }
         _routerEnabled() { const c = this._config; return !!(c.router?.enabled); }
-        _routerTransitionName() { const c = this._config; return (c.router?.transitionName ?? 'route'); }
-        _isSameOrigin(href) {
-            if (!FT_RT)
-                return false;
-            try {
-                const u = new URL(href, d?.baseURI || location.href);
-                const cur = new URL(location.href);
-                return u.origin === cur.origin;
-            }
-            catch {
-                return false;
-            }
-        }
-        _isSameDocument(target) {
-            if (!FT_RT)
-                return false;
-            try {
-                const u = typeof target === 'string' ? new URL(target, d?.baseURI || location.href) : target;
-                const cur = new URL(location.href);
-                return (u.origin === cur.origin && u.pathname === cur.pathname && u.search === cur.search);
-            }
-            catch {
-                return false;
-            }
-        }
-        _normalizeDocURL(target) {
-            const u = typeof target === 'string' ? new URL(target, d?.baseURI || location.href) : target;
-            return `${u.origin}${u.pathname}${u.search}`;
-        }
-        _scrollToHash(hash) {
-            if (FT_RT === false)
-                return false;
-            try {
-                if (!hash || hash === '#')
-                    return false;
-                const id = decodeURIComponent(hash.replace(/^#/, ''));
-                const el = d.getElementById(id) || d.querySelector(`[name="${CSS.escape(id)}"]`);
-                if (el) {
-                    el.scrollIntoView({ block: 'start', 'behavior': 'instant' });
-                    return true;
-                }
-            }
-            catch { }
-            return false;
-        }
         _installRouting(root) {
             if (!FT_RT)
                 return;
-            const self = this;
-            const preload = (href) => {
-                try {
-                    if (!self._isSameOrigin(href))
-                        return;
-                }
-                catch {
-                    return;
-                }
-                const u = new URL(href, location.href);
-                if (self._isSameDocument(u))
-                    return;
-                u.hash = '';
-                const url = u.toString();
-                if (self._prefetched.has(url))
-                    return;
-                const existing = d?.head?.querySelector(`link[rel="prefetch"][href="${CSS.escape(url)}"]`);
-                if (existing) {
-                    self._prefetched.add(url);
-                    return;
-                }
-                try {
-                    const link = d.createElement('link');
-                    link.setAttribute('rel', 'prefetch');
-                    link.setAttribute('as', 'document');
-                    link.setAttribute('href', url);
-                    d.head.appendChild(link);
-                    self._prefetched.add(url);
-                }
-                catch { }
-            };
-            const onClick = (e) => {
-                const ev = e;
-                if (ev.defaultPrevented || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey)
-                    return;
-                let el = ev.target;
-                while (el && el !== root && el.tagName !== 'A')
-                    el = el.parentElement;
-                if (!el || el.tagName !== 'A' || el.hasAttribute('download'))
-                    return;
-                const a = el;
-                const href = a.getAttribute('href');
-                if (!href || href.startsWith('#'))
-                    return;
-                const target = a.getAttribute('target');
-                if (target && target.toLowerCase() === '_blank')
-                    return;
-                if (!self._isSameOrigin(href))
-                    return;
-                const url = new URL(href, location.href);
-                if (self._isSameDocument(url))
-                    return;
-                ev.preventDefault();
-                self._navigate(url.toString(), true, 'link').catch(() => { location.assign(url.toString()); });
-            };
-            root.addEventListener('click', onClick);
-            if (this._config.router?.prefetchOnHover) {
-                const preloadEventHandler = (e) => {
-                    const t = e.target;
-                    let el = t;
-                    while (el && el !== root && el.tagName !== 'A')
-                        el = el.parentElement;
-                    if (!el || el.tagName !== 'A' || el.hasAttribute('download'))
-                        return;
-                    const href = el.getAttribute('href');
-                    if (!href || href.startsWith('#'))
-                        return;
-                    preload(href);
-                };
-                root.addEventListener('mouseover', preloadEventHandler, { passive: true });
-                root.addEventListener('touchstart', preloadEventHandler, { passive: true });
-            }
-            window.addEventListener('popstate', () => { self._navigate(location.href, false, 'popstate').catch(() => { }); });
+            const { install, navigate } = Router(this._config, this);
+            install(root);
+            this.navigate = navigate;
         }
         async _navigate(url, push, source = 'program') {
-            if (!FT_RT)
+            if (!this.navigate)
                 return;
-            if (!this._routerEnabled())
-                return Promise.resolve();
-            if (!this._isSameOrigin(url)) {
-                location.assign(url);
-                return;
-            }
-            const targetURL = new URL(url);
-            const targetKey = this._normalizeDocURL(targetURL);
-            if (source !== 'popstate') {
-                if (this._isSameDocument(targetURL)) {
-                    location.href = url;
-                    return;
-                }
-            }
-            else {
-                if (this._currentDocURL && targetKey === this._currentDocURL) {
-                    this._scrollToHash(targetURL.hash);
-                    return;
-                }
-            }
-            const from = location.href;
-            try {
-                const res = await (this._config.router?.before?.(url, from, { source }));
-                if (res === false)
-                    return;
-            }
-            catch (err) {
-                try {
-                    this._config.router?.error?.(err, url, from);
-                }
-                catch { }
-                return;
-            }
-            const curKey = this._currentDocURL || this._normalizeDocURL(from);
-            this._scrollPositions.set(curKey, { x: window.scrollX || 0, y: window.scrollY || 0 });
-            try {
-                const html = await this._fetchHTML(url);
-                if (push)
-                    history.pushState({}, '', url);
-                await this._swapDocument(html);
-                this._currentDocURL = targetKey;
-                _se(() => {
-                    if (source === 'popstate') {
-                        const pos = this._scrollPositions.get(targetKey);
-                        if (pos)
-                            (window).scrollTo(pos.x, pos.y);
-                        else if (!this._scrollToHash(targetURL.hash))
-                            (window).scrollTo(0, 0);
-                    }
-                    else {
-                        if (!this._scrollToHash(targetURL.hash))
-                            (window).scrollTo(0, 0);
-                    }
-                });
-                try {
-                    await this._config.router?.after?.(url, from, { source });
-                }
-                catch { }
-            }
-            catch (err) {
-                if (err && (err.name === 'XToolRedirect' || err.message === 'XToolRedirect'))
-                    return;
-                _se(() => this._config.router?.error?.(err, url, from));
-                try {
-                    location.assign(url);
-                }
-                catch {
-                    _se(() => location.href = url);
-                }
-            }
+            return this.navigate(url, push, source);
         }
-        async _fetchHTML(url) {
-            if (!FT_RT)
-                return Promise.reject();
-            const res = await fetch(url, { credentials: 'same-origin', cache: 'default', redirect: 'follow' });
-            if (res.redirected) {
-                const finalUrl = res.url;
-                try {
-                    location.assign(finalUrl);
-                }
-                catch {
-                    _se(() => location.href = finalUrl);
-                }
-                const e = new Error('XToolRedirect');
-                e.name = 'XToolRedirect';
-                e.url = finalUrl;
-                throw e;
-            }
-            if (!res.ok)
-                throw new Error(res.status + ' ' + res.statusText);
-            return await res.text();
-        }
-        async _swapDocument(html) {
-            if (!FT_RT)
-                return;
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newHead = doc.head;
-            const newTitle = newHead?.querySelector('title');
-            const applySwap = () => {
-                if (newTitle) {
-                    const t = newTitle.textContent || '';
-                    if (document.title !== t)
-                        document.title = t;
-                }
-                const sel = this._config.container || 'body';
-                const cur = d.querySelector(sel);
-                const next = doc.querySelector(sel);
-                if (cur && next) {
-                    this._morphElement(cur, next);
-                }
-                else if (next) {
-                    d.body.innerHTML = next.innerHTML;
-                }
-                else {
-                    d.body.innerHTML = doc.body.innerHTML;
-                }
-                this._byEl.delete(cur);
-                this._autoDiscoverComponents();
-                const c = d?.querySelector(this._config.container);
-                if (c) {
-                    this._ensureRootObserver(c);
-                    if (this._config.delegate)
-                        this._ensureDelegation(c);
-                }
-            };
-            const vt = (document).startViewTransition?.bind(document);
-            if (vt && this._getConfig().router?.transitionName) {
-                const sel = this._config.container || 'body';
-                const cont = d.querySelector(sel);
-                const prev = cont ? (cont.style.getPropertyValue('view-transition-name') || '') : '';
-                _se(() => { if (cont)
-                    cont.style.setProperty('view-transition-name', this._routerTransitionName()); });
-                try {
-                    const transition = vt(applySwap);
-                    await transition.finished;
-                }
-                finally {
-                    try {
-                        if (cont) {
-                            if (prev)
-                                cont.style.setProperty('view-transition-name', prev);
-                            else
-                                cont.style.removeProperty('view-transition-name');
-                        }
-                    }
-                    catch { }
-                }
-            }
-            else
-                applySwap();
-        }
-        _setAttributes(cur, next) {
-            if (!FT_RT)
-                return;
-            const curAttrs = cur.getAttributeNames();
-            for (let i = 0; i < curAttrs.length; i++) {
-                const name = curAttrs[i];
-                if (!next.hasAttribute(name))
-                    cur.removeAttribute(name);
-            }
-            const nextAttrs = next.getAttributeNames();
-            for (let i = 0; i < nextAttrs.length; i++) {
-                const name = nextAttrs[i];
-                const val = next.getAttribute(name);
-                if (cur.getAttribute(name) !== val)
-                    cur.setAttribute(name, val);
-            }
-        }
-        _attributesEqual(a, b) {
-            if (!FT_RT)
-                return false;
-            const aNames = a.getAttributeNames();
-            const bNames = b.getAttributeNames();
-            if (aNames.length !== bNames.length)
-                return false;
-            const map = new Map();
-            for (let i = 0; i < aNames.length; i++) {
-                const n = aNames[i];
-                map.set(n, a.getAttribute(n));
-            }
-            for (let i = 0; i < bNames.length; i++) {
-                const n = bNames[i];
-                if (!map.has(n))
-                    return false;
-                if (map.get(n) !== b.getAttribute(n))
-                    return false;
-            }
-            return true;
-        }
-        _isDynamicNode(el) {
-            const tag = el.tagName;
-            if (tag === 'IFRAME' && el.hasAttribute('src'))
-                return true;
-            if (tag === 'COMPONENT' && el.hasAttribute('source'))
-                return true;
-            return false;
-        }
-        _morphElement(cur, next) {
-            if (!FT_RT)
-                return;
-            if (cur.nodeName !== next.nodeName || this._isDynamicNode(next)) {
-                cur.replaceWith(next.cloneNode(true));
-                return;
-            }
-            this._setAttributes(cur, next);
-            if (!cur.firstChild && !next.firstChild)
-                return;
-            const curChildren = Array.from(cur.childNodes);
-            const nextChildren = Array.from(next.childNodes);
-            const max = nextChildren.length;
-            for (let i = 0; i < max; i++) {
-                const n = nextChildren[i];
-                const c = curChildren[i];
-                if (!c) {
-                    cur.appendChild(n.cloneNode(true));
-                    continue;
-                }
-                if (n.nodeType === c.nodeType) {
-                    if (n.nodeType === 3) {
-                        const a = c;
-                        const b = n;
-                        if (a.data !== b.data)
-                            a.data = b.data;
-                    }
-                    else if (n.nodeType === 1) {
-                        const cn = c;
-                        const nn = n;
-                        if (this._isDynamicNode(nn)) {
-                            try {
-                                cn.replaceWith(nn.cloneNode(true));
-                            }
-                            catch { }
-                        }
-                        else if (cn.nodeName === nn.nodeName && this._attributesEqual(cn, nn)) {
-                            this._morphElement(cn, nn);
-                        }
-                        else {
-                            try {
-                                cn.replaceWith(nn.cloneNode(true));
-                            }
-                            catch { }
-                        }
-                    }
-                    else {
-                        try {
-                            c.replaceWith(n.cloneNode(true));
-                        }
-                        catch { }
-                    }
-                }
-                else {
-                    try {
-                        c.replaceWith(n.cloneNode(true));
-                    }
-                    catch { }
-                }
-            }
-            if (curChildren.length > max) {
-                for (let i = curChildren.length - 1; i >= max; i--) {
-                    const toRemove = cur.childNodes[i];
-                    try {
-                        cur.removeChild(toRemove);
-                    }
-                    catch { }
-                }
-            }
-        }
-        _fetchAndEvalComponent(path, retries = 2, baseDelay = 300) {
+        _fetchAndEvalComponent(path, retries = 2, baseDelay = 300, maxDelay = 30000) {
             const existing = this._inflightComponentLoads.get(path);
             if (existing)
                 return existing;
             const self = this;
-            const isTypeScript = /\.ts?$/.test(new URL(path, d?.baseURI || location.href).pathname);
-            if (isTypeScript && !FT_TS) {
+            const urlObj = new URL(path, d?.baseURI || location.href);
+            const isTypeScript = /\.ts?$/.test(urlObj.pathname);
+            if (isTypeScript && !FT_TS)
                 throw new Error(`TypeScript component loading is not enabled in tiny builds. Loading failed for: ${path} failed.`);
-            }
+            const isHTMLComponent = /\.html?$/.test(urlObj.pathname);
             const html = (strings, ...values) => strings.reduce((acc, str, i) => acc + str + (i < values.length ? values[i] : ''), '') + `\n`;
-            const attempt = (n) => {
-                return fetch(path, { cache: 'no-cache' }).then(res => {
+            const data = (init) => {
+                try {
+                    if (isReactive(init) || isComputedRef(init))
+                        return init;
+                }
+                catch { }
+                if (!init || typeof init !== 'object')
+                    return makeReactive({ value: init });
+                const inner = makeReactive(init);
+                const ref = makeReactive({ value: inner });
+                try {
+                    const innerCtrl = getReactiveControl(inner);
+                    const refCtrl = getReactiveControl(ref);
+                    if (innerCtrl && refCtrl) {
+                        if (!innerCtrl.changeListeners)
+                            innerCtrl.changeListeners = [];
+                        innerCtrl.changeListeners.push((_old, _new) => {
+                            if (Array.isArray(refCtrl.changeListeners)) {
+                                const oldSnap = unwrapReactive(inner);
+                                const newSnap = unwrapReactive(inner);
+                                for (const l of refCtrl.changeListeners) {
+                                    try {
+                                        l(oldSnap, newSnap);
+                                    }
+                                    catch { }
+                                }
+                            }
+                        });
+                    }
+                }
+                catch { }
+                const proxy = new Proxy(ref, {
+                    get: (r, k) => (k === 'value' ? r.value : r.value?.[k]),
+                    set: (r, k, v) => { try {
+                        if (r.value)
+                            r.value[k] = v;
+                        return true;
+                    }
+                    catch (e) {
+                        return false;
+                    } },
+                    has: (r, k) => (k === 'value') || (r.value ? (k in r.value) : false),
+                    ownKeys: (r) => (r.value ? Reflect.ownKeys(r.value) : []),
+                    getOwnPropertyDescriptor: (r, k) => {
+                        if (k === 'value')
+                            return { configurable: true, enumerable: true, value: r.value, writable: true };
+                        const val = r.value;
+                        return val ? (Object.getOwnPropertyDescriptor(val, k) || { configurable: true, enumerable: true, value: val[k], writable: true }) : undefined;
+                    }
+                });
+                try {
+                    const ctrl = getReactiveControl(ref);
+                    if (ctrl)
+                        setReactiveControl(proxy, ctrl);
+                }
+                catch { }
+                return proxy;
+            };
+            const computed = (getter) => makeComputed(getter);
+            let resolved = false;
+            let attemptIndex = 0;
+            let timer = null;
+            let onlineListener = null;
+            let resolveFn;
+            let rejectFn;
+            const computeDelay = (n) => Math.min(maxDelay, (baseDelay * Math.pow(2, n)) * (0.75 + Math.random() * 0.5));
+            const clearResources = () => {
+                if (timer != null) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+                if (onlineListener) {
+                    window.removeEventListener('online', onlineListener);
+                    onlineListener = null;
+                }
+            };
+            const attempt = () => {
+                const currentN = attemptIndex++;
+                fetch(path, { cache: 'no-cache' }).then(res => {
                     if (!res.ok)
                         throw new Error(res.status + ' ' + res.statusText);
                     return res.text();
                 }).then(code => {
-                    if (FT_TS && isTypeScript) {
+                    if (resolved)
+                        return;
+                    if (FT_TS && isTypeScript)
                         code = stripTypes(code);
+                    if (!isHTMLComponent) {
+                        const wrapped = code + `\n//# sourceURL=${path}`;
+                        try {
+                            new Function('XTool', 'html', wrapped)(self, html);
+                        }
+                        catch (err) {
+                            console.error(`Error evaluating component script at ${path}:`, err);
+                        }
                     }
-                    const wrapped = code + `\n//# sourceURL=${path}`;
-                    try {
-                        new Function('XTool', 'html', wrapped)(self, html);
+                    else {
+                        const namedComponents = new Map();
+                        let defaultScript = '';
+                        let defaultTemplate = '';
+                        let defaultHasSetup = false;
+                        try {
+                            const parser = new DOMParser();
+                            const parsed = parser.parseFromString(code, 'text/html');
+                            const scripts = parsed.querySelectorAll('script');
+                            scripts.forEach(sc => {
+                                const isSetup = sc.hasAttribute('setup');
+                                const name = sc.getAttribute('name');
+                                if (name) {
+                                    const entry = namedComponents.get(name) || { script: '', template: '', hasSetup: false };
+                                    if (isSetup)
+                                        entry.hasSetup = true;
+                                    entry.script += (sc.textContent || '') + '\n';
+                                    namedComponents.set(name, entry);
+                                }
+                                else {
+                                    if (isSetup)
+                                        defaultHasSetup = true;
+                                    defaultScript += (sc.textContent || '') + '\n';
+                                }
+                                sc.remove();
+                            });
+                            const templates = parsed.querySelectorAll('template');
+                            templates.forEach(tpl => {
+                                const name = tpl.getAttribute('name');
+                                if (name) {
+                                    const entry = namedComponents.get(name) || { script: '', template: '', hasSetup: false };
+                                    entry.template = (tpl.innerHTML || '').trim();
+                                    namedComponents.set(name, entry);
+                                }
+                                else if (!defaultTemplate) {
+                                    defaultTemplate = (tpl.innerHTML || '').trim();
+                                }
+                            });
+                            if (!defaultTemplate && !namedComponents.size) {
+                                defaultTemplate = (parsed.body ? parsed.body.innerHTML : '').trim();
+                            }
+                        }
+                        catch (e) {
+                            console.error('HTML component parse failed, falling back to raw processing:', e);
+                            defaultTemplate = code;
+                        }
+                        const registerOneComponent = (scriptContent, templateHTML, hasSetup, explicitName) => {
+                            try {
+                                const ctx = {};
+                                const lifecycles = {
+                                    onMounted: [],
+                                    onBeforeMount: [],
+                                    onUnmounted: [],
+                                    onBeforeUnmount: []
+                                };
+                                const expose = (obj) => { if (obj && typeof obj === 'object')
+                                    Object.assign(ctx, obj); };
+                                const onMounted = (fn) => { if (typeof fn === 'function')
+                                    lifecycles.onMounted.push(fn); };
+                                const onBeforeMount = (fn) => { if (typeof fn === 'function')
+                                    lifecycles.onBeforeMount.push(fn); };
+                                const onUnmounted = (fn) => { if (typeof fn === 'function')
+                                    lifecycles.onUnmounted.push(fn); };
+                                const onBeforeUnmount = (fn) => { if (typeof fn === 'function')
+                                    lifecycles.onBeforeUnmount.push(fn); };
+                                const watch = (source, cb) => {
+                                    if (!source || typeof cb !== 'function')
+                                        return () => { };
+                                    const readVal = (s) => {
+                                        if (isComputedRef(s))
+                                            return undefined;
+                                        if (isReactive(s)) {
+                                            try {
+                                                if ('value' in s)
+                                                    return s.value;
+                                            }
+                                            catch { }
+                                            return unwrapReactive(s);
+                                        }
+                                        return s;
+                                    };
+                                    if (Array.isArray(source)) {
+                                        const srcs = source.filter((s) => !!s && !isComputedRef(s));
+                                        const ctrls = srcs.map((s) => isReactive(s) ? getReactiveControl(s) : undefined);
+                                        const listeners = [];
+                                        let oldVals = srcs.map(readVal);
+                                        let scheduled = false;
+                                        const fire = () => {
+                                            if (scheduled)
+                                                return;
+                                            scheduled = true;
+                                            Promise.resolve().then(() => {
+                                                scheduled = false;
+                                                const newVals = srcs.map(readVal);
+                                                try {
+                                                    cb(newVals, oldVals);
+                                                }
+                                                catch (e) {
+                                                    console.error(e);
+                                                }
+                                                oldVals = newVals;
+                                            });
+                                        };
+                                        for (let i = 0; i < ctrls.length; i++) {
+                                            const c = ctrls[i];
+                                            if (!c)
+                                                continue;
+                                            if (!c.changeListeners)
+                                                c.changeListeners = [];
+                                            const l = (_o, _n) => fire();
+                                            c.changeListeners.push(l);
+                                            listeners.push(l);
+                                        }
+                                        const stop = () => {
+                                            for (let i = 0; i < ctrls.length; i++) {
+                                                const c = ctrls[i];
+                                                const l = listeners[i];
+                                                if (!c || !l || !c.changeListeners)
+                                                    continue;
+                                                const idx = c.changeListeners.indexOf(l);
+                                                if (idx >= 0)
+                                                    c.changeListeners.splice(idx, 1);
+                                            }
+                                        };
+                                        lifecycles.onBeforeUnmount.push(stop);
+                                        return stop;
+                                    }
+                                    if (isComputedRef(source)) {
+                                        return () => { };
+                                    }
+                                    if (isReactive(source)) {
+                                        const ctrl = getReactiveControl(source);
+                                        if (!ctrl)
+                                            return () => { };
+                                        if (!ctrl.changeListeners)
+                                            ctrl.changeListeners = [];
+                                        let oldV = readVal(source);
+                                        const listener = (_old, _new) => {
+                                            const newV = readVal(source);
+                                            try {
+                                                cb(newV, oldV);
+                                            }
+                                            catch (e) {
+                                                console.error(e);
+                                            }
+                                            oldV = newV;
+                                        };
+                                        ctrl.changeListeners.push(listener);
+                                        const stop = () => {
+                                            const arr = ctrl.changeListeners;
+                                            if (!arr)
+                                                return;
+                                            const idx = arr.indexOf(listener);
+                                            if (idx >= 0)
+                                                arr.splice(idx, 1);
+                                        };
+                                        lifecycles.onBeforeUnmount.push(stop);
+                                        return stop;
+                                    }
+                                    return () => { };
+                                };
+                                const exec = new Function('XTool', 'data', 'computed', 'watch', 'html', 'template', 'expose', 'onMounted', 'onBeforeMount', 'onUnmounted', 'onBeforeUnmount', scriptContent + `\n//# sourceURL=${path}`);
+                                if (hasSetup)
+                                    exec.call(ctx, self, data, computed, watch, html, templateHTML, expose, onMounted, onBeforeMount, onUnmounted, onBeforeUnmount);
+                                else
+                                    exec(self, data, computed, watch, html, templateHTML, expose, onMounted, onBeforeMount, onUnmounted, onBeforeUnmount);
+                                const inferredName = (path.split('/').pop() || '').replace(/\.(mjs|js|ts|html)(\?.*)?$/i, '').toLowerCase();
+                                const name = explicitName || (typeof ctx.name === 'string' && ctx.name.trim() ? ctx.name.trim() : inferredName);
+                                const dataObj = {};
+                                const methodsObj = {};
+                                const computedObj = {};
+                                for (const k of Object.keys(ctx)) {
+                                    if (k === 'name' && typeof ctx[k] === 'string')
+                                        continue;
+                                    const v = ctx[k];
+                                    if (typeof v === 'function') {
+                                        methodsObj[k] = v;
+                                    }
+                                    else if (isComputedRef(v) && FT_C) {
+                                        computedObj[k] = v;
+                                    }
+                                    else {
+                                        dataObj[k] = isReactive(v) && _FT_DR ? v : v;
+                                    }
+                                }
+                                const lifecycleDef = {};
+                                if (lifecycles.onMounted.length) {
+                                    lifecycleDef.mounted = function () { for (let i = 0; i < lifecycles.onMounted.length; i++) {
+                                        try {
+                                            lifecycles.onMounted[i].call(this);
+                                        }
+                                        catch (e) {
+                                            console.error(e);
+                                        }
+                                    } };
+                                }
+                                if (lifecycles.onBeforeMount.length) {
+                                    lifecycleDef.beforeMount = function () { for (let i = 0; i < lifecycles.onBeforeMount.length; i++) {
+                                        try {
+                                            lifecycles.onBeforeMount[i].call(this);
+                                        }
+                                        catch (e) {
+                                            console.error(e);
+                                        }
+                                    } };
+                                }
+                                if (lifecycles.onUnmounted.length) {
+                                    lifecycleDef.unmounted = function () { for (let i = 0; i < lifecycles.onUnmounted.length; i++) {
+                                        try {
+                                            lifecycles.onUnmounted[i].call(this);
+                                        }
+                                        catch (e) {
+                                            console.error(e);
+                                        }
+                                    } };
+                                }
+                                if (lifecycles.onBeforeUnmount.length) {
+                                    lifecycleDef.beforeUnmount = function () { for (let i = 0; i < lifecycles.onBeforeUnmount.length; i++) {
+                                        try {
+                                            lifecycles.onBeforeUnmount[i].call(this);
+                                        }
+                                        catch (e) {
+                                            console.error(e);
+                                        }
+                                    } };
+                                }
+                                try {
+                                    self.registerComponent({ name, template: templateHTML, data: dataObj, methods: methodsObj, computed: computedObj, ...lifecycleDef });
+                                }
+                                catch (e) {
+                                    console.error('Auto HTML component registration failed:', e);
+                                }
+                            }
+                            catch (err) {
+                                console.error(`Error evaluating HTML component at ${path}:`, err);
+                            }
+                        };
+                        for (const [compName, entry] of namedComponents) {
+                            registerOneComponent(entry.script, entry.template, entry.hasSetup, compName);
+                        }
+                        if (defaultScript || defaultTemplate) {
+                            registerOneComponent(defaultScript, defaultTemplate, defaultHasSetup);
+                        }
                     }
-                    catch (err) {
-                        console.error(`Error evaluating component script at ${path}:`, err);
-                    }
+                    resolved = true;
+                    clearResources();
+                    resolveFn();
                 }).catch(err => {
-                    if (n >= retries)
-                        throw err;
-                    const delay = baseDelay * Math.pow(2, n);
-                    return new Promise(resolve => setTimeout(resolve, delay)).then(() => attempt(n + 1));
+                    if (resolved)
+                        return;
+                    const isOnline = (typeof navigator === 'undefined') ? true : navigator.onLine;
+                    const msg = (err && (err.message || '')) + '';
+                    const networkLike = err instanceof TypeError || /Failed to fetch|NetworkError|load failed/i.test(msg);
+                    if (!isOnline || networkLike) {
+                        if (!onlineListener) {
+                            onlineListener = () => {
+                                if (resolved)
+                                    return;
+                                if (timer != null) {
+                                    clearTimeout(timer);
+                                    timer = null;
+                                }
+                                attempt();
+                            };
+                            window.addEventListener('online', onlineListener);
+                        }
+                        const delay = computeDelay(currentN);
+                        timer = window.setTimeout(() => attempt(), delay);
+                        return;
+                    }
+                    if (currentN >= retries) {
+                        clearResources();
+                        rejectFn(err);
+                        return;
+                    }
+                    const delay = computeDelay(currentN);
+                    timer = window.setTimeout(() => attempt(), delay);
                 });
             };
-            const p = attempt(0).finally(() => { this._inflightComponentLoads.delete(path); });
+            const p = new Promise((resolve, reject) => {
+                resolveFn = resolve;
+                rejectFn = reject;
+                attempt();
+            }).finally(() => { this._inflightComponentLoads.delete(path); clearResources(); });
             this._inflightComponentLoads.set(path, p);
             return p;
         }
@@ -1380,17 +2092,17 @@ const XToolFramework = function () {
                             quMct(() => {
                                 if (el.isConnected)
                                     return;
+                                if (el.__x_if_suspended)
+                                    return;
                                 this._runRefCleanup(el);
                                 const stack = [el];
                                 while (stack.length) {
                                     const cur = stack.pop();
+                                    if (cur.__x_if_suspended)
+                                        continue;
                                     const comp = this._getComponentByElement(cur);
                                     if (comp && !comp.isDestroyed) {
-                                        try {
-                                            this._clearComponentRefs(comp);
-                                            comp.destroy();
-                                        }
-                                        catch { }
+                                        _se(() => { this._clearComponentRefs(comp); comp.destroy(); });
                                     }
                                     let child = cur.firstElementChild;
                                     while (child) {
@@ -1410,11 +2122,7 @@ const XToolFramework = function () {
                             else if (r.attributeName === STR_READONLY) {
                                 const comp = this._getComponentByElement(target);
                                 if (comp) {
-                                    try {
-                                        const ro = target.hasAttribute(STR_READONLY);
-                                        comp.setFrozen(!!ro);
-                                    }
-                                    catch { }
+                                    _se(() => { const ro = target.hasAttribute(STR_READONLY); comp.setFrozen(!!ro); });
                                 }
                             }
                         }
@@ -1487,27 +2195,21 @@ const XToolFramework = function () {
             if (onLeave && onLeave.cb) {
                 (reg.leave || (reg.leave = [])).push({ cb: onLeave.cb, once: !!onLeave.once });
             }
-            _se(() => io.observe(el));
-            return () => { _se(() => io.unobserve(el)); };
+            io.observe(el);
+            return () => { io.unobserve(el); };
         }
         _onComponentSourceChanged(el) {
             const src = _tr(el.getAttribute('source'));
             const existing = this._getComponentByElement(el);
             if (!src) {
                 if (existing && !existing.isDestroyed) {
-                    try {
-                        existing.destroy();
-                    }
-                    catch { }
+                    _se(() => existing.destroy());
                 }
                 el.innerHTML = '';
                 return;
             }
             if (existing && !existing.isDestroyed) {
-                try {
-                    existing.destroy();
-                }
-                catch { }
+                _se(() => existing.destroy());
             }
             el.innerHTML = '';
             this._instantiateNamedComponent(el);
@@ -1524,25 +2226,12 @@ const XToolFramework = function () {
             }
         }
         _instantiateNamedComponent(el, parentHint) {
-            const source = el.getAttribute('source');
+            let source = el.__x_mount_source || el.getAttribute('source');
             if (!source)
                 return;
-            let def = this._getRegisteredComponentDef(source);
-            if (!def) {
-                const name = source.toLowerCase();
-                const lazy = this._lazyComponentSources?.get(name);
-                if (lazy) {
-                    if (lazy.status === LS_PENDING) {
-                        lazy.status = LS_LOADING;
-                        lazy.promise = this._fetchAndEvalComponent(lazy.path)
-                            .then(() => { lazy.status = LS_LOADED; })
-                            .catch(() => { lazy.status = LS_ERROR; });
-                    }
-                    lazy.promise?.then(() => { _se(() => { const again = this._getRegisteredComponentDef(source); if (again)
-                        this._instantiateNamedComponent(el); }); });
-                }
-                return;
-            }
+            if (el.__x_mount_source)
+                delete el.__x_mount_source;
+            delete el.__x_saved_attrs;
             let parentComp = parentHint;
             if (!parentComp) {
                 let par = el.parentElement;
@@ -1554,12 +2243,60 @@ const XToolFramework = function () {
                         par = par.parentElement;
                 }
             }
+            let def = this._getRegisteredComponentDef(source);
+            if (!def && parentComp) {
+                try {
+                    const fn = new Function('ctx', 'with(ctx){return (' + source + ')}');
+                    const ctx = parentComp._createContextProxy(undefined, el);
+                    const evaluated = fn.call(parentComp.getContext(true), ctx);
+                    if (typeof evaluated === 'string' && evaluated) {
+                        source = evaluated;
+                        def = this._getRegisteredComponentDef(source);
+                    }
+                }
+                catch { }
+            }
+            if (!def) {
+                const name = source.toLowerCase();
+                const lazy = this._lazyComponentSources?.get(name);
+                if (lazy) {
+                    if (lazy.status === LS_PENDING && !lazy.promise) {
+                        lazy.status = LS_LOADING;
+                        lazy.promise = this._fetchAndEvalComponent(lazy.path)
+                            .then(() => { lazy.status = LS_LOADED; })
+                            .catch(() => { lazy.status = LS_ERROR; })
+                            .finally(() => {
+                            if (lazy.status === LS_LOADED) {
+                                this._lazyComponentSources?.delete(name);
+                            }
+                        });
+                    }
+                    if (lazy.promise) {
+                        const elementToRetry = el;
+                        const parentToRetry = parentHint;
+                        lazy.promise.then(() => {
+                            _se(() => {
+                                const again = this._getRegisteredComponentDef(source);
+                                if (again && elementToRetry.isConnected && !this._getComponentByElement(elementToRetry)) {
+                                    this._instantiateNamedComponent(elementToRetry, parentToRetry);
+                                }
+                            });
+                        });
+                    }
+                }
+                return;
+            }
             let props = null;
             let dynamicPropObj = null;
             let rawPropExpression = null;
             if (!props)
                 props = {};
-            const propExpr = el.getAttribute(attrName('prop'));
+            const mountProps = el.__x_mount_props;
+            if (mountProps && typeof mountProps === 'object') {
+                Object.assign(props, mountProps);
+                delete el.__x_mount_props;
+            }
+            const propExpr = this._propExpressions.get(el) || el.getAttribute(attrName('prop'));
             const propBase = attrName('prop');
             const propPrefix = propBase + ':';
             const modifierPropExpressions = {};
@@ -1600,9 +2337,10 @@ const XToolFramework = function () {
                     try {
                         const fn = new Function('ctx', 'with(ctx){return (' + propExpr + ')}');
                         const ctx = parentComp.getContext(true);
-                        dynamicPropObj = fn(ctx);
+                        const ctxProxy = parentComp._createContextProxy(undefined, el);
+                        dynamicPropObj = fn.call(ctx, ctxProxy);
                     }
-                    catch {
+                    catch (e) {
                         dynamicPropObj = null;
                     }
                 }
@@ -1618,6 +2356,7 @@ const XToolFramework = function () {
                     for (const k in dynamicPropObj)
                         if (!(k in props))
                             props[k] = dynamicPropObj[k];
+                this._propExpressions.set(el, propExpr);
                 el.removeAttribute(attrName('prop'));
             }
             if (Object.keys(modifierPropExpressions).length) {
@@ -1627,9 +2366,11 @@ const XToolFramework = function () {
                     if (parentComp) {
                         try {
                             const fn = new Function('ctx', 'with(ctx){return (' + expr + ')}');
-                            val = fn(parentComp.getContext(true));
+                            const ctx = parentComp.getContext(true);
+                            const ctxProxy = parentComp._createContextProxy(undefined, el);
+                            val = fn.call(ctx, ctxProxy);
                         }
-                        catch {
+                        catch (e) {
                             val = undefined;
                         }
                     }
@@ -1643,7 +2384,7 @@ const XToolFramework = function () {
                     }
                     evaluated[k] = val;
                     if (!(k in props))
-                        props[k] = String(val);
+                        props[k] = val;
                 }
                 const existingDynamic = dynamicPropObj ? { ...dynamicPropObj } : {};
                 dynamicPropObj = { ...existingDynamic };
@@ -1704,10 +2445,12 @@ const XToolFramework = function () {
                 }
             }
             const compDef = {
+                name: def.name ?? name,
                 data: baseData,
                 methods: { ...(def.methods || {}), ...(initDef?.methods || {}) },
                 computed: { ...(def.computed || {}), ...(initDef?.computed || {}) },
                 propEffects: { ...(def.propEffects || {}), ...(initDef?.propEffects || {}) },
+                setup: initDef?.setup || def.setup,
                 mounted: initDef?.mounted || def.mounted,
                 unmounted: initDef?.unmounted || def.unmounted,
                 beforeMount: initDef?.beforeMount || def.beforeMount,
@@ -1772,10 +2515,7 @@ const XToolFramework = function () {
                 }
             }
             catch { }
-            try {
-                this._discoverNestedNamed(el, comp);
-            }
-            catch { }
+            _se(() => { this._discoverNestedNamed(el, comp); });
             if (rawPropExpression && parentComp) {
                 _se(() => comp._initReactiveProps(rawPropExpression, parentComp));
             }
@@ -1869,6 +2609,41 @@ const XToolFramework = function () {
         set isMounted(v) { this._isMounted = v; }
         get isDestroyed() { return this._isDestroyed; }
         set isDestroyed(v) { this._isDestroyed = v; }
+        _setActiveEffect(effect) {
+            this._activeEffect = effect;
+            _globalActiveEffect = effect;
+        }
+        _bridgeUtilReactive(prop, obj) {
+            if (!isReactive(obj))
+                return;
+            const control = getReactiveControl(obj);
+            if (!control)
+                return;
+            const prevDep = control.depTracker;
+            const prevBase = control.baseChangeListener;
+            control.trackerId = prop;
+            control.depTracker = (k) => {
+                if (this._isInComputedEvaluation && this._computedKeyStack.length) {
+                    const current = this._computedKeyStack[this._computedKeyStack.length - 1];
+                    let s = this._computedDeps.get(current);
+                    if (!s) {
+                        s = new Set();
+                        this._computedDeps.set(current, s);
+                        this._reverseComputedDeps = null;
+                    }
+                    s.add(prop);
+                    this._reverseComputedDeps = null;
+                }
+                if (prevDep)
+                    prevDep(k);
+            };
+            control.baseChangeListener = (oldVal, newVal) => {
+                if (prevBase)
+                    prevBase(oldVal, newVal);
+                this._onDataChange(prop);
+            };
+            setReactiveControl(obj, control);
+        }
         _abortInvokerResources() {
             for (const byKind of this._invokerResources.values()) {
                 for (const cleanup of byKind.values()) {
@@ -1898,10 +2673,7 @@ const XToolFramework = function () {
                 const boolVal = !!value;
                 if (propName && isBooleanProp)
                     elAny[propName] = boolVal;
-                if (boolVal)
-                    element.setAttribute(attributeName, '');
-                else
-                    element.removeAttribute(attributeName);
+                element.toggleAttribute(attributeName, boolVal);
                 return;
             }
             let normalized = null;
@@ -1918,14 +2690,13 @@ const XToolFramework = function () {
             }
             if (hasNonFunctionProp && propName) {
                 if (normalized !== null) {
+                    if (elAny[propName] === normalized)
+                        return;
                     try {
                         elAny[propName] = normalized;
                     }
                     catch {
-                        try {
-                            element.setAttribute(attributeName, normalized);
-                        }
-                        catch { }
+                        _se(() => element.setAttribute(attributeName, normalized));
                     }
                 }
                 else {
@@ -1945,13 +2716,14 @@ const XToolFramework = function () {
         _scanDirectiveAttrs(el, opts) {
             const prefixDash = PFX + '-';
             const prefixColon = PFX + ':';
+            const superColon = ':';
             const namesOut = [];
             let hasTextOrHtml = false;
             let forName = null;
             const names = el.getAttributeNames();
             for (let i = 0; i < names.length; i++) {
                 const name = names[i];
-                const isDir = name.startsWith(prefixDash) || name.startsWith(prefixColon) || name.startsWith('@');
+                const isDir = name.startsWith(prefixDash) || name.startsWith(prefixColon) || name.startsWith('@') || (name.startsWith(superColon) && name.length > 1);
                 if (!isDir)
                     continue;
                 if (opts?.skipRootFor && name === attrName('for'))
@@ -1981,10 +2753,7 @@ const XToolFramework = function () {
                     this._isSealed = false;
                 }
                 this._sealedBeforeFreeze = null;
-                try {
-                    this._scheduleRender();
-                }
-                catch { }
+                this._scheduleRender();
             }
         }
         _setSealed(on) {
@@ -2001,6 +2770,7 @@ const XToolFramework = function () {
             this._directives.set(element, existing);
         }
         constructor(id, def, framework) {
+            this.name = 'ReactiveComponent';
             this._propUpdateActive = false;
             this._runningPropEffect = false;
             this._element = null;
@@ -2014,38 +2784,52 @@ const XToolFramework = function () {
             this._propEffects = {};
             this._computedCache = new Map();
             this._computedDeps = new Map();
+            this._reverseComputedDeps = null;
+            this._computedRefControls = new Map();
             this._computedKeyStack = [];
             this._isInComputedEvaluation = false;
             this._isInMethodExecution = false;
             this._allEffects = new Set();
-            this._hasComputed = false;
             this._directives = new Map();
             this._cleanupFunctions = new Set();
             this._directiveAbort = new AbortController();
             this._invokerResources = new Map();
             this._targetIds = new WkMap();
             this._targetSeq = 0;
+            this._fetchCounter = 0;
+            this._contextBase = null;
+            this._signalHandlers = new Map();
             this._isSealed = false;
             this._isFrozen = false;
             this._sealedBeforeFreeze = null;
             this._isMutationEnabled = true;
+            this._deferEffectExecution = false;
             this._effectsToRun = new Set();
+            this._changedProperties = new Set();
             this._currentInvoker = null;
-            this._loopScopes = new WkMap();
             this._expressionCache = new Map();
             this._propertyDependencies = new Map();
             this._activeEffect = null;
+            this._suspendedEffects = new WeakSet();
             this._renderScheduled = false;
             this._nextTickQueue = [];
             this._changeFrameId = null;
             this._renderFrameId = null;
             this._initialClassSets = new WkMap();
             this._rawData = {};
+            this._cachedMethodContext = null;
+            this._cachedMethodContextSpecials = null;
             this._propParent = null;
             this._callLifecycleHook = (hookName) => {
                 const hook = this._lifecycle[hookName];
+                if (this._beforeMountCalled && hookName === 'beforeMount') {
+                    return;
+                }
                 if (typeof hook === 'function') {
                     this._safeExecute(() => this._runWithGlobalInterception(hook, []));
+                    if (hookName === 'beforeMount') {
+                        this._beforeMountCalled = true;
+                    }
                 }
                 if (hookName === 'mounted' && this._xInitExpr) {
                     const expr = this._xInitExpr;
@@ -2075,37 +2859,48 @@ const XToolFramework = function () {
                 if (typeof fn !== 'function')
                     return undefined;
                 const wrapped = () => {
-                    try {
-                        fn();
-                    }
-                    catch { }
+                    _se(fn);
                     this._cleanupFunctions.delete(wrapped);
                 };
                 this._cleanupFunctions.add(wrapped);
                 return () => { this._cleanupFunctions.delete(wrapped); };
             };
+            if (def.name)
+                this.name = def.name;
             this._id = id;
             this._framework = framework;
             this._originalMethods = def.methods || {};
-            this._computed = this._bindComputed(def.computed || {});
+            this._computed = this._bindFunctionMap(def.computed || {}, 'computed');
             this._propEffects = def.propEffects || {};
             if (this._propEffects && Object.keys(this._propEffects).length) {
-                this._propEffects = this._bindPropEffects();
+                this._propEffects = this._bindFunctionMap(this._propEffects, 'prop');
             }
-            this._hasComputed = !!(def.computed && Object.keys(def.computed).length);
             this._lifecycle = {
                 mounted: def.mounted,
                 unmounted: def.unmounted || def.destroyed,
                 updated: def.updated,
                 beforeMount: def.beforeMount,
-                beforeUnmount: def.beforeUnmount || def.beforeDestroy
+                beforeUnmount: def.beforeUnmount || def.beforeDestroy,
+                setup: def.setup
             };
             this._rawData = this._cloneData(def.data || {});
             this._data = this._createReactiveData(this._rawData || {});
-            this._methods = this._bindMethods();
+            try {
+                const keys = Object.keys(this._rawData || {});
+                for (let i = 0; i < keys.length; i++) {
+                    const k = keys[i];
+                    const v = this._rawData[k];
+                    if (isReactive(v))
+                        this._bridgeUtilReactive(k, v);
+                }
+            }
+            catch { }
+            this._methods = this._bindFunctionMap(this._originalMethods, 'methods');
         }
         _cloneData(value, seen) {
             if (value === null || typeof value !== 'object')
+                return value;
+            if (isReactive(value))
                 return value;
             const s = seen || new WeakMap();
             if (s.has(value))
@@ -2150,104 +2945,182 @@ const XToolFramework = function () {
                 this._beforeMountCalled = true;
             }
         }
-        _onDataChange(_property) {
-            if (!this.isBound)
+        _triggerFullUpdate() {
+            if (!this.isBound || this._isSealed)
                 return;
             const self = this;
             if (self._changeFrameId != null) {
-                _se(() => cancelAnimationFrame(self._changeFrameId));
+                cancelAnimationFrame(self._changeFrameId);
                 self._changeFrameId = null;
             }
-            if (this._isMutationEnabled === false)
-                return;
+            if (FT_C)
+                self._computedCache.clear();
             const effectsToRun = self._effectsToRun;
-            const directDeps = self._propertyDependencies.get(_property);
-            if (directDeps) {
-                for (let i = 0; i < directDeps.length; i++)
-                    effectsToRun.add(directDeps[i]);
-            }
-            if (FT_C && self._computedDeps.size) {
-                const queue = [_property];
-                const visited = new Set();
-                const affectedComputed = new Set();
-                let queueIdx = 0;
-                while (queueIdx < queue.length) {
-                    const base = queue[queueIdx++];
-                    if (visited.has(base))
-                        continue;
-                    visited.add(base);
-                    for (const [compKey, baseDeps] of self._computedDeps.entries()) {
-                        if (baseDeps.has(base) && !affectedComputed.has(compKey)) {
-                            affectedComputed.add(compKey);
-                            queue.push(compKey);
-                        }
-                    }
-                }
-                for (const compKey of affectedComputed) {
-                    const compEffects = self._propertyDependencies.get(compKey);
-                    if (compEffects) {
-                        for (let i = 0; i < compEffects.length; i++)
-                            effectsToRun.add(compEffects[i]);
-                    }
-                    self._computedCache.delete(compKey);
-                }
+            for (const [, effects] of self._propertyDependencies) {
+                for (const effect of effects)
+                    effectsToRun.add(effect);
             }
             self._changeFrameId = requestAnimationFrame(() => {
-                if (FT_C)
-                    self._computedCache.clear();
                 self._changeFrameId = null;
                 if (self.isDestroyed || self._isSealed)
                     return;
                 for (const effect of effectsToRun)
                     self._safeExecute(effect);
                 effectsToRun.clear();
-                if (!directDeps?.length && (self._hasComputed || !XTOOL_ENABLE_STATIC_DIRECTIVES)) {
-                    self._scheduleRender();
-                }
+                self._scheduleRender();
                 self._callLifecycleHook('updated');
             });
         }
-        _bindMethods() {
-            return this._bindFunctionMap(this._originalMethods, 'methods');
+        _buildReverseComputedDeps() {
+            const reverse = new Map();
+            for (const [compKey, baseDeps] of this._computedDeps) {
+                for (const baseProp of baseDeps) {
+                    let set = reverse.get(baseProp);
+                    if (!set) {
+                        set = new Set();
+                        reverse.set(baseProp, set);
+                    }
+                    set.add(compKey);
+                }
+            }
+            return reverse;
         }
-        _bindComputed(src) {
-            return this._bindFunctionMap(src, 'computed');
+        _invalidateReverseComputedDeps() {
+            this._reverseComputedDeps = null;
         }
-        _bindPropEffects() {
-            return this._bindFunctionMap(this._propEffects || {}, 'prop');
+        _onDataChange(_property) {
+            if (!this.isBound || this._isMutationEnabled === false)
+                return;
+            const self = this;
+            const directDeps = self._propertyDependencies.get(_property);
+            if (directDeps) {
+                const effectsToRun = self._effectsToRun;
+                const suspended = self._suspendedEffects;
+                for (const effect of directDeps) {
+                    if (!suspended.has(effect))
+                        effectsToRun.add(effect);
+                }
+            }
+            self._changedProperties.add(_property);
+            if (self._deferEffectExecution) {
+                self._invalidateAffectedComputed();
+                return;
+            }
+            if (self._changeFrameId != null)
+                return;
+            self._changeFrameId = requestAnimationFrame(() => {
+                self._changeFrameId = null;
+                if (self.isDestroyed || self._isSealed)
+                    return;
+                self._invalidateAffectedComputed();
+                const effectsToRun = self._effectsToRun;
+                if (effectsToRun.size > 0) {
+                    for (const effect of effectsToRun)
+                        self._safeExecute(effect);
+                    effectsToRun.clear();
+                    self._callLifecycleHook('updated');
+                }
+            });
+        }
+        _invalidateAffectedComputed() {
+            if (!FT_C || !this._computedDeps.size || !this._changedProperties.size) {
+                this._changedProperties.clear();
+                return;
+            }
+            if (!this._reverseComputedDeps) {
+                this._reverseComputedDeps = this._buildReverseComputedDeps();
+            }
+            const reverse = this._reverseComputedDeps;
+            const affectedComputed = new Set();
+            const effectsToRun = this._effectsToRun;
+            const toProcess = Array.from(this._changedProperties);
+            this._changedProperties.clear();
+            let i = 0;
+            while (i < toProcess.length) {
+                const prop = toProcess[i++];
+                const affectedByProp = reverse.get(prop);
+                if (affectedByProp) {
+                    for (const compKey of affectedByProp) {
+                        if (!affectedComputed.has(compKey)) {
+                            affectedComputed.add(compKey);
+                            toProcess.push(compKey);
+                        }
+                    }
+                }
+            }
+            for (const compKey of affectedComputed) {
+                const compEffects = this._propertyDependencies.get(compKey);
+                if (compEffects) {
+                    for (const effect of compEffects)
+                        effectsToRun.add(effect);
+                }
+                const ctrl = this._computedRefControls.get(compKey);
+                if (ctrl && typeof ctrl.depTracker === 'function') {
+                    try {
+                        ctrl.depTracker(compKey);
+                    }
+                    catch { }
+                }
+                this._computedCache.delete(compKey);
+            }
+        }
+        _compileInterceptedWrapper(fn) {
+            try {
+                const src = String(fn);
+                if (!/\[native code\]/.test(src)) {
+                    let body = src.trim();
+                    if (!/^function[\s\(]/.test(body) && !/^[\w\$_][\w\d\$_]*\s*=>/.test(body) && !/^\(.*?\)\s*=>/.test(body)) {
+                        body = 'function ' + body;
+                    }
+                    const trySrc = 'with(ctx){ const f = (' + body + '); return f.apply(thisArg, argsArray); }';
+                    const wrapper = new Function('thisArg', 'argsArray', 'ctx', trySrc);
+                    return { wrapper, original: fn };
+                }
+            }
+            catch {
+            }
+            return { wrapper: null, original: fn };
         }
         _bindFunctionMap(src, kind) {
             const out = {};
-            const isNative = (fn) => /\[native code\]/.test(String(fn));
-            const makeNoArgCtxRunner = (fn) => {
-                try {
-                    if (!isNative(fn)) {
-                        let body = String(fn).trim();
-                        if (!/^function[\s\(]/.test(body) && !/^[\w\$_][\w\d\$_]*\s*=>/.test(body) && !/^\(.*?\)\s*=>/.test(body)) {
-                            body = 'function ' + body;
-                        }
-                        const compiled = new Function('ctx', `with(ctx){ const f = (${body}); return f.apply(this, []); }`);
-                        return () => { const ctx = this._createMethodContext(); return compiled.call(ctx, ctx); };
-                    }
-                }
-                catch { }
-                return () => fn.call(this._createMethodContext());
-            };
             for (const key in (src || {})) {
                 const original = src[key];
-                if (typeof original !== 'function')
-                    continue;
                 if (kind === 'computed') {
-                    out[key] = makeNoArgCtxRunner(original);
+                    if (isComputedRef(original)) {
+                        const ctrl = getReactiveControl(original);
+                        if (ctrl)
+                            this._computedRefControls.set(key, ctrl);
+                        out[key] = (() => {
+                            return original.value;
+                        });
+                    }
+                    else {
+                        out[key] = () => {
+                            const ctx = this._createMethodContext();
+                            return original.call(ctx);
+                        };
+                    }
                 }
                 else if (kind === 'methods') {
+                    const { wrapper, original: orig } = this._compileInterceptedWrapper(original);
                     out[key] = (...args) => {
                         const prev = this._isInMethodExecution;
                         const prevInv = this._currentInvoker;
                         this._isInMethodExecution = true;
                         this._currentInvoker = key;
+                        const thisArg = this._createMethodContext();
                         try {
-                            return this._safeExecute(() => this._runWithGlobalInterception(original, args));
+                            if (wrapper) {
+                                try {
+                                    return this._safeExecute(() => wrapper.call(thisArg, thisArg, args, this._createContextProxy(undefined, undefined)));
+                                }
+                                catch {
+                                    return this._safeExecute(() => orig.apply(thisArg, args));
+                                }
+                            }
+                            else {
+                                return this._safeExecute(() => orig.apply(thisArg, args));
+                            }
                         }
                         finally {
                             this._isInMethodExecution = prev;
@@ -2256,13 +3129,25 @@ const XToolFramework = function () {
                     };
                 }
                 else {
+                    const { wrapper, original: orig } = this._compileInterceptedWrapper(original);
                     out[key] = (newValue, oldValue) => {
                         const prevInv = this._currentInvoker;
                         const prevFlag = this._runningPropEffect;
                         this._currentInvoker = `prop:${key}`;
                         this._runningPropEffect = true;
+                        const thisArg = this._createMethodContext();
                         try {
-                            return this._safeExecute(() => this._runWithGlobalInterception(original, [newValue, oldValue]));
+                            if (wrapper) {
+                                try {
+                                    return this._safeExecute(() => wrapper.call(thisArg, thisArg, [newValue, oldValue], this._createContextProxy(undefined, undefined)));
+                                }
+                                catch {
+                                    return this._safeExecute(() => orig.apply(thisArg, [newValue, oldValue]));
+                                }
+                            }
+                            else {
+                                return this._safeExecute(() => orig.apply(thisArg, [newValue, oldValue]));
+                            }
                         }
                         finally {
                             this._runningPropEffect = prevFlag;
@@ -2282,6 +3167,7 @@ const XToolFramework = function () {
             this._isInComputedEvaluation = true;
             this._computedKeyStack.push(key);
             this._computedDeps.set(key, new Set());
+            this._reverseComputedDeps = null;
             try {
                 const getter = this._computed[key];
                 const value = typeof getter === 'function' ? getter() : undefined;
@@ -2297,16 +3183,16 @@ const XToolFramework = function () {
             }
         }
         _trackDependency(propKey) {
-            const activeEff = this._activeEffect;
+            const activeEff = _globalActiveEffect || this._activeEffect;
             if (!activeEff)
                 return;
+            activeEff._hasDeps = true;
             let deps = this._propertyDependencies.get(propKey);
             if (!deps) {
-                deps = [];
+                deps = new Set();
                 this._propertyDependencies.set(propKey, deps);
             }
-            if (!deps.includes(activeEff))
-                deps.push(activeEff);
+            deps.add(activeEff);
             const stackLen = this._computedKeyStack.length;
             if (this._isInComputedEvaluation && stackLen) {
                 const current = this._computedKeyStack[stackLen - 1];
@@ -2315,7 +3201,10 @@ const XToolFramework = function () {
                     s = new Set();
                     this._computedDeps.set(current, s);
                 }
+                const prevSize = s.size;
                 s.add(propKey);
+                if (s.size !== prevSize)
+                    this._reverseComputedDeps = null;
             }
         }
         _scheduleRender() {
@@ -2363,10 +3252,7 @@ const XToolFramework = function () {
         _applyAsyncTemplateResolved() {
             if (!this._element)
                 return;
-            try {
-                this._parseDirectives(this._element);
-            }
-            catch { }
+            _se(() => this._parseDirectives(this._element));
             this._scheduleRender();
         }
         completeBinding() {
@@ -2377,6 +3263,9 @@ const XToolFramework = function () {
             this._isBound = true;
             this._isMounted = true;
             this._parseDirectives(this._element);
+            if (this._lifecycle.setup) {
+                this._safeExecute(() => this._runWithGlobalInterception(this._lifecycle.setup, []));
+            }
             this._render();
             this._callLifecycleHook('mounted');
         }
@@ -2392,7 +3281,15 @@ const XToolFramework = function () {
             }
         }
         _setXInitExpr(expr) { this._xInitExpr = expr || undefined; }
-        _runWithGlobalInterception(fn, args) {
+        _runWithGlobalInterception(fn, args, skipExtract) {
+            const thisArg = this._createMethodContext();
+            if (skipExtract) {
+                if (typeof fn !== 'function') {
+                    console.log('Attempted to call a non-function:', fn);
+                    return;
+                }
+                return fn.apply(thisArg, args);
+            }
             try {
                 const src = String(fn);
                 if (!/\[native code\]/.test(src)) {
@@ -2402,13 +3299,21 @@ const XToolFramework = function () {
                     }
                     const trySrc = 'with(ctx){ const f = (' + body + '); return f.apply(thisArg, argsArray); }';
                     const wrapper = new Function('thisArg', 'argsArray', 'ctx', trySrc);
-                    const thisArg = this._createMethodContext();
-                    return wrapper.call(thisArg, thisArg, args, this._createContextProxy(undefined, undefined));
+                    try {
+                        return wrapper.call(thisArg, thisArg, args, this._createContextProxy(undefined, undefined));
+                    }
+                    catch (execErr) {
+                        return fn.apply(thisArg, args);
+                    }
                 }
             }
             catch {
             }
-            return fn.apply(this._createMethodContext(), args);
+            if (typeof fn !== 'function') {
+                console.log('Attempted to call a non-function:', fn);
+                return;
+            }
+            return fn.apply(thisArg, args);
         }
         destroy() {
             const self = this;
@@ -2430,10 +3335,7 @@ const XToolFramework = function () {
                 }
             }
             self._directives.clear();
-            try {
-                self._directiveAbort.abort();
-            }
-            catch { }
+            _se(() => self._directiveAbort.abort());
             self._directiveAbort = new AbortController();
             self._abortInvokerResources();
             self._runCleanupCallbacks();
@@ -2442,20 +3344,18 @@ const XToolFramework = function () {
             self._propertyDependencies.clear();
             if (self._propParent && self._propEffect) {
                 for (const deps of self._propParent._propertyDependencies.values()) {
-                    const idx = deps.indexOf(self._propEffect);
-                    if (idx > -1)
-                        deps.splice(idx, 1);
+                    deps.delete(self._propEffect);
                 }
             }
             if (self._element)
                 self._framework._unregisterElement(self._element);
             self._framework._clearComponentRefs(self);
             if (self._changeFrameId != null) {
-                _se(() => cancelAnimationFrame(self._changeFrameId));
+                cancelAnimationFrame(self._changeFrameId);
                 self._changeFrameId = null;
             }
             if (self._renderFrameId != null) {
-                _se(() => cancelAnimationFrame(self._renderFrameId));
+                cancelAnimationFrame(self._renderFrameId);
                 self._renderFrameId = null;
             }
             self._callLifecycleHook('unmounted');
@@ -2474,11 +3374,47 @@ const XToolFramework = function () {
             self._computed = {};
             self._propEffects = {};
             self._activeEffect = null;
+            self._signalHandlers.clear();
+        }
+        _onSignal(name, handler) {
+            let set = this._signalHandlers.get(name);
+            if (!set) {
+                set = new Set();
+                this._signalHandlers.set(name, set);
+            }
+            set.add(handler);
+        }
+        _offSignal(name, handler) {
+            const set = this._signalHandlers.get(name);
+            if (set) {
+                set.delete(handler);
+                if (set.size === 0)
+                    this._signalHandlers.delete(name);
+            }
+        }
+        _emitSignal(name, payload) {
+            const evt = { name, payload, _stopped: false, stopPropagation() { this._stopped = true; } };
+            let cur = this;
+            while (cur) {
+                const set = cur._signalHandlers.get(name);
+                if (set && set.size) {
+                    for (const h of Array.from(set)) {
+                        try {
+                            h.call(cur._createMethodContext(true), evt);
+                        }
+                        catch { }
+                        if (evt._stopped)
+                            return;
+                    }
+                }
+                cur = cur._parent;
+            }
         }
         _initReactiveProps(expr, parent) {
             if (!expr || !parent)
                 return;
             this._propParent = parent;
+            const el = this._element;
             let evalFn;
             try {
                 evalFn = new Function('ctx', 'with(ctx){return (' + expr + ')}');
@@ -2486,26 +3422,88 @@ const XToolFramework = function () {
             catch {
                 return;
             }
+            const lastPropValues = {};
+            const lastPropVersions = {};
+            let isFirstRun = true;
             const update = () => {
-                parent._activeEffect = update;
+                parent._setActiveEffect(update);
                 let obj;
                 try {
-                    const ctx = parent.getContext(true);
-                    obj = evalFn(ctx);
+                    const ctx = parent._createContextProxy(undefined, el);
+                    obj = evalFn.call(parent.getContext(true), ctx);
                 }
                 catch {
                     obj = null;
                 }
-                parent._activeEffect = null;
+                parent._setActiveEffect(null);
                 if (obj && typeof obj === 'object') {
                     this._data.$props = this._data.$props || {};
-                    this._propUpdateActive = true;
+                    const autoMerge = this._framework._autoMergeProps;
+                    const effectsToCall = [];
                     for (const k in obj) {
                         const v = obj[k];
-                        if (this._data[k] !== v)
+                        const oldValue = lastPropValues[k];
+                        this._data.$props[k] = v;
+                        let hasChanged = isFirstRun || lastPropValues[k] !== v;
+                        const isObjProp = v !== null && typeof v === 'object';
+                        if (!hasChanged && isObjProp) {
+                            const currentVersion = _getDeepVersion(v);
+                            const lastVersion = lastPropVersions[k] ?? -1;
+                            hasChanged = currentVersion !== lastVersion;
+                        }
+                        if (!hasChanged)
+                            continue;
+                        lastPropValues[k] = v;
+                        const eff = k in this._propEffects ? this._propEffects[k] : undefined;
+                        if (eff && !this._isSealed) {
+                            effectsToCall.push({ eff, newVal: v, oldVal: oldValue, key: k, isObjProp });
+                        }
+                        else if (autoMerge) {
+                            this._propUpdateActive = true;
                             this._data[k] = v;
+                            this._propUpdateActive = false;
+                            if (isObjProp) {
+                                lastPropVersions[k] = _getDeepVersion(v);
+                            }
+                        }
+                        else {
+                            this._onDataChange('$props');
+                            if (isObjProp) {
+                                lastPropVersions[k] = _getDeepVersion(v);
+                            }
+                        }
                     }
-                    this._propUpdateActive = false;
+                    if (effectsToCall.length > 0) {
+                        this._deferEffectExecution = true;
+                        try {
+                            for (const { eff, newVal, oldVal, key, isObjProp } of effectsToCall) {
+                                const prevFlag = this._runningPropEffect;
+                                this._runningPropEffect = true;
+                                this._propUpdateActive = true;
+                                try {
+                                    eff(newVal, oldVal);
+                                }
+                                finally {
+                                    this._runningPropEffect = prevFlag;
+                                    this._propUpdateActive = false;
+                                }
+                                if (isObjProp) {
+                                    lastPropVersions[key] = _getDeepVersion(newVal);
+                                }
+                            }
+                        }
+                        finally {
+                            this._deferEffectExecution = false;
+                            const effectsToRun = this._effectsToRun;
+                            if (effectsToRun.size > 0) {
+                                for (const effect of effectsToRun)
+                                    this._safeExecute(effect);
+                                effectsToRun.clear();
+                                this._callLifecycleHook('updated');
+                            }
+                        }
+                    }
+                    isFirstRun = false;
                 }
             };
             this._propEffect = update;
@@ -2548,14 +3546,51 @@ const XToolFramework = function () {
                     return false;
                 }
                 const isComponentTag = el[STR_TAGNAME] === 'COMPONENT';
-                const { names: directiveNames, hasTextOrHtml, forName } = self._scanDirectiveAttrs(el);
+                let directiveNames;
+                let hasTextOrHtml;
+                let forName;
+                const saved = el.__x_saved_attrs;
+                if (saved && saved.length > 0) {
+                    for (const { name, value } of saved) {
+                        el.setAttribute(name, value);
+                    }
+                    directiveNames = saved.map(a => a.name);
+                    hasTextOrHtml = directiveNames.some(n => n === attrName('text') || n === attrName('html'));
+                    forName = directiveNames.find(n => n === attrName('for')) || null;
+                }
+                else {
+                    const scan = self._scanDirectiveAttrs(el);
+                    directiveNames = scan.names;
+                    hasTextOrHtml = scan.hasTextOrHtml;
+                    forName = scan.forName;
+                    if (directiveNames.length > 0) {
+                        const toSave = [];
+                        for (const name of directiveNames) {
+                            toSave.push({ name, value: el.getAttribute(name) || '' });
+                        }
+                        el.__x_saved_attrs = toSave;
+                    }
+                }
                 if (directiveNames.length > 0) {
                     processedElements++;
                     if (forName) {
                         self._bindDirective(el, forName, el.getAttribute(forName) || '');
                         return false;
                     }
+                    const priorityAttrs = [];
+                    const otherAttrs = [];
                     for (const attr of directiveNames) {
+                        if (attr.startsWith(PFX + '-transition') || attr.startsWith(PFX + ':transition')) {
+                            priorityAttrs.push(attr);
+                        }
+                        else {
+                            otherAttrs.push(attr);
+                        }
+                    }
+                    for (const attr of priorityAttrs) {
+                        self._bindDirective(el, attr, el.getAttribute(attr) || '');
+                    }
+                    for (const attr of otherAttrs) {
                         self._bindDirective(el, attr, el.getAttribute(attr) || '');
                     }
                 }
@@ -2669,16 +3704,55 @@ const XToolFramework = function () {
                 child = next;
             }
         }
+        _normalizeTemplateElement(element, directiveName) {
+            if (element[STR_TAGNAME] !== STR_TEMPLATE)
+                return element;
+            const type = directiveName.slice(PFX.length + 1);
+            if (type === 'for' || type === 'if' || type === 'else-if' || type === 'else')
+                return element;
+            const template = element;
+            const content = template.content;
+            const children = Array.from(content.children);
+            let targetElement;
+            if (children.length === 1) {
+                targetElement = children[0].cloneNode(true);
+            }
+            else {
+                targetElement = d.createElement('div');
+                targetElement.style.setProperty(STR_DISPLAY, STR_CONTENTS, 'important');
+                targetElement.appendChild(content.cloneNode(true));
+            }
+            for (const attr of Array.from(template.attributes)) {
+                if (attr.name === directiveName)
+                    continue;
+                targetElement.setAttribute(attr.name, attr.value);
+            }
+            template.parentNode?.insertBefore(targetElement, template);
+            template.parentNode?.removeChild(template);
+            this.framework._discoverNested(targetElement, this);
+            this.framework._processPending();
+            this._parseDirectives(targetElement);
+            return targetElement;
+        }
         _bindDirective(element, directiveName, expression) {
             const self = this;
+            element = self._normalizeTemplateElement(element, directiveName);
             const isAtEvent = directiveName.startsWith('@');
             const isShortBind = directiveName.startsWith(PFX + ':');
+            const isSuperShortBind = directiveName.startsWith(':');
+            if (isSuperShortBind) {
+                const attr = directiveName.slice(1);
+                if (attr) {
+                    element.removeAttribute(directiveName);
+                    return self._bindAttributeDirective(element, attr, expression);
+                }
+            }
             const type = isAtEvent ? ('on:' + directiveName.slice(1)) : directiveName.slice(PFX.length + 1);
             if (!isAtEvent && (isShortBind || type === 'class' || type === STR_STYLE)) {
                 element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, type, expression);
             }
-            if (FT_EXT_DIRS && !isAtEvent && (type === 'transition' || type.startsWith('transition.'))) {
+            if (FT_VT && !isAtEvent && (type === 'transition' || type.startsWith('transition.'))) {
                 let modifiers;
                 if (type.startsWith('transition.')) {
                     const modList = type.slice('transition.'.length).split('.').filter(Boolean);
@@ -2694,8 +3768,8 @@ const XToolFramework = function () {
                 element.removeAttribute(directiveName);
                 return self._bindRefDirective(element, expression);
             }
-            const handled = (!isAtEvent && type === 'model') ? (element.removeAttribute(directiveName), self._bindModelDirective(element, expression), true)
-                : type === 'if' ? (element.removeAttribute(directiveName), self._bindIfDirective(element, expression), true)
+            const handled = (!isAtEvent && type === 'if') ? (element.removeAttribute(directiveName), self._bindIfDirective(element, expression), true)
+                : (!isAtEvent && type === 'model') ? (element.removeAttribute(directiveName), self._bindModelDirective(element, expression), true)
                     : type === 'for' ? (element.removeAttribute(directiveName), self._bindForDirective(element, expression), true)
                         : false;
             if (handled)
@@ -2715,7 +3789,7 @@ const XToolFramework = function () {
                         ? self._bindCustomDirective(element, suffix, expression, customDirective, modifiers)
                         : self._bindEventDirective(element, suffix, expression, modifiers);
                 }
-                if (prefix === 'transition' && FT_EXT_DIRS) {
+                if (prefix === 'transition' && FT_VT) {
                     element.removeAttribute(directiveName);
                     const map = {
                         'enter': 'enter', 'enter-from': 'enterFrom', 'enter-to': 'enterTo',
@@ -2790,10 +3864,7 @@ const XToolFramework = function () {
             const unobserve = this.framework._ioObserve(element, rootMargin, onEnter, onLeave);
             const dir = { type: 'intersect', expression };
             this._addDirective(element, dir);
-            this._addCleanupFunction(() => { try {
-                unobserve();
-            }
-            catch { } });
+            this._addCleanupFunction(() => { _se(unobserve); });
         }
         _createEffect(updateFn, directiveRef) {
             const effect = () => {
@@ -2808,25 +3879,22 @@ const XToolFramework = function () {
             effect();
             this._allEffects.add(effect);
             if (XTOOL_ENABLE_STATIC_DIRECTIVES && directiveRef && directiveRef._static === undefined) {
-                let found = false;
-                for (const deps of this._propertyDependencies.values()) {
-                    if (deps.includes(effect)) {
-                        found = true;
-                        break;
-                    }
-                }
-                directiveRef._static = !found;
+                directiveRef._static = !effect._hasDeps;
             }
             return effect;
         }
         _bindTransitionDirective(element, expression, part, modifiers) {
-            if (!FT_EXT_DIRS)
+            if (!FT_EXT_DIRS || !FT_VT)
                 return;
             let config = element.__x_transition || null;
             const trimmed = _tr(expression);
             if (trimmed) {
                 try {
-                    const evalFn = this._createElementEvaluator(trimmed, element);
+                    const isObject = trimmed.startsWith('{');
+                    const isQuoted = (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+                        (trimmed.startsWith('"') && trimmed.endsWith('"'));
+                    const evalExpr = (isObject || isQuoted) ? trimmed : `\`${trimmed}\``;
+                    const evalFn = this._createElementEvaluator(evalExpr, element);
                     const val = this._safeExecute(() => evalFn());
                     if (!config)
                         config = {};
@@ -2863,7 +3931,7 @@ const XToolFramework = function () {
             this._addDirective(element, { type: 'transition', expression });
         }
         _applyShowWithTransition(el, show, originalDisplay, onDone) {
-            if (!FT_EXT_DIRS) {
+            if (!FT_EXT_DIRS || !FT_VT) {
                 if (show) {
                     if (originalDisplay)
                         el.style.setProperty('display', originalDisplay, 'important');
@@ -2895,10 +3963,7 @@ const XToolFramework = function () {
             }
             const prev = el.__x_t;
             if (prev && typeof prev.cancel === 'function') {
-                try {
-                    prev.cancel();
-                }
-                catch { }
+                prev.cancel();
             }
             const duration = typeof cfg.duration === 'number' ? cfg.duration : 150;
             const easing = typeof cfg.easing === 'string' ? cfg.easing : 'ease';
@@ -2964,10 +4029,7 @@ const XToolFramework = function () {
             const finishers = [];
             const addFinish = (cb) => finishers.push(cb);
             const cleanup = () => { while (finishers.length) {
-                try {
-                    finishers.pop()();
-                }
-                catch { }
+                _se(() => finishers.pop()());
             } };
             const waitEnd = (fallbackMs, done) => {
                 let ended = false;
@@ -2983,14 +4045,10 @@ const XToolFramework = function () {
                 el.addEventListener('animationend', onEnd, { once: true, capture: true });
                 const to = setTimeout(off, fallbackMs + 50);
                 addFinish(() => {
-                    try {
-                        el.removeEventListener('transitionend', onEnd);
-                    }
-                    catch { }
-                    try {
-                        el.removeEventListener('animationend', onEnd);
-                    }
-                    catch { }
+                    _se(() => {
+                        el.removeEventListener('transitionend', onEnd, { capture: true });
+                        el.removeEventListener('animationend', onEnd, { capture: true });
+                    });
                     clearTimeout(to);
                 });
             };
@@ -3128,7 +4186,7 @@ const XToolFramework = function () {
                 return this._bindAttributeDirective(element, type, expression);
             }
             const evaluator = this._createElementEvaluator(expression, element);
-            let isDirty = directiveName ? element.getAttribute(directiveName) !== null : false;
+            let isDirty = true;
             let originalDisplay;
             if (type === 'show') {
                 const el = element;
@@ -3151,8 +4209,9 @@ const XToolFramework = function () {
                         break;
                     case 'show':
                         const next = !!value;
-                        if (_prevShown === next)
+                        if (_prevShown === next) {
                             return;
+                        }
                         _prevShown = next;
                         this._applyShowWithTransition(el, next, originalDisplay);
                         break;
@@ -3259,25 +4318,59 @@ const XToolFramework = function () {
         }
         _bindIfDirective(element, expression) {
             const self = this;
+            const wasDetached = !element.parentNode;
+            let tempFragment = null;
+            if (wasDetached) {
+                tempFragment = d.createDocumentFragment();
+                tempFragment.appendChild(element);
+            }
             const placeholder = d.createComment('x-if');
             element.parentNode?.insertBefore(placeholder, element);
+            element.__x_if_placeholder = placeholder;
             element.__x_if_anchorParent = placeholder.parentElement || null;
             const branches = [];
-            const makeActualElement = (el) => {
+            const makeActualBranch = (el) => {
                 if (el[STR_TAGNAME] === STR_TEMPLATE) {
-                    const wrapper = d.createElement('div');
-                    wrapper.style[STR_DISPLAY] = STR_CONTENTS;
-                    wrapper.appendChild(el.content.cloneNode(true));
-                    return { el: wrapper, isTemplate: true };
+                    const content = el.content;
+                    const elementChildren = Array.from(content.children);
+                    if (elementChildren.length === 1) {
+                        const cloned = elementChildren[0].cloneNode(true);
+                        const od = (cloned.style[STR_DISPLAY] !== STR_NONE) ? cloned.style[STR_DISPLAY] : undefined;
+                        return {
+                            branch: { el: cloned, isTemplate: true, originalDisplay: od, isFragment: false }
+                        };
+                    }
+                    else if (elementChildren.length > 1) {
+                        const anchor = d.createComment('x-if-branch');
+                        const endMarker = d.createComment('/x-if-branch');
+                        return {
+                            branch: { anchor, nodes: [], endMarker, isTemplate: true, isFragment: true },
+                            templateChildren: elementChildren
+                        };
+                    }
+                    const empty = d.createElement('div');
+                    empty.style[STR_DISPLAY] = STR_NONE;
+                    return { branch: { el: empty, isTemplate: true, originalDisplay: STR_NONE, isFragment: false } };
                 }
-                return { el: el, isTemplate: false };
+                const od = (el.style[STR_DISPLAY] !== STR_NONE) ? el.style[STR_DISPLAY] : undefined;
+                const saved = el.__x_saved_attrs;
+                if (saved) {
+                    const ifAttr = attrName('if');
+                    const elseIfAttr = attrName('else-if');
+                    const elseAttr = attrName('else');
+                    el.__x_saved_attrs = saved.filter(a => a.name !== ifAttr && a.name !== elseIfAttr && a.name !== elseAttr);
+                }
+                return { branch: { el: el, isTemplate: false, originalDisplay: od, isFragment: false } };
             };
-            const first = makeActualElement(element);
-            const firstOD = (first.el.style[STR_DISPLAY] !== STR_NONE) ? first.el.style[STR_DISPLAY] : undefined;
+            const firstResult = makeActualBranch(element);
             const firstEval = self._createElementEvaluator(expression, element);
-            branches.push({ el: first.el, test: firstEval, isTemplate: first.isTemplate, originalDisplay: firstOD });
-            if (!first.isTemplate)
-                first.el.__x_tool_bound = true;
+            if (firstResult.branch.isFragment) {
+                branches.push({ ...firstResult.branch, test: firstEval });
+            }
+            else {
+                branches.push({ ...firstResult.branch, test: firstEval });
+            }
+            const branchTemplates = [firstResult.templateChildren || null];
             const originalNodes = [element];
             if (FT_IFB) {
                 let sib = element.nextElementSibling;
@@ -3286,22 +4379,19 @@ const XToolFramework = function () {
                     const isElseIf = sib.hasAttribute(attrName('else-if'));
                     if (!isElse && !isElseIf)
                         break;
-                    if (sib.hasAttribute(attrName('else-if'))) {
+                    const branchResult = makeActualBranch(sib);
+                    let evalFn = null;
+                    if (isElseIf) {
                         const attr = sib.getAttribute(attrName('else-if')) || '';
-                        const branch = makeActualElement(sib);
-                        const od = (branch.el.style[STR_DISPLAY] !== STR_NONE) ? branch.el.style[STR_DISPLAY] : undefined;
-                        const evalFn = self._createElementEvaluator(_tr(attr), sib);
-                        branches.push({ el: branch.el, test: evalFn, isTemplate: branch.isTemplate, originalDisplay: od });
-                        if (!branch.isTemplate)
-                            branch.el.__x_tool_bound = true;
+                        evalFn = self._createElementEvaluator(_tr(attr), element);
+                    }
+                    if (branchResult.branch.isFragment) {
+                        branches.push({ ...branchResult.branch, test: evalFn });
                     }
                     else {
-                        const branch = makeActualElement(sib);
-                        const od = (branch.el.style[STR_DISPLAY] !== STR_NONE) ? branch.el.style[STR_DISPLAY] : undefined;
-                        branches.push({ el: branch.el, test: null, isTemplate: branch.isTemplate, originalDisplay: od });
-                        if (!branch.isTemplate)
-                            branch.el.__x_tool_bound = true;
+                        branches.push({ ...branchResult.branch, test: evalFn });
                     }
+                    branchTemplates.push(branchResult.templateChildren || null);
                     sib.removeAttribute(attrName('else'));
                     sib.removeAttribute(attrName('else-if'));
                     originalNodes.push(sib);
@@ -3313,24 +4403,83 @@ const XToolFramework = function () {
                 if (orig.parentNode)
                     orig.parentNode.removeChild(orig);
             }
+            const findParentScope = () => self._collectLoopScope(placeholder.parentElement);
             const mountBranch = (idx) => {
                 if (idx < 0)
                     return;
                 const b = branches[idx];
-                if (!b.el.__x_tool_bound) {
-                    self._parseDirectives(b.el);
-                    b.el.__x_tool_bound = true;
+                const parentScope = findParentScope();
+                if (b.isFragment) {
+                    const templates = branchTemplates[idx];
+                    if (!templates)
+                        return;
+                    b.nodes = templates.map(t => t.cloneNode(true));
+                    if (parentScope) {
+                        b.anchor.__x_scope = parentScope;
+                        for (const n of b.nodes) {
+                            n.__x_scope = parentScope;
+                        }
+                    }
+                    for (const n of b.nodes) {
+                        if (!n.__x_tool_bound) {
+                            self._parseDirectives(n);
+                            n.__x_tool_bound = true;
+                        }
+                    }
+                    const insertRef = placeholder.nextSibling;
+                    placeholder.parentNode?.insertBefore(b.anchor, insertRef);
+                    for (const n of b.nodes) {
+                        placeholder.parentNode?.insertBefore(n, insertRef);
+                    }
+                    placeholder.parentNode?.insertBefore(b.endMarker, insertRef);
+                    for (const n of b.nodes) {
+                        self.framework._discoverNested(n, self);
+                    }
+                    element.__x_if_current = b.anchor;
                 }
-                element.__x_if_current?.parentNode?.removeChild(element.__x_if_current);
-                if (!b.el.parentNode) {
-                    placeholder.parentNode?.insertBefore(b.el, placeholder.nextSibling);
+                else {
+                    if (parentScope) {
+                        b.el.__x_scope = parentScope;
+                    }
+                    const wasSuspended = !!b.el.__x_if_suspended;
+                    if (wasSuspended) {
+                        const current = element.__x_if_current;
+                        if (current && current !== b.el && current.parentNode) {
+                            current.parentNode.removeChild(current);
+                        }
+                        if (!b.el.parentNode) {
+                            placeholder.parentNode?.insertBefore(b.el, placeholder.nextSibling);
+                        }
+                        element.__x_if_current = b.el;
+                        b.el.__x_if_suspended = false;
+                        self._resumeSubtree(b.el);
+                        self._applyShowWithTransition(b.el, true, b.originalDisplay);
+                    }
+                    else {
+                        const dataAttr = attrName('data');
+                        const hasXData = b.el.hasAttribute(dataAttr) && !self.framework._getComponentByElement(b.el);
+                        if (hasXData) {
+                            self.framework._bindElementAsComponent(b.el, self);
+                        }
+                        else if (!b.el.__x_tool_bound) {
+                            self._parseDirectives(b.el);
+                            b.el.__x_tool_bound = true;
+                        }
+                        const current = element.__x_if_current;
+                        if (current && current.parentNode) {
+                            current.parentNode.removeChild(current);
+                        }
+                        if (!b.el.parentNode) {
+                            placeholder.parentNode?.insertBefore(b.el, placeholder.nextSibling);
+                        }
+                        element.__x_if_current = b.el;
+                        if (hasXData) {
+                            self.framework._processPending();
+                        }
+                        self._applyShowWithTransition(b.el, true, b.originalDisplay);
+                        self.framework._discoverNested(b.el, self);
+                    }
                 }
-                element.__x_if_current = b.el;
-                self._applyShowWithTransition(b.el, true, b.originalDisplay);
-                try {
-                    self.framework._discoverNestedNamed(b.el, self);
-                }
-                catch { }
                 active = idx;
             };
             const unmountBranch = (idx, cb) => {
@@ -3340,17 +4489,48 @@ const XToolFramework = function () {
                     return;
                 }
                 const b = branches[idx];
-                if (b.el.parentNode) {
-                    self._applyShowWithTransition(b.el, false, b.originalDisplay, () => {
-                        if (b.el.parentNode)
-                            b.el.parentNode.removeChild(b.el);
-                        if (cb)
-                            cb();
-                    });
-                }
-                else if (cb)
-                    cb();
                 active = -1;
+                if (b.isFragment) {
+                    for (const n of b.nodes) {
+                        self._cleanupElementSubtree(n);
+                        const nestedComponents = n.querySelectorAll('component[source]');
+                        for (const el of nestedComponents) {
+                            const comp = self.framework._getComponentByElement(el);
+                            if (comp && !comp.isDestroyed) {
+                                _se(() => { self.framework._clearComponentRefs(comp); comp.destroy(); });
+                            }
+                        }
+                        n.__x_tool_bound = false;
+                        if (n.parentNode)
+                            n.parentNode.removeChild(n);
+                    }
+                    if (b.anchor.parentNode)
+                        b.anchor.parentNode.removeChild(b.anchor);
+                    if (b.endMarker.parentNode)
+                        b.endMarker.parentNode.removeChild(b.endMarker);
+                    b.nodes = [];
+                    if (cb)
+                        cb();
+                }
+                else {
+                    if (b.el.parentNode) {
+                        self._suspendSubtree(b.el);
+                        b.el.__x_if_suspended = true;
+                        self._applyShowWithTransition(b.el, false, b.originalDisplay, () => {
+                            if (!b.el.__x_if_suspended) {
+                                if (cb)
+                                    cb();
+                                return;
+                            }
+                            if (b.el.parentNode)
+                                b.el.parentNode.removeChild(b.el);
+                            if (cb)
+                                cb();
+                        });
+                    }
+                    else if (cb)
+                        cb();
+                }
             };
             const update = () => {
                 let next = -1;
@@ -3459,6 +4639,8 @@ const XToolFramework = function () {
             };
             const runExpr = self._compileHandler(trimmed, element, (ev) => [ev, element]);
             const createEventHandler = (event) => {
+                if ((isOutside || isWindow) && element instanceof Element && !element.isConnected)
+                    return;
                 if (!passesFilters(event))
                     return;
                 if (shouldPrevent)
@@ -3481,8 +4663,18 @@ const XToolFramework = function () {
                 this._addCleanupFunction(remover);
             }
             else {
-                const target = isWindow ? (typeof window !== 'undefined' ? window : element) : (isOutside ? (element?.ownerDocument || d || document) : element);
-                self._listen(target, eventName, createEventHandler, opts);
+                const target = isWindow ? (typeof window !== 'undefined' ? window : element) : (isOutside ? (element.isConnected ? element?.ownerDocument : document || d || document) : element);
+                if ((isOutside || isWindow) && element instanceof Element) {
+                    const listenerAbort = new AbortController();
+                    const listenerOpts = opts ? { ...opts, signal: listenerAbort.signal } : { signal: listenerAbort.signal };
+                    target.addEventListener(eventName, createEventHandler, listenerOpts);
+                    const cleanup = () => { listenerAbort.abort(); };
+                    self.framework.registerRefCleanup(element, cleanup);
+                    self._addCleanupFunction(cleanup);
+                }
+                else {
+                    self._listen(target, eventName, createEventHandler, opts);
+                }
             }
         }
         _createEvaluator(expression, isStatement = false) {
@@ -3497,13 +4689,31 @@ const XToolFramework = function () {
                     fn = new Function('ctx', `with(ctx){${isStatement ? expression : `return (${expression})`}}`);
                 }
                 this._expressionCache.set(key, fn);
+                if (this._expressionCache.size > ReactiveComponent._EXPR_CACHE_MAX) {
+                    const firstKey = this._expressionCache.keys().next().value;
+                    if (firstKey)
+                        this._expressionCache.delete(firstKey);
+                }
             }
             return fn;
         }
         _createElementEvaluator(expression, element) {
             const self = this;
             const compiled = self._createEvaluator(expression);
-            return () => this._safeExecute(() => compiled.call(self._createMethodContext(), self._createContextProxy(undefined, element)));
+            return () => {
+                const ctx = self._createContextProxy(undefined, element);
+                try {
+                    let result = compiled.call(self._createMethodContext(), ctx);
+                    if (result && typeof result === 'object' && isReactive(result)) {
+                        result = result.value;
+                    }
+                    return result;
+                }
+                catch (e) {
+                    console.error(`[${self.name}] Error evaluating expression: \`${expression}\`,`, e);
+                    return undefined;
+                }
+            };
         }
         _extractArrowFunction(expression) {
             let m = expression.match(/^\s*\(\s*([^)]*?)\s*\)\s*=>\s*([\s\S]+)$/);
@@ -3546,10 +4756,7 @@ const XToolFramework = function () {
                 const ctx = self._createContextProxy(payload, element);
                 const result = executor.call(thisCtx, ctx);
                 if (typeof result === 'function') {
-                    try {
-                        result.call(thisCtx, payload);
-                    }
-                    catch { }
+                    _se(() => result.call(thisCtx, payload));
                 }
             };
         }
@@ -3564,16 +4771,19 @@ const XToolFramework = function () {
         _wrapData(data, parentKey) {
             if (!_FT_DR)
                 return data;
-            const isArr = ARRAY_ISARRAY(data);
-            const isSet = (typeof Set !== 'undefined') && (data instanceof Set);
-            const isMap = (typeof Map !== 'undefined') && (data instanceof Map);
-            if (!(Object.getPrototypeOf(data) === Object.prototype || isArr || isSet || isMap))
+            const raw = _unwrap(data);
+            if (data !== raw)
                 return data;
+            const isArr = ARRAY_ISARRAY(raw);
+            const isSet = (typeof Set !== 'undefined') && (raw instanceof Set);
+            const isMap = (typeof Map !== 'undefined') && (raw instanceof Map);
+            if (!(Object.getPrototypeOf(raw) === Object.prototype || isArr || isSet || isMap))
+                return raw;
             const self = this;
             if (!this._deepReactiveCache)
                 this._deepReactiveCache = new WkMap();
-            if (this._deepReactiveCache.has(data))
-                return this._deepReactiveCache.get(data);
+            if (this._deepReactiveCache.has(raw))
+                return this._deepReactiveCache.get(raw);
             const makeCollectionWrapper = (name, fn, isArray) => function (...args) {
                 self._assertMutable(parentKey, name);
                 if (isArray) {
@@ -3583,6 +4793,7 @@ const XToolFramework = function () {
                     const beforeLast = arr[beforeLen - 1];
                     const result = fn.apply(this, args);
                     if (!self._isSealed && (arr.length !== beforeLen || arr[0] !== beforeFirst || arr[arr.length - 1] !== beforeLast)) {
+                        _bumpObjVersion(raw);
                         self._onDataChange(parentKey);
                     }
                     return result;
@@ -3591,13 +4802,19 @@ const XToolFramework = function () {
                     const before = this.size;
                     const existed = (name === 'set') ? this.has(args[0]) : false;
                     const result = fn.apply(this, args);
-                    if (!self._isSealed && (this.size !== before || (name === 'set' && !existed)))
+                    if (!self._isSealed && (this.size !== before || (name === 'set' && !existed))) {
+                        _bumpObjVersion(raw);
                         self._onDataChange(parentKey);
+                    }
                     return result;
                 }
             };
-            const proxy = new Proxy(data, {
+            const proxy = new Proxy(raw, {
                 get: (target, p, receiver) => {
+                    if (p === _RAW_TARGET)
+                        return target;
+                    if (p === _OWNER_COMPONENT)
+                        return self;
                     const isCollection = isSet || isMap;
                     if (isArr) {
                         if (p === Symbol.iterator || p === 'length' || (typeof p === 'string' && /^\d+$/.test(p))) {
@@ -3644,35 +4861,40 @@ const XToolFramework = function () {
                     const had = Reflect.has(target, p);
                     const oldValue = had ? Reflect.get(target, p) : undefined;
                     if (value && typeof value === 'object') {
-                        value = self._wrapData(value, (String(parentKey) + '.' + String(p)));
+                        value = self._wrapData(value, parentKey);
                     }
                     if (!had) {
                         _se(() => Reflect.defineProperty(target, p, { configurable: true, enumerable: true, writable: true, value }));
                         if (!Reflect.has(target, p))
                             Reflect.set(target, p, value);
+                        _bumpObjVersion(raw);
                         self._onDataChange(parentKey);
                         return true;
                     }
                     if (oldValue === value)
                         return true;
                     Reflect.set(target, p, value);
-                    if (!self._isSealed)
+                    if (!self._isSealed) {
+                        _bumpObjVersion(raw);
                         self._onDataChange(parentKey);
+                    }
                     return true;
                 },
                 deleteProperty: (target, p) => {
-                    const key = String(parentKey) + (typeof p === 'symbol' ? '' : '.' + String(p));
+                    const key = String(parentKey) + '.' + String(p);
                     if (self._isInComputedEvaluation)
                         throw new Error(`[x-tool] Deletion of '${key}' is not allowed during computed evaluation.`);
                     if (self._isFrozen)
                         throw new Error(`[x-tool] Deletion of '${key}' is not allowed while component is frozen.`);
                     const ok = Reflect.deleteProperty(target, p);
-                    if (ok && !self._isSealed)
+                    if (ok && !self._isSealed) {
+                        _bumpObjVersion(raw);
                         self._onDataChange(parentKey);
+                    }
                     return ok;
                 }
             });
-            this._deepReactiveCache.set(data, proxy);
+            this._deepReactiveCache.set(raw, proxy);
             return proxy;
         }
         _createReactiveData(data) {
@@ -3686,6 +4908,9 @@ const XToolFramework = function () {
                         self._trackDependency(property);
                     }
                     if (value && typeof value === 'object' && _FT_DR) {
+                        if (value[_OWNER_COMPONENT]) {
+                            return value;
+                        }
                         return self._wrapData(value, property);
                     }
                     return value;
@@ -3703,6 +4928,8 @@ const XToolFramework = function () {
                     if (property === Symbol.iterator && ARRAY_ISARRAY(target))
                         return value;
                     const oldValue = Reflect.get(target, property);
+                    if (oldValue === value && !self._propUpdateActive)
+                        return true;
                     const had = Reflect.has(target, property);
                     if (!had) {
                         try {
@@ -3720,100 +4947,134 @@ const XToolFramework = function () {
                     else {
                         Reflect.set(target, property, value, receiver);
                     }
+                    try {
+                        if (typeof property !== 'symbol' && isReactive(value)) {
+                            self._bridgeUtilReactive(String(property), value);
+                        }
+                    }
+                    catch { }
+                    if (value && typeof value === 'object') {
+                        _bumpObjVersion(value);
+                    }
                     if (!this._isSealed)
                         this._onDataChange(property);
-                    if (this._propUpdateActive && property !== '$props') {
+                    if (this._propUpdateActive && property !== '$props' && !this._runningPropEffect) {
                         const pc = target.$props;
                         if (pc)
                             pc[property] = value;
                         const eff = this._propEffects[property];
                         if (eff && !this._isSealed) {
-                            eff(value, oldValue);
+                            this._runningPropEffect = true;
+                            try {
+                                eff(value, oldValue);
+                            }
+                            finally {
+                                this._runningPropEffect = false;
+                            }
                         }
                     }
                     return true;
                 }
             });
         }
-        _createMethodContext(_includeComputed = true) {
+        _ensureMethodContextSpecials() {
+            if (this._cachedMethodContextSpecials)
+                return this._cachedMethodContextSpecials;
             const self = this;
-            const specials = {
-                '$log': (..._args) => { },
-                '$destroy': () => self.destroy(),
-                '$forceUpdate': () => self._scheduleRender(),
-                '$addCleanupFunction': (fn) => self._addCleanupFunction(fn),
-                '$nextTick': (cb) => {
-                    if (cb) {
-                        self._nextTickQueue.push(cb);
-                        if (!self._renderScheduled)
-                            quMct(() => {
-                                if (!self._renderScheduled && self._nextTickQueue.length) {
-                                    const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
-                                    for (const fn of q) {
-                                        self._safeExecute(() => fn());
-                                    }
+            const specials = Object.create(null);
+            Object.defineProperties(specials, {
+                '$el': { get: () => self._element, enumerable: true },
+                '$id': { get: () => self._id, enumerable: true },
+                '$isMounted': { get: () => self._isMounted, enumerable: true },
+                '$isDestroyed': { get: () => self._isDestroyed, enumerable: true },
+                '$isSealed': { get: () => self._isSealed, enumerable: true },
+                '$isFrozen': { get: () => self._isFrozen, enumerable: true },
+                '$parent': { get: () => self._parent, enumerable: true },
+                '$children': { get: () => self._children, enumerable: true }
+            });
+            specials['$destroy'] = () => self.destroy();
+            specials['$forceUpdate'] = () => self._scheduleRender();
+            specials['$addCleanupFunction'] = (fn) => self._addCleanupFunction(fn);
+            specials['Signals'] = {
+                emit: (name, payload) => { self._emitSignal(String(name), payload); },
+                connect: (name, handler) => { self._onSignal(String(name), handler); },
+                disconnect: (name, handler) => { self._offSignal(String(name), handler); }
+            };
+            specials['$nextTick'] = (cb) => {
+                if (cb) {
+                    self._nextTickQueue.push(cb);
+                    if (!self._renderScheduled)
+                        quMct(() => {
+                            if (!self._renderScheduled && self._nextTickQueue.length) {
+                                const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
+                                for (const fn of q) {
+                                    self._safeExecute(() => fn());
                                 }
-                            });
-                        return;
-                    }
-                    return new Promise(resolve => {
-                        self._nextTickQueue.push(() => resolve());
-                        if (!self._renderScheduled)
-                            quMct(() => {
-                                if (!self._renderScheduled && self._nextTickQueue.length) {
-                                    const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
-                                    for (const fn of q) {
-                                        self._safeExecute(() => fn());
-                                    }
+                            }
+                        });
+                    return;
+                }
+                return new Promise(resolve => {
+                    self._nextTickQueue.push(() => resolve());
+                    if (!self._renderScheduled)
+                        quMct(() => {
+                            if (!self._renderScheduled && self._nextTickQueue.length) {
+                                const q = self._nextTickQueue.splice(0, self._nextTickQueue.length);
+                                for (const fn of q) {
+                                    self._safeExecute(() => fn());
                                 }
-                            });
-                    });
-                },
-                '$el': self._element,
-                '$id': self._id,
-                ...(FT_EXT_DIRS ? {
-                    '$refs': new Proxy({}, {
-                        get: (_t, refName) => {
-                            if (!refName)
-                                return null;
-                            return self._getSharedRef(refName);
-                        }
-                    }),
-                    '$ref': (refName, value) => {
-                        if (value === undefined)
-                            return self._getSharedRef(refName);
-                        self._framework._registerComponentRef(self, refName, value);
-                    }
-                } : {}),
-                '$isMounted': self._isMounted,
-                '$isDestroyed': self._isDestroyed,
-                '$isSealed': self._isSealed,
-                '$isFrozen': self._isFrozen,
-                '$parent': self._parent,
-                '$children': self._children,
-                '$seal': (on = true) => { self._setSealed(!!on); },
-                '$mutate': (fn) => {
-                    const prevMethod = self._isInMethodExecution;
-                    self._isMutationEnabled = false;
-                    if (self._isInComputedEvaluation) {
-                        throw new Error('[x-tool] $mutate cannot be used inside computed evaluation; computed getters must be pure.');
-                    }
-                    self._isInMethodExecution = false;
-                    try {
-                        return typeof fn === 'function' ? fn() : undefined;
-                    }
-                    finally {
-                        self._isInMethodExecution = prevMethod;
-                        self._isMutationEnabled = true;
-                        self._scheduleRender();
-                    }
+                            }
+                        });
+                });
+            };
+            if (FT_EXT_DIRS) {
+                specials['$refs'] = new Proxy({}, {
+                    get: (_t, refName) => refName ? self._getSharedRef(refName) : null
+                });
+                specials['$ref'] = (refName, value) => {
+                    if (value === undefined)
+                        return self._getSharedRef(refName);
+                    self._framework._registerComponentRef(self, refName, value);
+                };
+            }
+            specials['$seal'] = (on = true) => { self._setSealed(!!on); };
+            specials['$mutate'] = (fn) => {
+                const prevMethod = self._isInMethodExecution;
+                self._isMutationEnabled = false;
+                if (self._isInComputedEvaluation) {
+                    throw new Error('[x-tool] $mutate cannot be used inside computed evaluation; computed getters must be pure.');
+                }
+                self._isInMethodExecution = false;
+                try {
+                    return typeof fn === 'function' ? fn() : undefined;
+                }
+                finally {
+                    self._isInMethodExecution = prevMethod;
+                    self._isMutationEnabled = true;
+                    self._triggerFullUpdate();
                 }
             };
-            let data = self._data;
-            if (self._isInComputedEvaluation) {
-                data = (self._rawData);
-            }
-            return new Proxy(data, {
+            this._cachedMethodContextSpecials = specials;
+            return specials;
+        }
+        _createMethodContext(_includeComputed = true) {
+            const self = this;
+            if (self._cachedMethodContext)
+                return self._cachedMethodContext;
+            const specials = self._ensureMethodContextSpecials();
+            const data = self._data;
+            self._cachedMethodContext = new Proxy(data, {
+                has: (_target, propStr) => {
+                    if (propStr in data)
+                        return true;
+                    if (FT_C && (propStr in self._computed))
+                        return true;
+                    if (propStr in specials)
+                        return true;
+                    if (propStr in self._methods)
+                        return true;
+                    return false;
+                },
                 get: (target, propStr) => {
                     if (propStr in target) {
                         self._trackDependency(propStr);
@@ -3838,43 +5099,40 @@ const XToolFramework = function () {
                     return true;
                 }
             });
+            return self._cachedMethodContext;
         }
-        _createContextProxy(event, targetElement) {
+        _ensureContextBase() {
+            if (this._contextBase)
+                return this._contextBase;
             const component = this;
-            const mergedScope = targetElement ? this._collectLoopScope(targetElement) : null;
             const gWindow = (typeof window !== 'undefined' ? window : undefined);
             const gDocument = (typeof document !== 'undefined' ? document : undefined);
             const cfg = this.framework._getConfig();
             const sandbox = !!cfg.sandboxExpressions;
             const allow = new Set((cfg.allowGlobals || []).map(s => String(s)));
-            const ensureInvoker = () => this._currentInvoker || '__anonymous__';
+            const ensureInvoker = () => component._currentInvoker || '__anonymous__';
             const registerResource = (kind, setup) => {
                 const inv = ensureInvoker();
-                let byKind = this._invokerResources.get(inv);
+                let byKind = component._invokerResources.get(inv);
                 if (!byKind) {
                     byKind = new Map();
-                    this._invokerResources.set(inv, byKind);
+                    component._invokerResources.set(inv, byKind);
                 }
                 const prev = byKind.get(kind);
                 if (prev) {
-                    try {
-                        prev();
-                    }
-                    catch { }
+                    _se(prev);
                     byKind.delete(kind);
                 }
                 const cleanup = setup();
                 if (typeof cleanup === 'function') {
-                    const wrapped = () => {
-                        try {
-                            cleanup();
-                        }
-                        finally {
-                            byKind?.delete(kind);
-                        }
-                    };
+                    const wrapped = () => { try {
+                        cleanup();
+                    }
+                    finally {
+                        byKind?.delete(kind);
+                    } };
                     byKind.set(kind, wrapped);
-                    this._addCleanupFunction(wrapped);
+                    component._addCleanupFunction(wrapped);
                 }
             };
             const wrapTarget = (target) => {
@@ -3884,36 +5142,22 @@ const XToolFramework = function () {
                     get: (obj, prop) => {
                         if (prop === 'addEventListener') {
                             return (eventName, handler, options) => {
-                                if (this._isSealed || this._isFrozen)
+                                if (component._isSealed || component._isFrozen)
                                     return;
                                 obj.addEventListener(eventName, handler, options);
                                 const optSig = typeof options === 'boolean' ? options : options?.capture ? '1' : '0';
-                                const key = 'listener:' + this._targetKey(obj) + ':' + eventName + ':' + optSig;
-                                registerResource(key, () => () => {
-                                    try {
-                                        obj.removeEventListener(eventName, handler, options);
-                                    }
-                                    catch { }
-                                });
+                                const key = 'listener:' + component._targetKey(obj) + ':' + eventName + ':' + optSig;
+                                registerResource(key, () => () => { _se(() => obj.removeEventListener(eventName, handler, options)); });
                             };
                         }
-                        if (prop === 'removeEventListener') {
-                            return (eventName, handler, options) => {
-                                try {
-                                    obj.removeEventListener(eventName, handler, options);
-                                }
-                                catch { }
-                            };
-                        }
-                        if (prop === 'querySelector') {
+                        if (prop === 'removeEventListener')
+                            return (eventName, handler, options) => { _se(() => obj.removeEventListener(eventName, handler, options)); };
+                        if (prop === 'querySelector')
                             return (sel) => wrapTarget(obj.querySelector(sel));
-                        }
-                        if (prop === 'querySelectorAll') {
+                        if (prop === 'querySelectorAll')
                             return (sel) => Array.from(obj.querySelectorAll(sel)).map(wrapTarget);
-                        }
-                        if (prop === 'getElementById') {
+                        if (prop === 'getElementById')
                             return (id) => wrapTarget(obj.getElementById(id));
-                        }
                         if (prop === 'document') {
                             const doc = obj.document;
                             return wrapTarget(doc) || doc;
@@ -3927,50 +5171,71 @@ const XToolFramework = function () {
                             return wrapTarget(body) || body;
                         }
                         const value = obj[prop];
-                        if (typeof value === 'function') {
-                            try {
-                                return value.bind(obj);
-                            }
-                            catch {
-                                return value;
-                            }
-                        }
-                        return value;
+                        return typeof value === 'function' ? _se(() => value.bind(obj), value) : value;
                     }
                 });
             };
             const ctxSetTimeout = (fn, ms, ...args) => {
-                if (this._isSealed || this._isFrozen || this._isDestroyed)
+                if (component._isSealed || component._isFrozen || component._isDestroyed)
                     return undefined;
                 const id = gWindow?.setTimeout?.(fn, ms, ...args);
                 if (id != null)
-                    registerResource('timeout', () => () => { try {
-                        gWindow?.clearTimeout?.(id);
-                    }
-                    catch { } });
+                    registerResource('timeout', () => () => { gWindow?.clearTimeout?.(id); });
                 return id;
             };
             const ctxSetInterval = (fn, ms, ...args) => {
-                if (this._isSealed || this._isFrozen)
+                if (component._isSealed || component._isFrozen)
                     return undefined;
                 const id = gWindow?.setInterval?.(fn, ms, ...args);
                 if (id != null)
-                    registerResource('interval', () => () => { try {
-                        gWindow?.clearInterval?.(id);
-                    }
-                    catch { } });
+                    registerResource('interval', () => () => { gWindow?.clearInterval?.(id); });
                 return id;
             };
             const ctxRequestAnimationFrame = (cb) => {
-                if (this._isSealed || this._isFrozen)
+                if (component._isSealed || component._isFrozen)
                     return undefined;
                 const id = gWindow?.requestAnimationFrame?.(cb);
                 if (id != null)
-                    registerResource('raf', () => () => { try {
-                        gWindow?.cancelAnimationFrame?.(id);
-                    }
-                    catch { } });
+                    registerResource('raf', () => () => { gWindow?.cancelAnimationFrame?.(id); });
                 return id;
+            };
+            const ctxFetch = (input, init) => {
+                if (component._isSealed || component._isFrozen || component._isDestroyed)
+                    return undefined;
+                const nativeFetch = gWindow?.fetch || (typeof fetch !== 'undefined' ? fetch : undefined);
+                if (!nativeFetch)
+                    return undefined;
+                const controller = new AbortController();
+                const signal = controller.signal;
+                const mergedInit = { ...init };
+                if (init?.signal) {
+                    init.signal.addEventListener('abort', () => controller.abort());
+                }
+                mergedInit.signal = signal;
+                const key = 'fetch:' + (++component._fetchCounter);
+                registerResource(key, () => () => { if (!signal.aborted)
+                    controller.abort(); });
+                return nativeFetch(input, mergedInit);
+            };
+            const wrapXHRCtor = (Orig) => {
+                if (!Orig)
+                    return undefined;
+                return function () {
+                    if (component._isSealed || component._isFrozen || component._isDestroyed) {
+                        return { open() { }, send() { }, abort() { }, setRequestHeader() { }, addEventListener() { }, removeEventListener() { }, readyState: 0, status: 0, responseText: '', response: null };
+                    }
+                    const xhr = new Orig();
+                    const xhrKey = 'xhr:' + (++component._fetchCounter);
+                    let aborted = false;
+                    registerResource(xhrKey, () => () => { if (!aborted) {
+                        aborted = true;
+                        _se(() => xhr.abort());
+                    } });
+                    return new Proxy(xhr, {
+                        get(target, prop) { const value = target[prop]; return typeof value === 'function' ? value.bind(target) : value; },
+                        set(target, prop, value) { target[prop] = value; return true; }
+                    });
+                };
             };
             const wrapObserverCtor = (Orig, kind) => {
                 if (!Orig)
@@ -3979,29 +5244,19 @@ const XToolFramework = function () {
                     if (component._isSealed || component._isFrozen)
                         return { observe() { }, disconnect() { }, unobserve() { } };
                     const inst = new Orig(...observerArgs);
-                    registerResource('observer:' + kind, () => () => { try {
-                        inst.disconnect();
-                    }
-                    catch { } });
+                    registerResource('observer:' + kind, () => () => { _se(() => inst.disconnect()); });
                     return inst;
                 };
             };
-            const specials = {
-                '$target': targetElement || null,
-                '$event': event || null,
+            const staticSpecials = {
+                'Signals': {
+                    emit: (name, payload) => { component._emitSignal(String(name), payload); },
+                    connect: (name, handler) => { component._onSignal(String(name), handler); },
+                    disconnect: (name, handler) => { component._offSignal(String(name), handler); }
+                },
                 ...(FT_EXT_DIRS ? {
-                    '$refs': new Proxy({}, {
-                        get: (_t, refName) => {
-                            if (!refName)
-                                return null;
-                            return component._getSharedRef(refName);
-                        }
-                    }),
-                    '$ref': (refName, value) => {
-                        if (value === undefined)
-                            return component._getSharedRef(refName);
-                        component._framework._registerComponentRef(component, refName, value);
-                    }
+                    '$refs': new Proxy({}, { get: (_t, refName) => refName ? component._getSharedRef(refName) : null }),
+                    '$ref': (refName, value) => value === undefined ? component._getSharedRef(refName) : component._framework._registerComponentRef(component, refName, value)
                 } : {}),
                 ...(FT_RT && this.framework._routerEnabled() ? {
                     'location': new Proxy(gWindow?.location || location, {
@@ -4010,54 +5265,125 @@ const XToolFramework = function () {
                             const key = String(p);
                             if (key === 'href') {
                                 try {
-                                    this.framework._navigate(String(v), true, 'program');
+                                    component.framework._navigate(String(v), true, 'program');
                                 }
                                 catch {
                                     location.href = String(v);
                                 }
                                 return true;
                             }
-                            try {
-                                location[p] = v;
-                            }
-                            catch { }
+                            _se(() => location[p] = v);
                             return true;
                         }
                     })
                 } : {}),
                 ...(sandbox && !allow.has('setTimeout') ? {} : { 'setTimeout': ctxSetTimeout }),
-                ...(sandbox && !allow.has('clearTimeout') ? {} : { 'clearTimeout': (id) => { try {
-                        gWindow?.clearTimeout?.(id);
-                    }
-                    catch { } } }),
+                ...(sandbox && !allow.has('clearTimeout') ? {} : { 'clearTimeout': (id) => { _se(() => gWindow?.clearTimeout?.(id)); } }),
                 ...(sandbox && !allow.has('setInterval') ? {} : { 'setInterval': ctxSetInterval }),
-                ...(sandbox && !allow.has('clearInterval') ? {} : { 'clearInterval': (id) => { try {
-                        gWindow?.clearInterval?.(id);
-                    }
-                    catch { } } }),
+                ...(sandbox && !allow.has('clearInterval') ? {} : { 'clearInterval': (id) => { _se(() => gWindow?.clearInterval?.(id)); } }),
                 ...(sandbox && !allow.has('requestAnimationFrame') ? {} : { 'requestAnimationFrame': ctxRequestAnimationFrame }),
-                ...(sandbox && !allow.has('cancelAnimationFrame') ? {} : { 'cancelAnimationFrame': (id) => { try {
-                        gWindow?.cancelAnimationFrame?.(id);
-                    }
-                    catch { } } }),
+                ...(sandbox && !allow.has('cancelAnimationFrame') ? {} : { 'cancelAnimationFrame': (id) => { _se(() => gWindow?.cancelAnimationFrame?.(id)); } }),
                 ...(sandbox && !allow.has('MutationObserver') ? {} : { 'MutationObserver': wrapObserverCtor(gWindow?.MutationObserver, 'mutation') }),
                 ...(sandbox && !allow.has('ResizeObserver') ? {} : { 'ResizeObserver': wrapObserverCtor(gWindow?.ResizeObserver, 'resize') }),
                 ...(sandbox && !allow.has('IntersectionObserver') ? {} : { 'IntersectionObserver': wrapObserverCtor(gWindow?.IntersectionObserver, 'intersection') }),
+                ...(sandbox && !allow.has('fetch') ? {} : { 'fetch': ctxFetch }),
+                ...(sandbox && !allow.has('XMLHttpRequest') ? {} : { 'XMLHttpRequest': wrapXHRCtor(gWindow?.XMLHttpRequest) }),
                 ...(sandbox && !allow.has('window') ? {} : { 'window': wrapTarget(gWindow) }),
                 ...(sandbox && !allow.has('document') ? {} : { 'document': wrapTarget(gDocument) })
             };
+            this._contextBase = { gWindow, gDocument, sandbox, allow, wrapTarget, registerResource, ctxSetTimeout, ctxSetInterval, ctxRequestAnimationFrame, ctxFetch, wrapXHRCtor, wrapObserverCtor, staticSpecials };
+            return this._contextBase;
+        }
+        _createContextProxy(event, targetElement, _thisArg) {
+            const component = this;
+            const base = this._ensureContextBase();
+            const mergedScope = targetElement ? this._collectLoopScope(targetElement) : null;
+            const setAttr = (el, name, val, isCss) => {
+                if (isCss) {
+                    const style = el.style;
+                    if (val == null || val === false)
+                        style.removeProperty(name);
+                    else
+                        style.setProperty(name, String(val));
+                }
+                else {
+                    if (val == null || val === false)
+                        el.removeAttribute(name);
+                    else if (val === true)
+                        el.setAttribute(name, '');
+                    else
+                        el.setAttribute(name, String(val));
+                }
+            };
+            const expandAndSet = (el, name, value, isCss) => {
+                const globMatch = name.match(/^(.*)?\[([^\]]+)\](.*)$/);
+                if (globMatch) {
+                    const [, prefix = '', keys, suffix = ''] = globMatch;
+                    const keyList = keys.split(',').map(k => k.trim()).filter(Boolean);
+                    const isObjValue = value && typeof value === 'object' && !Array.isArray(value);
+                    for (const key of keyList) {
+                        const attrName = prefix + key + suffix;
+                        const attrValue = isObjValue && key in value ? value[key] : value;
+                        setAttr(el, attrName, attrValue, isCss);
+                    }
+                }
+                else {
+                    setAttr(el, name, value, isCss);
+                }
+            };
+            const dynamicSpecials = {
+                '$target': targetElement || null,
+                '$event': event || null,
+                '$attr': (nameOrObj, value) => {
+                    if (!targetElement)
+                        return;
+                    if (typeof nameOrObj === 'object' && nameOrObj !== null) {
+                        for (const key in nameOrObj) {
+                            if (Object.prototype.hasOwnProperty.call(nameOrObj, key))
+                                expandAndSet(targetElement, key, nameOrObj[key]);
+                        }
+                    }
+                    else if (typeof nameOrObj === 'string') {
+                        expandAndSet(targetElement, nameOrObj, value);
+                    }
+                },
+                '$css': (nameOrObj, value) => {
+                    if (!targetElement)
+                        return;
+                    if (typeof nameOrObj === 'object' && nameOrObj !== null) {
+                        for (const key in nameOrObj) {
+                            if (Object.prototype.hasOwnProperty.call(nameOrObj, key))
+                                expandAndSet(targetElement, key, nameOrObj[key], true);
+                        }
+                    }
+                    else if (typeof nameOrObj === 'string') {
+                        expandAndSet(targetElement, nameOrObj, value, true);
+                    }
+                }
+            };
+            const staticSpecials = base.staticSpecials;
             return new Proxy({}, {
                 get: (_t, propStr) => {
-                    if (mergedScope && propStr in mergedScope)
-                        return mergedScope[propStr];
+                    if (mergedScope && propStr in mergedScope) {
+                        const value = mergedScope[propStr];
+                        if (value && typeof value === 'object' && _FT_DR) {
+                            const owner = value[_OWNER_COMPONENT];
+                            if (owner && typeof owner._wrapData === 'function')
+                                return owner._wrapData(value, propStr);
+                            return component._wrapData(value, propStr);
+                        }
+                        return value;
+                    }
                     if (propStr in component._data)
                         return component._data[propStr];
                     if (propStr in component._computed)
                         return component._getComputedValue(propStr);
                     if (propStr in component._methods)
                         return component._methods[propStr];
-                    if (propStr in specials)
-                        return specials[propStr];
+                    if (propStr in dynamicSpecials)
+                        return dynamicSpecials[propStr];
+                    if (propStr in staticSpecials)
+                        return staticSpecials[propStr];
                     return undefined;
                 },
                 set: (_t, propStr, value) => {
@@ -4078,7 +5404,8 @@ const XToolFramework = function () {
                     propStr in component._data ||
                     propStr in component._computed ||
                     propStr in component._methods ||
-                    propStr in specials
+                    propStr in dynamicSpecials ||
+                    propStr in staticSpecials
             });
         }
         _bindCustomDirective(element, _name, expression, directive, modifiers) {
@@ -4113,6 +5440,11 @@ const XToolFramework = function () {
                     self._initialClassSets.set(el, baseSet);
                 }
             }
+            let baseStyle;
+            if (attributeName === STR_STYLE) {
+                const el = element;
+                baseStyle = el.getAttribute('style') || undefined;
+            }
             const meta = self._resolveBindingMeta(element, attributeName);
             const update = () => {
                 const value = evaluator();
@@ -4145,30 +5477,34 @@ const XToolFramework = function () {
                         }
                     }
                     else if (value && typeof value === 'object') {
-                        if (base && base.size) {
-                            const baseStr = [...base].join(' ');
-                            if (isSvg) {
-                                if (baseStr)
-                                    element.setAttribute('class', baseStr);
-                                else
-                                    element.removeAttribute('class');
-                            }
-                            else {
-                                element.className = baseStr;
-                            }
-                        }
-                        const elAny = element;
+                        const classState = new Map();
                         for (const raw in value) {
-                            const on = !!value[raw];
                             if (!raw)
                                 continue;
-                            const tokens = raw.split(/\s+/);
-                            for (let i = 0; i < tokens.length; i++) {
-                                const tk = tokens[i];
+                            const on = !!value[raw];
+                            for (const tk of raw.split(/\s+/)) {
                                 if (!tk)
                                     continue;
-                                elAny.classList?.toggle(tk, on);
+                                if (on || !classState.has(tk)) {
+                                    classState.set(tk, on);
+                                }
                             }
+                        }
+                        const finalClasses = base ? [...base] : [];
+                        for (const [tk, on] of classState) {
+                            if (on && (!base || !base.has(tk))) {
+                                finalClasses.push(tk);
+                            }
+                        }
+                        const finalStr = finalClasses.join(' ');
+                        if (isSvg) {
+                            if (finalStr)
+                                element.setAttribute('class', finalStr);
+                            else
+                                element.removeAttribute('class');
+                        }
+                        else {
+                            element.className = finalStr;
                         }
                     }
                     else if (value == null && base && base.size) {
@@ -4191,10 +5527,19 @@ const XToolFramework = function () {
                 if (attributeName === STR_STYLE) {
                     const el = element;
                     if (typeof value === 'string') {
-                        el.style.cssText = value;
+                        const styleStr = value.trim();
+                        if (styleStr) {
+                            el.style.cssText += ';' + styleStr;
+                        }
                         return;
                     }
-                    if (value && typeof value === 'object') {
+                    else if (value && typeof value === 'object') {
+                        if (baseStyle) {
+                            el.style.cssText = baseStyle;
+                        }
+                        else {
+                            el.style.cssText = '';
+                        }
                         for (const k in value) {
                             const v = value[k];
                             const cssProp = k.startsWith('--') ? k : k.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
@@ -4205,8 +5550,12 @@ const XToolFramework = function () {
                         }
                         return;
                     }
-                    if (value == null)
+                    if (baseStyle) {
+                        el.style.cssText = baseStyle;
+                    }
+                    else {
                         el.removeAttribute('style');
+                    }
                     return;
                 }
                 self._applyGenericBinding(element, attributeName, value, meta);
@@ -4217,6 +5566,9 @@ const XToolFramework = function () {
         _collectLoopScope(el) {
             if (!el)
                 return null;
+            const directScope = el.__x_scope;
+            if (directScope)
+                return directScope;
             if (!el.parentElement) {
                 const cur = el.__x_if_current;
                 if (cur && cur.parentElement) {
@@ -4231,34 +5583,21 @@ const XToolFramework = function () {
             let node = el;
             while (node) {
                 const s = node.__x_scope;
-                if (s)
+                if (s) {
                     return s;
-                node = node.parentElement;
-            }
-            const merged = {};
-            node = el;
-            while (node) {
-                const scope = this._loopScopes.get(node);
-                if (scope)
-                    Object.assign(merged, scope);
-                if (node === this.element)
-                    break;
-                node = node.parentElement;
-            }
-            return _Okeys(merged).length ? merged : null;
-        }
-        _updateElementDirectives(root, force) {
-            if (!FT_EXT_DIRS)
-                return;
-            for (const [element, directives] of this._directives) {
-                for (const directive of directives) {
-                    if ((root === element || (element instanceof Element && root.contains(element))) && directive.update) {
-                        if (XTOOL_ENABLE_STATIC_DIRECTIVES && directive._static && !force)
-                            continue;
-                        directive.update();
-                    }
                 }
+                let sibling = node.previousSibling;
+                while (sibling) {
+                    if (sibling.nodeType === 8) {
+                        const commentScope = sibling.__x_scope;
+                        if (commentScope)
+                            return commentScope;
+                    }
+                    sibling = sibling.previousSibling;
+                }
+                node = node.parentElement;
             }
+            return null;
         }
         _updateElementDirectivesForVar(root, varName) {
             const re = new RegExp('(^|[^$\\w])' + varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^$\\w]|$)');
@@ -4278,23 +5617,57 @@ const XToolFramework = function () {
         _cleanupElementSubtree(root) {
             if (!FT_EXT_DIRS)
                 return;
-            const toDelete = [];
-            for (const [element, directives] of this._directives) {
-                if (root === element || (element instanceof Element && root.contains(element))) {
-                    for (const directive of directives) {
-                        if (directive.type === 'custom' && directive.customDirective?.unbind) {
-                            try {
-                                directive.customDirective.unbind(element, this);
-                            }
-                            catch { }
-                        }
+            const dirs = this._directives.get(root);
+            if (dirs) {
+                for (const d of dirs) {
+                    if (d.type === 'custom' && d.customDirective?.unbind) {
+                        _se(() => d.customDirective.unbind(root, this));
                     }
-                    toDelete.push(element);
+                }
+                this._directives.delete(root);
+            }
+            let child = root.firstElementChild;
+            while (child) {
+                this._cleanupElementSubtree(child);
+                child = child.nextElementSibling;
+            }
+        }
+        _suspendSubtree(root) {
+            const dirs = this._directives.get(root);
+            if (dirs) {
+                for (const d of dirs) {
+                    if (d.type !== 'if' && d.type !== 'for' && d.update) {
+                        this._suspendedEffects.add(d.update);
+                    }
                 }
             }
-            if (toDelete.length) {
-                for (const el of toDelete)
-                    this._directives.delete(el);
+            let child = root.firstElementChild;
+            while (child) {
+                this._suspendSubtree(child);
+                child = child.nextElementSibling;
+            }
+        }
+        _resumeSubtree(root) {
+            const effectsToRun = [];
+            this._resumeSubtreeCollect(root, effectsToRun);
+            for (const effect of effectsToRun) {
+                this._safeExecute(effect);
+            }
+        }
+        _resumeSubtreeCollect(root, effectsToRun) {
+            const dirs = this._directives.get(root);
+            if (dirs) {
+                for (const d of dirs) {
+                    if (d.update && this._suspendedEffects.has(d.update)) {
+                        this._suspendedEffects.delete(d.update);
+                        effectsToRun.push(d.update);
+                    }
+                }
+            }
+            let child = root.firstElementChild;
+            while (child) {
+                this._resumeSubtreeCollect(child, effectsToRun);
+                child = child.nextElementSibling;
             }
         }
         _bindForDirective(element, expression) {
@@ -4314,15 +5687,28 @@ const XToolFramework = function () {
                 element.removeAttribute(keyAttrName);
             const placeholder = d.createComment('x-for');
             element.parentNode?.insertBefore(placeholder, element);
-            let templateToClone;
+            const isFragment = (inst) => inst && typeof inst === 'object' && 'anchor' in inst && 'nodes' in inst;
+            let templateChildren = [];
+            let isMultiChildFragment = false;
+            let templateToClone = null;
             if (element[STR_TAGNAME] === STR_TEMPLATE) {
-                templateToClone = d.createElement('div');
-                templateToClone.style[STR_DISPLAY] = STR_CONTENTS;
-                templateToClone.appendChild(element.content.cloneNode(true));
+                const content = element.content;
+                templateChildren = Array.from(content.children);
+                if (templateChildren.length === 1) {
+                    templateToClone = templateChildren[0].cloneNode(true);
+                }
+                else if (templateChildren.length > 1) {
+                    isMultiChildFragment = true;
+                }
+                else {
+                    templateToClone = d.createElement('div');
+                    templateToClone.style[STR_DISPLAY] = STR_NONE;
+                }
                 element.parentNode?.removeChild(element);
             }
             else {
                 templateToClone = element;
+                templateChildren = [element];
                 element.parentNode?.removeChild(element);
             }
             const contextAnchor = placeholder.parentElement || self.element;
@@ -4335,6 +5721,9 @@ const XToolFramework = function () {
             const BP_DATA = attrName('data');
             const buildBlueprint = (root) => {
                 const bp = [];
+                const BP_IF = attrName('if');
+                const BP_ELSE = attrName('else');
+                const BP_ELSEIF = attrName('else-if');
                 const walk = (el, path, isRootEl) => {
                     if (!isRootEl && el.hasAttribute(BP_DATA))
                         return;
@@ -4343,9 +5732,15 @@ const XToolFramework = function () {
                     const dnames = scan.names.filter(n => n !== BP_KEY && (!isRootEl || n !== BP_FOR));
                     const hasTextOrHtml = scan.names.includes(BP_TEXT) || scan.names.includes(BP_HTML);
                     const forName = scan.forName;
+                    const hasStructural = dnames.includes(BP_IF) || dnames.includes(BP_ELSE) || dnames.includes(BP_ELSEIF);
                     if (dnames.length) {
                         if (forName) {
                             bp.push({ path, directiveNames: [forName], hasTextOrHtml: hasTextOrHtml, forName });
+                            return;
+                        }
+                        if (hasStructural) {
+                            const structuralOnly = dnames.filter(n => n === BP_IF || n === BP_ELSE || n === BP_ELSEIF);
+                            bp.push({ path, directiveNames: structuralOnly, hasTextOrHtml });
                             return;
                         }
                         bp.push({ path, directiveNames: dnames, hasTextOrHtml });
@@ -4370,7 +5765,7 @@ const XToolFramework = function () {
                 return bp;
             };
             const hydrateFromBlueprint = (cloneRoot, bp) => {
-                for (let i = 0; i < bp.length; i++) {
+                for (let i = bp.length - 1; i >= 0; i--) {
                     const instr = bp[i];
                     const target = this._resolveNodeByPath(cloneRoot, instr.path);
                     if (instr.forName) {
@@ -4389,21 +5784,95 @@ const XToolFramework = function () {
                         self._bindTextInterpolationsIn(target);
                 }
             };
-            const blueprint = buildBlueprint(templateToClone);
+            const blueprint = templateToClone ? buildBlueprint(templateToClone) : null;
+            const fragmentBlueprints = isMultiChildFragment
+                ? templateChildren.map(child => buildBlueprint(child))
+                : null;
+            const hydrateFragmentNodes = (nodes, bps) => {
+                for (let r = 0; r < nodes.length; r++) {
+                    hydrateFromBlueprint(nodes[r], bps[r]);
+                }
+            };
+            const parentLoopScope = self._collectLoopScope(contextAnchor);
             const instances = [];
             const createScope = (item, idxOrKey, existing) => {
-                const scope = existing || {};
+                const base = parentLoopScope ? Object.create(parentLoopScope) : {};
+                const scope = existing ? Object.assign(base, existing) : base;
                 scope[itemVar] = item;
                 if (indexVar)
                     scope[indexVar] = idxOrKey;
                 return scope;
+            };
+            const getPrimaryElement = (inst) => isFragment(inst) ? inst.nodes[0] : inst;
+            const getLastNode = (inst) => {
+                if (isFragment(inst))
+                    return inst.endMarker;
+                const current = inst.__x_if_current;
+                if (current)
+                    return current;
+                return inst;
+            };
+            const getFirstNode = (inst) => {
+                if (isFragment(inst))
+                    return inst.anchor;
+                const xifPlaceholder = inst.__x_if_placeholder;
+                if (xifPlaceholder)
+                    return xifPlaceholder;
+                return inst;
+            };
+            const removeInstance = (inst) => {
+                if (isFragment(inst)) {
+                    if (inst.anchor.parentNode)
+                        inst.anchor.parentNode.removeChild(inst.anchor);
+                    for (const n of inst.nodes) {
+                        self._cleanupElementSubtree(n);
+                        if (n.parentNode)
+                            n.parentNode.removeChild(n);
+                    }
+                    if (inst.endMarker.parentNode)
+                        inst.endMarker.parentNode.removeChild(inst.endMarker);
+                }
+                else {
+                    const xifPlaceholder = inst.__x_if_placeholder;
+                    if (xifPlaceholder && xifPlaceholder.parentNode) {
+                        xifPlaceholder.parentNode.removeChild(xifPlaceholder);
+                    }
+                    const current = inst.__x_if_current;
+                    if (current && current !== inst && current.parentNode) {
+                        current.parentNode.removeChild(current);
+                    }
+                    self._cleanupElementSubtree(inst);
+                    if (inst.parentNode)
+                        inst.parentNode.removeChild(inst);
+                }
+            };
+            const insertInstanceBefore = (inst, ref, parent) => {
+                if (isFragment(inst)) {
+                    parent.insertBefore(inst.anchor, ref);
+                    for (const n of inst.nodes)
+                        parent.insertBefore(n, ref);
+                    parent.insertBefore(inst.endMarker, ref);
+                }
+                else {
+                    const xifPlaceholder = inst.__x_if_placeholder;
+                    if (xifPlaceholder) {
+                        parent.insertBefore(xifPlaceholder, ref);
+                        inst.__x_if_anchorParent = xifPlaceholder.parentElement || null;
+                        if (inst.parentNode === xifPlaceholder.parentNode) {
+                            parent.insertBefore(inst, ref);
+                        }
+                    }
+                    else {
+                        parent.insertBefore(inst, ref);
+                    }
+                }
             };
             const objIds = new WeakMap();
             let objSeq = 0;
             const extractId = (o) => {
                 if (!o || typeof o !== 'object')
                     return null;
-                const v = o.id ?? o._id ?? o.key;
+                const v = o.id ?? o._id;
                 if (v == null)
                     return null;
                 const t = typeof v;
@@ -4443,8 +5912,15 @@ const XToolFramework = function () {
             const update = () => {
                 const norm = self._safeExecute(() => {
                     const result = listEval();
-                    if (_AisArr(result))
+                    if (ARRAY_ISARRAY(result))
                         return { list: result, keys: null, src: result };
+                    if (typeof result === 'number' && Number.isFinite(result) && result >= 0) {
+                        const n = Math.floor(result);
+                        const range = new Array(n);
+                        for (let i = 0; i < n; i++)
+                            range[i] = i + 1;
+                        return { list: range, keys: null, src: result };
+                    }
                     const tag = result && Object.prototype.toString.call(result);
                     const isMap = typeof Map !== 'undefined' && (result instanceof Map || tag === '[object Map]' || (result && typeof result.get === 'function' && typeof result.set === 'function' && typeof result.keys === 'function'));
                     if (isMap) {
@@ -4469,44 +5945,46 @@ const XToolFramework = function () {
                 const oldByObjKey = new Map();
                 const oldPrimQueues = new Map();
                 for (let i = 0; i < instances.length; i++) {
-                    const n = instances[i];
-                    const k = n.__x_for_key;
-                    const ps = n.__x_primSig;
+                    const inst = instances[i];
+                    const primary = getPrimaryElement(inst);
+                    const k = primary.__x_for_key;
+                    const ps = primary.__x_primSig;
                     if (ps) {
                         let q = oldPrimQueues.get(ps);
                         if (!q) {
                             q = [];
                             oldPrimQueues.set(ps, q);
                         }
-                        q.push(n);
+                        q.push(inst);
                     }
                     else if (k) {
-                        oldByObjKey.set(k, n);
+                        oldByObjKey.set(k, inst);
                     }
                 }
-                const newNodes = new Array(list.length);
+                const newInstances = new Array(list.length);
+                const pendingHydration = [];
                 const parent = placeholder.parentNode;
                 for (let i = 0; i < list.length; i++) {
                     const item = list[i];
                     const idxOrKey = keysArr ? keysArr[i] : i;
-                    let node;
+                    let inst;
                     let nodeKey;
                     const explicitKey = keyEval ? evalKeyExpr(item, idxOrKey) : null;
                     if (explicitKey != null) {
                         nodeKey = 'k:' + String(explicitKey);
                         const prev = oldByObjKey.get(nodeKey);
                         if (prev) {
-                            node = prev;
+                            inst = prev;
                             oldByObjKey.delete(nodeKey);
                         }
                     }
-                    if (!node) {
+                    if (!inst) {
                         const k = keyFor(item);
-                        if (k && k.startsWith('o#') || (k && k.startsWith('id:'))) {
+                        if (k && (k.startsWith('o#') || k.startsWith('id:'))) {
                             nodeKey = k;
                             const prev = oldByObjKey.get(k);
                             if (prev) {
-                                node = prev;
+                                inst = prev;
                                 oldByObjKey.delete(k);
                             }
                         }
@@ -4514,113 +5992,149 @@ const XToolFramework = function () {
                             const ps = k;
                             const q = oldPrimQueues.get(ps);
                             if (q && q.length) {
-                                node = q.shift();
+                                inst = q.shift();
                             }
-                            if (node) {
-                                nodeKey = node.__x_for_key;
-                            }
-                            if (node) {
-                                node.__x_primSig = ps;
+                            if (inst) {
+                                const primary = getPrimaryElement(inst);
+                                nodeKey = primary.__x_for_key;
+                                primary.__x_primSig = ps;
                             }
                         }
                     }
-                    if (!node) {
-                        const clone = templateToClone.cloneNode(true);
-                        clone.removeAttribute('x-for');
-                        if (keyExpr)
-                            clone.removeAttribute(keyAttrName);
+                    if (!inst) {
                         const initScope = createScope(item, idxOrKey, {});
-                        clone.__x_scope = initScope;
-                        clone.__x_itemRef = item;
-                        if (indexVar)
-                            clone.__x_idxRef = idxOrKey;
-                        self._loopScopes.set(clone, initScope);
-                        try {
-                            hydrateFromBlueprint(clone, blueprint);
+                        if (isMultiChildFragment && fragmentBlueprints) {
+                            const anchor = d.createComment('x-for-item');
+                            const endMarker = d.createComment('/x-for-item');
+                            const nodes = [];
+                            anchor.__x_scope = initScope;
+                            anchor.__x_itemRef = item;
+                            if (indexVar)
+                                anchor.__x_idxRef = idxOrKey;
+                            for (let c = 0; c < templateChildren.length; c++) {
+                                const clone = templateChildren[c].cloneNode(true);
+                                clone.removeAttribute('x-for');
+                                if (keyExpr)
+                                    clone.removeAttribute(keyAttrName);
+                                clone.__x_scope = initScope;
+                                nodes.push(clone);
+                            }
+                            inst = { anchor, nodes, endMarker };
+                            pendingHydration.push({ inst, isFragment: true, bp: fragmentBlueprints });
+                            anchor.__x_for_key = (nodeKey !== undefined) ? nodeKey : ('n#' + (++objSeq));
                         }
-                        catch { }
-                        try {
-                            self.framework._discoverNestedNamed(clone, self);
+                        else {
+                            const clone = templateToClone.cloneNode(true);
+                            clone.removeAttribute('x-for');
+                            if (keyExpr)
+                                clone.removeAttribute(keyAttrName);
+                            clone.__x_scope = initScope;
+                            clone.__x_itemRef = item;
+                            if (indexVar)
+                                clone.__x_idxRef = idxOrKey;
+                            inst = clone;
+                            pendingHydration.push({ inst, isFragment: false, bp: blueprint });
+                            clone.__x_for_key = (nodeKey !== undefined) ? nodeKey : ('n#' + (++objSeq));
                         }
-                        catch { }
-                        node = clone;
-                        node.__x_for_key = (nodeKey !== undefined) ? nodeKey : ('n#' + (++objSeq));
                     }
                     else {
-                        const existingScope = node.__x_scope;
-                        const prevIdxRef = node.__x_idxRef;
-                        const prevItemRef = node.__x_itemRef;
+                        const primary = isFragment(inst) ? inst.anchor : inst;
+                        const existingScope = primary.__x_scope;
+                        const prevIdxRef = primary.__x_idxRef;
+                        const prevItemRef = primary.__x_itemRef;
+                        const prevVersion = primary.__x_itemVersion ?? 0;
                         const scope = createScope(item, idxOrKey, existingScope);
-                        node.__x_scope = scope;
-                        self._loopScopes.set(node, scope);
-                        let needsUpdate = false;
-                        if (prevItemRef !== item) {
-                            needsUpdate = true;
-                            node.__x_itemRef = item;
+                        primary.__x_scope = scope;
+                        primary.__x_itemRef = item;
+                        if (indexVar)
+                            primary.__x_idxRef = idxOrKey;
+                        const nodes = isFragment(inst) ? inst.nodes : [inst];
+                        for (const n of nodes) {
+                            n.__x_scope = scope;
                         }
+                        const itemRefChanged = prevItemRef !== item;
                         const indexChanged = !!indexVar && prevIdxRef !== idxOrKey;
-                        if (indexChanged) {
-                            needsUpdate = true;
-                            node.__x_idxRef = idxOrKey;
+                        const currentVersion = (item && typeof item === 'object') ? _getDeepVersion(item) : 0;
+                        const versionChanged = currentVersion !== prevVersion;
+                        if (item && typeof item === 'object') {
+                            primary.__x_itemVersion = currentVersion;
                         }
-                        if (needsUpdate) {
-                            if (indexChanged && indexVar)
-                                self._updateElementDirectivesForVar(node, indexVar);
-                            else
-                                self._updateElementDirectives(node);
+                        if (itemRefChanged || indexChanged || versionChanged) {
+                            for (const n of nodes) {
+                                if (itemRefChanged || versionChanged) {
+                                    self._updateElementDirectivesForVar(n, itemVar);
+                                }
+                                if (indexChanged && indexVar) {
+                                    self._updateElementDirectivesForVar(n, indexVar);
+                                }
+                            }
                         }
                     }
+                    const primary = getPrimaryElement(inst);
                     if (nodeKey)
-                        node.__x_for_key = nodeKey;
+                        primary.__x_for_key = nodeKey;
                     const sig = (!keyExpr && !(item && typeof item === 'object')) ? ('p#' + (typeof item) + ':' + String(item)) : undefined;
-                    node.__x_primSig = sig;
-                    newNodes[i] = node;
+                    primary.__x_primSig = sig;
+                    newInstances[i] = inst;
                 }
-                for (const [, node] of oldByObjKey) {
-                    if (node && node.parentNode) {
-                        self._cleanupElementSubtree(node);
-                        node.parentNode.removeChild(node);
-                    }
+                for (const [, inst] of oldByObjKey) {
+                    removeInstance(inst);
                 }
                 for (const [, queue] of oldPrimQueues) {
-                    for (const node of queue) {
-                        if (node && node.parentNode) {
-                            self._cleanupElementSubtree(node);
-                            node.parentNode.removeChild(node);
-                        }
+                    for (const inst of queue) {
+                        removeInstance(inst);
                     }
                 }
                 if (parent) {
                     const oldIndexMap = new Map();
                     for (let i = 0; i < instances.length; i++) {
-                        const k = instances[i].__x_for_key;
+                        const primary = getPrimaryElement(instances[i]);
+                        const k = primary.__x_for_key;
                         if (k !== undefined)
                             oldIndexMap.set(k, i);
                     }
-                    const seq = new Array(newNodes.length);
-                    for (let i = 0; i < newNodes.length; i++) {
-                        const k = newNodes[i].__x_for_key;
+                    const seq = new Array(newInstances.length);
+                    for (let i = 0; i < newInstances.length; i++) {
+                        const primary = getPrimaryElement(newInstances[i]);
+                        const k = primary.__x_for_key;
                         const oldIdx = oldIndexMap.has(k) ? oldIndexMap.get(k) : -1;
                         seq[i] = oldIdx;
                     }
                     const { lisMask: lis } = this._computeLISMask(seq);
-                    const tailAnchor = instances.length ? (instances[instances.length - 1].nextSibling) : placeholder.nextSibling;
+                    const tailAnchor = instances.length
+                        ? getLastNode(instances[instances.length - 1]).nextSibling
+                        : placeholder.nextSibling;
                     let anchor = null;
-                    for (let i = newNodes.length - 1; i >= 0; i--) {
-                        const node = newNodes[i];
+                    for (let i = newInstances.length - 1; i >= 0; i--) {
+                        const inst = newInstances[i];
                         const ref = anchor ?? tailAnchor;
                         if (seq[i] === -1) {
-                            parent.insertBefore(node, ref);
+                            insertInstanceBefore(inst, ref, parent);
                         }
                         else if (!lis[i]) {
-                            parent.insertBefore(node, ref);
+                            insertInstanceBefore(inst, ref, parent);
                         }
-                        anchor = node;
+                        anchor = getFirstNode(inst);
                     }
+                    for (const pending of pendingHydration) {
+                        if (pending.isFragment) {
+                            const fragInst = pending.inst;
+                            _se(() => hydrateFragmentNodes(fragInst.nodes, pending.bp));
+                            for (const n of fragInst.nodes) {
+                                self.framework._discoverNested(n, self);
+                            }
+                        }
+                        else {
+                            const clone = pending.inst;
+                            _se(() => hydrateFromBlueprint(clone, pending.bp));
+                            self.framework._discoverNested(clone, self);
+                        }
+                    }
+                    self.framework._processPending();
                 }
                 instances.length = 0;
-                for (let i = 0; i < newNodes.length; i++)
-                    instances.push(newNodes[i]);
+                for (let i = 0; i < newInstances.length; i++)
+                    instances.push(newInstances[i]);
             };
             const dir = { type: 'for', expression };
             const effect = self._createEffect(update, dir);
@@ -4698,6 +6212,7 @@ const XToolFramework = function () {
             }
         }
     }
+    ReactiveComponent._EXPR_CACHE_MAX = 200;
     ReactiveComponent._BA = {
         itemscope: 1, formnovalidate: 1, novalidate: 1, default: 1, readonly: 1
     };

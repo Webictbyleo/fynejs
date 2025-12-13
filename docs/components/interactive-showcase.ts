@@ -905,6 +905,7 @@ XTool.registerComponent({
   },
   mounted() {
     // Update time every second
+    
     this.timeTimer = setInterval(() => {
       this.updateTime();
     }, 1000);
@@ -972,7 +973,7 @@ XTool.registerComponent({
 
         <!-- Component display -->
         <div class="p-4">
-          <component x:source="'apple-watch'" x-bind:readonly="isFrozen"></component>
+          <component x:source="'apple-watch'" :readonly="isFrozen"></component>
         </div>
       </div>
     </div>

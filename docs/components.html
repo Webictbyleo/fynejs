@@ -297,6 +297,111 @@ XTool.registerComponent({
           </div>
         </section>
 
+        <!-- HTML Component Files -->
+        <section class="mb-12 sm:mb-16 lg:mb-20">
+          <div class="mb-8 sm:mb-12 lg:mb-16">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-black mb-4 sm:mb-6 text-black">HTML Component Files</h2>
+            <p class="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-3xl">Write components in native HTML files with full IDE syntax highlighting and IntelliSense support—no build step required.</p>
+          </div>
+          
+          <div class="grid lg:grid-cols-2 gap-8 mb-8">
+            <!-- Single Component -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">HTML</span>
+                Single Component File
+              </h3>
+              <pre class="code-block overflow-x-auto text-sm bg-gray-900 rounded-lg p-4"><code class="text-green-400">&lt;!-- components/greeting.html --&gt;
+&lt;template&gt;
+  &lt;div class="greeting"&gt;
+    &lt;h2 x-text="message"&gt;&lt;/h2&gt;
+    &lt;button x-on:click="greet()"&gt;Say Hello&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+const message = data('Hello World');
+
+function greet() {
+  message.value = 'Hello, FyneJS!';
+}
+
+expose({ message, greet });
+
+onMounted(() =&gt; console.log('Greeting mounted!'));
+&lt;/script&gt;</code></pre>
+            </div>
+
+            <!-- Multi Component -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">MULTI</span>
+                Multiple Components in One File
+              </h3>
+              <pre class="code-block overflow-x-auto text-sm bg-gray-900 rounded-lg p-4"><code class="text-green-400">&lt;!-- components/widgets.html --&gt;
+&lt;template name="widget-header"&gt;
+  &lt;header x-text="title"&gt;&lt;/header&gt;
+&lt;/template&gt;
+&lt;script setup name="widget-header"&gt;
+const title = data('Widget Title');
+expose({ title });
+&lt;/script&gt;
+
+&lt;template name="widget-footer"&gt;
+  &lt;footer x-text="copyright"&gt;&lt;/footer&gt;
+&lt;/template&gt;
+&lt;script setup name="widget-footer"&gt;
+const copyright = data('© 2025');
+expose({ copyright });
+&lt;/script&gt;</code></pre>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-r from-black to-gray-800 rounded-2xl p-8 text-white">
+            <h3 class="text-xl font-bold mb-4">Loading HTML Components</h3>
+            <div class="grid lg:grid-cols-2 gap-6">
+              <div>
+                <pre class="text-green-400 text-sm"><code>// Load just like JS/TS components
+XTool.loadComponents([
+  'components/greeting.html',
+  'components/widgets.html',  // loads both widget-header &amp; widget-footer
+  { path: 'components/modal.html', mode: 'lazy' }
+]);
+
+// Use in your HTML
+&lt;component source="greeting"&gt;&lt;/component&gt;
+&lt;component source="widget-header"&gt;&lt;/component&gt;</code></pre>
+              </div>
+              <div class="text-sm text-gray-200">
+                <h4 class="font-bold text-white mb-2">Available Helpers in HTML Components:</h4>
+                <ul class="list-disc ml-5 space-y-1">
+                  <li><code class="bg-black/30 px-1 rounded">data(value)</code> – Create reactive data</li>
+                  <li><code class="bg-black/30 px-1 rounded">computed(getter)</code> – Create computed property</li>
+                  <li><code class="bg-black/30 px-1 rounded">watch(source, callback)</code> – Watch reactive changes</li>
+                  <li><code class="bg-black/30 px-1 rounded">expose({ ... })</code> – Expose data/methods to template</li>
+                  <li><code class="bg-black/30 px-1 rounded">onMounted(() =&gt; {})</code> – Lifecycle hook</li>
+                  <li><code class="bg-black/30 px-1 rounded">onUnmounted(() =&gt; {})</code> – Cleanup hook</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-6">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <p class="text-blue-800 font-medium mb-1">Why HTML Components?</p>
+                <p class="text-blue-700 text-sm">
+                  Full IDE support for HTML syntax, auto-complete, and formatting. No template strings or build tools needed. 
+                  The <code class="bg-blue-100 px-1 rounded">name</code> attribute on &lt;template&gt; and &lt;script&gt; lets you define multiple components per file.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Readonly Freeze Mode -->
         <section class="mb-12 sm:mb-16 lg:mb-20">
           <div class="mb-8 sm:mb-12 lg:mb-16">

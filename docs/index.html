@@ -179,29 +179,74 @@ x-data="{ mobileMenuOpen: false }"
     <div class="absolute bottom-32 -right-20 w-32 h-32 bg-gray-400 opacity-15 rounded-full blur-3xl"></div>
     
     <div class="relative container mx-auto max-w-6xl">
-      <div class="text-center">
+      <div class="text-center" x-data="{ 
+        current: 0,
+        timerID: null,
+        headlines: [
+          { title: 'More Features.', subtitle: 'Smaller Footprint.', tagline: 'Router, TypeScript, signals, transitions—<span class=\'font-bold text-black\'>all built-in</span>. While others ship dependencies, we ship solutions.' },
+          { title: 'Skip the Setup.', subtitle: 'Ship the Product.', tagline: 'No webpack wizardry. No config files. No 30-minute tutorials just to display Hello World.' },
+          { title: 'One Script Tag.', subtitle: 'Infinite Possibilities.', tagline: 'React needs react + react-dom + react-router + a build tool. We need <span class=\'font-bold text-black\'>one &lt;script&gt;</span>.' },
+          { title: 'TypeScript?', subtitle: 'No Compiler Needed.', tagline: 'Run .ts files directly in the browser. Types stripped <span class=\'font-bold text-black\'>faster than you can blink</span>. No build step. No waiting.' },
+          { title: 'Engineering.', subtitle: 'Not Workarounds.', tagline: 'No useEffect footguns. No dependency arrays. No &ldquo;why did this render twice?&rdquo; <span class=\'font-bold text-black\'>Reactivity that just works</span>.' },
+          { title: 'Designed.', subtitle: 'Not Patched.', tagline: 'We did not inherit a decade of technical debt. No breaking changes every major version. <span class=\'font-bold text-black\'>Built right from day one</span>.' }
+        ],
+        startCarousel() {
+          this.timerID = setInterval(() => { this.current = (this.current + 1) % this.headlines.length; }, 5000);
+        }
+      }" x-init="startCarousel()">
         <!-- Badge -->
         <div class="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-full text-sm font-medium mb-10 shadow-lg">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
           </svg>
-          Zero Dependencies • Zero Build Step
+          Everything Included • Nothing to Configure
         </div>
 
-        <!-- Main Heading -->
-        <h1 data-vt='title' class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-gray-900 mb-6 sm:mb-8 leading-tight tracking-tight">
-          Fast Reactive UI<br />
-          <span class="relative">
-            For The Web
-            <div class="absolute -bottom-2 left-0 right-0 h-1 bg-black"></div>
-          </span>
-        </h1>
+        <!-- Rotating Headlines -->
+        <div class="relative h-48  mb-6 sm:mb-8">
+          
+            <h1 x-for="(h, i) in headlines" :key="i" x-if="current === i"
+                x-transition:enter="transition ease-out duration-500"
+                x-transition:enter-from="opacity-0 transform translate-y-4"
+                x-transition:enter-to="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-300"
+                x-transition:leave-from="opacity-100 transform translate-y-0"
+                x-transition:leave-to="opacity-0 transform -translate-y-4"
+                class="absolute inset-0 text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-gray-900 leading-tight tracking-tight">
+              <span x-text="h.title"></span><br />
+              <span class="relative">
+                <span x-text="h.subtitle"></span>
+                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-black"></div>
+              </span>
+            </h1>
+          
+        </div>
 
-        <!-- Subtitle -->
-        <p class="text-lg sm:text-xl md:text-2xl text-gray-600 mb-8 sm:mb-10 max-w-4xl mx-auto leading-relaxed">
-          Build interactive web apps with declarative attributes. 
-          <span class="font-bold text-black">No compilation, no complex setup</span>—just drop the script and start building.
-        </p>
+        <!-- Rotating Subtitles -->
+        <div class="relative h-20 sm:h-16 mb-8 sm:mb-10">
+          <template x-for="(h, i) in headlines" :key="i">
+            <p x-show="current === i"
+               x-transition:enter="transition ease-out duration-500 delay-150"
+               x-transition:enter-from="opacity-0"
+               x-transition:enter-to="opacity-100"
+               x-transition:leave="transition ease-in duration-200"
+               x-transition:leave-from="opacity-100"
+               x-transition:leave-to="opacity-0"
+               class="absolute inset-0 text-lg sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed"
+               x-html="h.tagline">
+            </p>
+          </template>
+        </div>
+
+        <!-- Carousel Indicators -->
+        <div class="flex items-center justify-center gap-2 mb-8">
+          <template x-for="(h, i) in headlines" :key="i">
+            <button x-on:click="()=>{if(this.timerID)clearInterval(this.timerID),this.current = i, this.startCarousel()}" 
+                    class="w-2 h-2 rounded-full transition-all duration-300"
+                    :class="current === i ? 'bg-black w-6' : 'bg-gray-300 hover:bg-gray-400'">
+            </button>
+          </template>
+        </div>
 
         <!-- CTA Buttons -->
         <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-12 sm:mb-16">
@@ -240,7 +285,7 @@ x-data="{ mobileMenuOpen: false }"
       <div class="text-center mb-12 sm:mb-16">
         <h2 class="text-4xl sm:text-5xl font-black text-gray-900 mb-4 sm:mb-6">See It In Action</h2>
         <p class="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-          Build complex interactive components like this Apple Watch with 8 functional faces. No compilation, no setup—just pure reactivity.
+          This interactive Apple Watch with 8 functional faces? One script tag. No webpack, no Vite, no "npm install 47 packages". Just works.
         </p>
       </div>
 
@@ -318,7 +363,7 @@ XTool.registerComponent({
       <div class="text-center mb-12 sm:mb-20">
         <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-4 sm:mb-6">Why Choose FyneJS?</h2>
         <p class="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-          Enterprise-grade features in just ~18.6KB. All the power, none of the complexity.
+          Enterprise-grade features in a tiny footprint. All the power, none of the complexity.
         </p>
       </div>
 
@@ -396,12 +441,12 @@ XTool.registerComponent({
             </div>
             <h3 class="text-2xl font-black text-gray-900 mb-4">Auto Memory Cleanup</h3>
             <p class="text-gray-600 leading-relaxed mb-6">
-              Multi-layered cleanup prevents memory leaks. Event listeners, timers, observers—all handled automatically.
+              Comprehensive resource management handles all cleanup automatically—from DOM bindings to async operations, component trees to reactive subscriptions.
             </p>
             <div class="flex flex-wrap gap-2">
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">WeakMaps</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">AbortController</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Resource Tracking</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Auto GC</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Leak Prevention</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Smart Cleanup</span>
             </div>
           </div>
         </div>
@@ -417,12 +462,12 @@ XTool.registerComponent({
             </div>
             <h3 class="text-2xl font-black text-gray-900 mb-4">Built-in Performance</h3>
             <p class="text-gray-600 leading-relaxed mb-6">
-              Static directive optimization, computed caching, batched DOM updates, and event delegation built-in.
+              Fine-grained reactivity, expression caching, computed memoization, keyed diffing, and batched updates—all optimized out of the box.
             </p>
             <div class="flex flex-wrap gap-2">
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Static Analysis</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">RAF Batching</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Event Delegation</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Keyed Diffing</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Smart Caching</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Batched Updates</span>
             </div>
           </div>
 
@@ -453,12 +498,12 @@ XTool.registerComponent({
             </div>
             <h3 class="text-2xl font-black text-gray-900 mb-4">Enterprise Components</h3>
             <p class="text-gray-600 leading-relaxed mb-6">
-              Reusable components with reactive props, lifecycle hooks, slots, and HTML templates with IDE syntax highlighting.
+              Full component system with reactive props, 7 lifecycle hooks, slots, signals, HTML file support, and programmatic mounting.
             </p>
             <div class="flex flex-wrap gap-2">
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Reactive Props</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Lifecycle Hooks</span>
-              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Slots</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">HTML Components</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Signals API</span>
+              <span class="px-2 py-1 bg-gray-200 rounded text-xs font-medium">Mount API</span>
             </div>
           </div>
         </div>
@@ -502,8 +547,8 @@ XTool.registerComponent({
               <path d="M3 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
             </svg>
           </div>
-          <h4 class="text-xl font-black text-gray-900 mb-3">Just ~18.6KB Gzipped</h4>
-          <p class="text-gray-600">4x smaller than Vue, 2.5x smaller than React. Complete framework with TypeScript stripping, router, and enterprise features in a single optimized file.</p>
+          <h4 class="text-xl font-black text-gray-900 mb-3">Fraction of the Size</h4>
+          <p class="text-gray-600">A typical React app (react + react-dom + react-router) weighs ~100KB+ gzipped; Vue 3 + Vue Router ~59KB. FyneJS delivers more features—router, TypeScript stripping, signals, transitions—in a single lighter package.</p>
         </div>
 
         <div class="bg-white p-8 rounded-2xl border-3 border-gray-200 hover:border-black hover:shadow-xl transition-all duration-300">
@@ -666,6 +711,27 @@ XTool.registerComponent({
               <td class="px-8 py-6 text-center text-2xl">⚠️</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
+            <tr class="hover:bg-blue-50 bg-blue-50/50 transition-colors duration-200">
+              <td class="px-8 py-6 text-base font-bold text-gray-900">Built-in SPA Router</td>
+              <td class="px-8 py-6 text-center text-2xl font-bold text-blue-600">✅</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+            </tr>
+            <tr class="hover:bg-blue-50 bg-blue-50/50 transition-colors duration-200">
+              <td class="px-8 py-6 text-base font-bold text-gray-900">Browser-Native TypeScript (.ts files)</td>
+              <td class="px-8 py-6 text-center text-2xl font-bold text-blue-600">✅</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+            </tr>
+            <tr class="hover:bg-blue-50 bg-blue-50/50 transition-colors duration-200">
+              <td class="px-8 py-6 text-base font-bold text-gray-900">Native HTML Component Files</td>
+              <td class="px-8 py-6 text-center text-2xl font-bold text-blue-600">✅</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
+            </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Computed Cache & Optimization</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
@@ -674,17 +740,10 @@ XTool.registerComponent({
               <td class="px-8 py-6 text-center text-2xl">✅</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
-              <td class="px-8 py-6 text-base font-semibold text-gray-900">Static Directive Optimization</td>
-              <td class="px-8 py-6 text-center text-2xl">✅</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
-              <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Event Delegation</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
-              <td class="px-8 py-6 text-center text-2xl">⚠️</td>
+              <td class="px-8 py-6 text-center text-2xl">❌</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
@@ -698,29 +757,15 @@ XTool.registerComponent({
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Multiple Components per File</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-              <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-              <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors duration-200">
-              <td class="px-8 py-6 text-base font-semibold text-gray-900">Configurable Directive Prefix</td>
-              <td class="px-8 py-6 text-center text-2xl">✅</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors duration-200">
-              <td class="px-8 py-6 text-base font-semibold text-gray-900">HTML Strings + IDE Syntax Highlighting</td>
-              <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
               <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Dynamic Component Switching</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">⚠️</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Component Lazy Loading</td>
@@ -729,11 +774,11 @@ XTool.registerComponent({
               <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">✅</td>
             </tr>
-            <tr class="hover:bg-blue-50 bg-blue-50/50 transition-colors duration-200">
-              <td class="px-8 py-6 text-base font-bold text-gray-900">Browser-Native TypeScript (.ts files)</td>
-              <td class="px-8 py-6 text-center text-2xl font-bold text-blue-600">✅</td>
+            <tr class="hover:bg-gray-50 transition-colors duration-200">
+              <td class="px-8 py-6 text-base font-semibold text-gray-900">Signals (Component Messaging)</td>
+              <td class="px-8 py-6 text-center text-2xl">✅</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
-              <td class="px-8 py-6 text-center text-2xl">❌</td>
+              <td class="px-8 py-6 text-center text-2xl">⚠️</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">
@@ -746,8 +791,8 @@ XTool.registerComponent({
             <tr class="hover:bg-gray-50 transition-colors duration-200">
               <td class="px-8 py-6 text-base font-semibold text-gray-900">Event Modifiers</td>
               <td class="px-8 py-6 text-center font-bold text-black">✅ 35+</td>
-              <td class="px-8 py-6 text-center font-semibold">✅ 30</td>
-              <td class="px-8 py-6 text-center font-semibold">✅ 29</td>
+              <td class="px-8 py-6 text-center font-semibold">✅ 12</td>
+              <td class="px-8 py-6 text-center font-semibold">✅ 12</td>
               <td class="px-8 py-6 text-center text-2xl">❌</td>
             </tr>
             <tr class="hover:bg-gray-50 transition-colors duration-200">

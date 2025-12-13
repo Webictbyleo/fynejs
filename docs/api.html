@@ -252,6 +252,7 @@
                 <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.directive()</code> - Register directive</li>
                 <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.registerComponent()</code> - Register component</li>
                 <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.loadComponents()</code> - Load external components</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">XTool.mountComponent()</code> - Mount programmatically</li>
               </ul>
             </div>
             
@@ -260,9 +261,9 @@
               <h4 class="font-bold text-white mb-3">Component Context</h4>
               <ul class="space-y-2 text-sm">
                 <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$el</code> - Root element</li>
-                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$destroy()</code> - Destroy component</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$refs</code> - Element references</li>
                 <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$nextTick()</code> - Next DOM update</li>
-                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.$mutate()</code> - Mutate reactive data</li>
+                <li><code class="text-gray-300 bg-black/20 px-2 py-1 rounded">this.Signals</code> - Emit/connect signals</li>
               </ul>
             </div>
             
@@ -567,6 +568,97 @@ await XTool.loadComponents([
 ]);
 
 // Returns: { settled: 2, failed: 0 }</code></pre>
+                </div>
+              </div>
+
+              <!-- mountComponent method -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 id="mountComponent" class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-bold">METHOD</span>
+                  mountComponent(name, element, props?): ReactiveComponent | undefined
+                </h4>
+                <p class="text-gray-600 mb-4">Programmatically mount a registered component on a DOM element. Returns the component instance or undefined if mounting failed.</p>
+                
+                <div class="mb-4">
+                  <h5 class="text-lg font-bold text-black mb-2">Syntax</h5>
+                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <code class="text-black font-mono">mountComponent(name: string, element: Element, props?: Record&lt;string, any&gt;): ReactiveComponent | undefined</code>
+                  </div>
+                </div>
+
+                <div class="mb-6">
+                  <h5 class="font-bold text-black mb-3">Parameters</h5>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-sm border border-gray-200 rounded-lg">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-3 text-left font-bold text-black">Parameter</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Type</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Required</th>
+                          <th class="px-4 py-3 text-left font-bold text-black">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr class="border-t border-gray-200">
+                          <td class="px-4 py-3 font-mono text-blue-600">name</td>
+                          <td class="px-4 py-3 font-mono">string</td>
+                          <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                          <td class="px-4 py-3 text-gray-600">Name of the registered component to mount</td>
+                        </tr>
+                        <tr class="border-t border-gray-200">
+                          <td class="px-4 py-3 font-mono text-blue-600">element</td>
+                          <td class="px-4 py-3 font-mono">Element</td>
+                          <td class="px-4 py-3 text-red-600 font-medium">Required</td>
+                          <td class="px-4 py-3 text-gray-600">DOM element to mount the component on</td>
+                        </tr>
+                        <tr class="border-t border-gray-200">
+                          <td class="px-4 py-3 font-mono text-blue-600">props</td>
+                          <td class="px-4 py-3 font-mono">Record&lt;string, any&gt;</td>
+                          <td class="px-4 py-3 text-gray-500 font-medium">Optional</td>
+                          <td class="px-4 py-3 text-gray-600">Initial props to pass to the component</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="mb-4">
+                  <h5 class="font-bold text-black mb-3">Example</h5>
+                  <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                    <pre class="text-sm text-gray-100"><code>// Register a component first
+XTool.registerComponent({
+  name: 'user-card',
+  template: '&lt;div&gt;&lt;h3 x-text="name"&gt;&lt;/h3&gt;&lt;p x-text="role"&gt;&lt;/p&gt;&lt;/div&gt;',
+  data: { name: 'Guest', role: 'Viewer' }
+});
+
+// Programmatically mount on any element
+const container = document.getElementById('dynamic-container');
+const component = XTool.mountComponent('user-card', container, {
+  name: 'John Doe',
+  role: 'Administrator'
+});
+
+// Access the mounted component instance
+if (component) {
+  console.log('Component mounted successfully');
+  // Later: component.$destroy() to unmount
+}</code></pre>
+                  </div>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+                  <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                      <p class="text-blue-800 font-medium mb-1">Use Cases</p>
+                      <p class="text-blue-700 text-sm">
+                        Perfect for dynamically creating components in response to user actions, integrating with third-party libraries, or building component factories.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1317,6 +1409,55 @@ await XTool.loadComponents([
                   <li><code class="text-black">$seal()</code> - Toggle sealed mode</li>
                   <li><code class="text-black">$log()</code> - Debug logging</li>
                 </ul>
+              </div>
+
+              <!-- Refs & DOM Access -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-purple-500 text-white px-2 py-1 rounded text-xs font-bold">REFS</span>
+                  Element References
+                </h4>
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li><code class="text-black">$refs.name</code> - Access element by x-ref name</li>
+                  <li><code class="text-black">$ref(name)</code> - Get ref by name (function form)</li>
+                  <li><code class="text-black">$ref(name, value)</code> - Register any value as a ref</li>
+                </ul>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
+                  <p class="text-purple-700 text-xs">Refs bubble up the component tree—child components can access parent refs.</p>
+                </div>
+              </div>
+
+              <!-- DOM Helpers -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold">HELPERS</span>
+                  DOM Helpers
+                </h4>
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li><code class="text-black">$attr(name, value)</code> - Set attribute on $target element</li>
+                  <li><code class="text-black">$attr({ name: value, ... })</code> - Set multiple attributes</li>
+                  <li><code class="text-black">$css(prop, value)</code> - Set CSS property on $target element</li>
+                  <li><code class="text-black">$css({ prop: value, ... })</code> - Set multiple CSS properties</li>
+                </ul>
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-3">
+                  <p class="text-orange-700 text-xs">Supports glob patterns: <code class="bg-orange-100 px-1 rounded">$attr('[width,height]', 100)</code> sets both attributes.</p>
+                </div>
+              </div>
+
+              <!-- Signals -->
+              <div class="border border-gray-200 rounded-xl p-6 bg-white">
+                <h4 class="text-lg font-bold text-black mb-3 flex items-center gap-3">
+                  <span class="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">SIGNALS</span>
+                  Component Messaging
+                </h4>
+                <ul class="space-y-2 text-sm text-gray-600">
+                  <li><code class="text-black">Signals.emit(name, payload?)</code> - Emit a signal that bubbles up</li>
+                  <li><code class="text-black">Signals.connect(name, handler)</code> - Listen for a signal</li>
+                  <li><code class="text-black">Signals.disconnect(name, handler)</code> - Stop listening</li>
+                </ul>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                  <p class="text-red-700 text-xs">Signals bubble from child to parent. Call <code class="bg-red-100 px-1 rounded">event.stopPropagation()</code> to stop bubbling.</p>
+                </div>
               </div>
             </div>
 

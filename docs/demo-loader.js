@@ -2,7 +2,7 @@
 (function () {
   // List of advanced example component scripts (Examples section only)
   const componentFiles = [
-    'interactive-showcase.ts',
+     'interactive-showcase.ts',
     'advanced-todo.js',
     'timer-demo.js',
     'data-chart.js',
@@ -18,7 +18,7 @@
     'virtual-log-stream.js',
     'order-book-ticker.js',
     'network-graph-mini.js',
-    'timeseries-resampler.js'
+    'timeseries-resampler.js',
   ];
   const basePath = 'components/';
   function installCodeBlock() {

@@ -1,0 +1,75 @@
+<template>
+  <div class="p-4 border rounded shadow-sm space-y-3">
+    <h2 class="text-lg font-semibold">HTML Counter Component</h2>
+    <div class="flex items-center space-x-3">
+      <button class="px-3 py-1 bg-green-600 text-white rounded" x-on:click="inc()">Increment</button>
+      <button class="px-3 py-1 bg-red-600 text-white rounded" x-on:click="dec()">Decrement</button>
+    </div>
+        <p>Double (computed): <span class="font-mono" x-text="double"></span></p>
+    <p class="mt-2">Count: <span class="font-mono" x-text="count"></span></p>
+    <p>Total Clicks: <span class="font-mono" x-text="clicks"></span></p>
+    <div class="mt-3 space-y-2">
+      <h3 class="font-medium">User Object (reactive)</h3>
+      <div class="flex items-center gap-2">
+        <label class="text-sm">Name:</label>
+        <input class="border px-2 py-1" x-model="user.name" placeholder="Enter name" />
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="text-sm">Age:</label>
+        <input type="number" class="border px-2 py-1" x-model="user.age" />
+      </div>
+      <p class="text-sm">Summary: <span class="font-mono" x-text="userSummary"></span></p>
+    </div>
+  </div>
+</template>
+
+<script setup type="text/javascript">
+// Multiple ref-like values using data(), plus a computed()
+const count = data(0);
+const clicks = data(0);
+const double = computed(() => count.value * 2);
+
+// Object ref example
+const user = data({ name: 'Ada', age: 28 });
+const userSummary = computed(() => `${user.value.name} (${user.value.age})`);
+
+// Demonstrate watch usage
+// Watch a single reactive source: receives (newVal, oldVal)
+watch(count, (newVal, oldVal) => {
+  console.log('[html-counter] count changed:', oldVal, '→', newVal);
+});
+
+// Watch an array of reactive sources: receives ([newVals], [oldVals])
+watch([count, clicks], (newVals, oldVals) => {
+  const [nCount, nClicks] = newVals;
+  const [oCount, oClicks] = oldVals;
+  console.log('[html-counter] sources changed:', { count: [oCount, nCount], clicks: [oClicks, nClicks] });
+});
+
+// Watch object ref: log previous/current snapshot
+watch(user, (newVal, oldVal) => {
+  console.log('[html-counter] user changed:', oldVal, '→', newVal);
+});
+
+function inc(){ count.value++; clicks.value++; }
+function dec(){ count.value--; clicks.value++; }
+
+onBeforeMount(() => {
+  console.log('html-counter beforeMount: initial count =', count.value);
+});
+
+onMounted(() => {
+  console.log('html-counter mounted');
+});
+
+onBeforeUnmount(() => {
+  console.log('html-counter beforeUnmount');
+});
+
+onUnmounted(() => {
+  console.log('html-counter unmounted');
+});
+
+// Expose bindings; loader maps refs/computed to component computed, others to data/methods.
+expose({ count, clicks, double, user, userSummary, inc, dec });
+</script>

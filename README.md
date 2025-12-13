@@ -16,6 +16,7 @@ FyneJS is a tiny, fast, zero‑dependency reactive UI framework for the browser.
 - **Browser-native TypeScript**: load `.ts` component files directly—blazing fast type stripping (~34ms for 1000 lines) with zero build tools
 - **Declarative power**: rich directives and component composition without a build step
 - **SEO‑friendly by design**: progressive enhancement on existing HTML; no client‑side rendering takeover, so your server content remains crawlable
+- **Signals API**: lightweight child → parent messaging with payloads and bubbling
 
 ## Capabilities (with examples)
 
@@ -222,6 +223,43 @@ You can copy the file into your repo and point `typeRoots` to it, or vendor the 
 ```
 
 ### Two-way binding
+### Signals (component messaging)
+
+Signals are lightweight, component-scoped broadcasts for child → parent notifications and other local messaging. Emissions start at the current component and bubble up to ancestors; any ancestor that connected a handler for the signal name will receive the event. Bubbling can be stopped via `evt.stopPropagation()`.
+
+Core API (available on the component context):
+- `this.Signals.emit(name, payload?)`: emit and bubble upward.
+- `this.Signals.connect(name, handler)`: register a handler on the current component.
+- `this.Signals.disconnect(name, handler)`: unregister the handler.
+
+Handlers receive `{ name, payload, stopPropagation }` and run with the component method context, so `this` has access to data/computed/methods.
+
+Connect just-in-time, emit, then disconnect:
+
+```html
+<div x-data="{ log: [],
+  handler(evt){ this.log = [...this.log, 'got:'+evt.payload]; },
+  run(){ this.Signals.connect('hello', this.handler); this.Signals.emit('hello','x'); this.Signals.disconnect('hello', this.handler); }
+}">
+  <button x-on:click="run()">fire</button>
+  <span x-text="log.join(',')"></span>
+</div>
+```
+
+Bubbling to ancestors (no stopPropagation):
+
+```html
+<section x-data="{ heard: [], mounted(){ this.Signals.connect('hello', (evt)=>{ this.heard = [...this.heard, evt.payload]; }); } }">
+  <div x-data>
+    <button x-on:click="Signals.emit('hello','X')">emit</button>
+  </div>
+  <span x-text="heard.join(',')"></span>
+</section>
+```
+
+Notes:
+- Signals handlers are cleared on component destroy to avoid leaks.
+- You can also connect in lifecycle to listen continuously, or connect/disconnect around a single operation.
 
 ```html
 <input type="text" x-model="form.name">
@@ -371,7 +409,135 @@ XTool.loadComponents([
   'components/modal.js'           // Regular JavaScript
 ]);
 ```
-</ul>
+
+### HTML Component Files
+
+Write components in native `.html` files with full IDE syntax highlighting—no template strings needed!
+
+```html
+<!-- components/greeting.html -->
+<template>
+  <div class="greeting">
+    <h2 x-text="message"></h2>
+    <button x-on:click="greet()">Say Hello</button>
+  </div>
+</template>
+
+<script setup>
+const message = data('Hello World');
+
+function greet() {
+  message.value = 'Hello, FyneJS!';
+}
+
+expose({ message, greet });
+onMounted(() => console.log('Mounted!'));
+</script>
+```
+
+**Multiple components in one file:**
+
+```html
+<!-- components/widgets.html -->
+<template name="widget-header">
+  <header x-text="title"></header>
+</template>
+<script setup name="widget-header">
+const title = data('Header');
+expose({ title });
+</script>
+
+<template name="widget-footer">
+  <footer x-text="copyright"></footer>
+</template>
+<script setup name="widget-footer">
+const copyright = data('© 2025');
+expose({ copyright });
+</script>
+```
+
+**Load like any other component:**
+
+```js
+XTool.loadComponents([
+  'components/greeting.html',
+  'components/widgets.html'  // loads both widget-header & widget-footer
+]);
+```
+
+Available helpers in HTML components: `data()`, `computed()`, `watch()`, `expose()`, `onMounted()`, `onBeforeMount()`, `onUnmounted()`, `onBeforeUnmount()`.
+
+### Programmatic Component Mounting
+
+Mount registered components on any DOM element programmatically:
+
+```js
+// Register a component
+XTool.registerComponent({
+  name: 'user-card',
+  template: '<div><h3 x-text="name"></h3></div>',
+  data: { name: 'Guest' }
+});
+
+// Mount on any element with optional props
+const container = document.getElementById('dynamic-area');
+const instance = XTool.mountComponent('user-card', container, {
+  name: 'John Doe'
+});
+
+// Later: instance.$destroy() to unmount
+```
+
+### Element References (x-ref)
+
+Create named references to DOM elements accessible via `$refs`:
+
+```html
+<div x-data="{ focusInput() { $refs.myInput.focus(); } }">
+  <input x-ref="myInput" type="text">
+  <button x-on:click="focusInput()">Focus</button>
+</div>
+```
+
+- `$refs.name` returns the element (or array if multiple elements share the name)
+- `$ref(name)` function form to get a ref
+- `$ref(name, value)` to register any value as a ref
+- Refs bubble up the component tree—child components can access parent refs
+
+### Shorthand Attribute Binding
+
+Three equivalent syntaxes for dynamic attributes:
+
+```html
+<div x-data="{ url: '/image.png', active: true }">
+  <!-- Full syntax -->
+  <img x-bind:src="url">
+  
+  <!-- x: shorthand -->
+  <img x:src="url">
+  
+  <!-- : shorthand (shortest, Vue-style) -->
+  <img :src="url">
+  <button :disabled="!active">Click</button>
+</div>
+```
+
+### DOM Helpers ($attr, $css)
+
+Programmatically set attributes and CSS on the target element:
+
+```html
+<div x-data>
+  <button x-on:click="$attr('data-clicked', true)">Mark Clicked</button>
+  <div x-on:click="$css('background', 'red')">Click to color</div>
+  
+  <!-- Object syntax for multiple -->
+  <button x-on:click="$attr({ 'data-x': 1, 'data-y': 2 })">Set Both</button>
+  <div x-on:click="$css({ color: 'white', background: 'blue' })">Style Me</div>
+  
+  <!-- Glob pattern -->
+  <div x-on:click="$attr('[width,height]', 100)">Set width & height</div>
+</div>
 ```
 
 ### Browser-Native TypeScript (Zero Build)

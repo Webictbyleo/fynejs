@@ -582,68 +582,67 @@ FyneJS.loadComponents([
         </div>
 
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <!-- SPA Router -->
-          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="bg-blue-500 text-white p-2 rounded-lg">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-              <h3 class="text-xl font-bold text-blue-900">SPA Router</h3>
-            </div>
-            <p class="text-blue-800 mb-4 text-sm">
-              Built-in single-page application routing with view transitions, prefetching, and navigation hooks.
-            </p>
-            <div class="bg-blue-900 rounded-lg p-3 text-xs">
-              <code class="text-blue-100">
-                XTool.init({<br/>
-                &nbsp;&nbsp;router: { enabled: true }<br/>
-                });
-              </code>
-            </div>
-          </div>
-
-          <!-- Intersection Observer -->
+          <!-- HTML Components -->
           <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
             <div class="flex items-center gap-3 mb-4">
               <div class="bg-green-500 text-white p-2 rounded-lg">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                  <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
                 </svg>
               </div>
-              <h3 class="text-xl font-bold text-green-900">Scroll Triggers</h3>
+              <h3 class="text-xl font-bold text-green-900">HTML Component Files</h3>
             </div>
             <p class="text-green-800 mb-4 text-sm">
-              Use x-intersect to trigger actions when elements enter or leave the viewport.
+              Write components in native .html files with full IDE syntax highlighting—no template strings needed!
             </p>
             <div class="bg-green-900 rounded-lg p-3 text-xs">
               <code class="text-green-100">
-                &lt;div x-intersect:enter="<br/>
-                &nbsp;&nbsp;animateIn()<br/>
-                "&gt;Animate me!&lt;/div&gt;
+                &lt;template&gt;...&lt;/template&gt;<br/>
+                &lt;script setup&gt;<br/>
+                &nbsp;&nbsp;expose({ data, methods });<br/>
+                &lt;/script&gt;
               </code>
             </div>
           </div>
 
-          <!-- TypeScript Support -->
-          <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+          <!-- Signals API -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200">
             <div class="flex items-center gap-3 mb-4">
-              <div class="bg-purple-500 text-white p-2 rounded-lg">
+              <div class="bg-blue-500 text-white p-2 rounded-lg">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
                 </svg>
               </div>
-              <h3 class="text-xl font-bold text-purple-900">TypeScript Without Build</h3>
+              <h3 class="text-xl font-bold text-blue-900">Signals API</h3>
+            </div>
+            <p class="text-blue-800 mb-4 text-sm">
+              Lightweight child → parent messaging with payloads and bubbling. Perfect for component communication.
+            </p>
+            <div class="bg-blue-900 rounded-lg p-3 text-xs">
+              <code class="text-blue-100">
+                Signals.emit('saved', data);<br/>
+                Signals.connect('saved', handler);
+              </code>
+            </div>
+          </div>
+
+          <!-- Element Refs & Shorthand -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="bg-purple-500 text-white p-2 rounded-lg">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <h3 class="text-xl font-bold text-purple-900">x-ref & :attr Shorthand</h3>
             </div>
             <p class="text-purple-800 mb-4 text-sm">
-              Run .ts component files directly in the browser with instant type stripping. No compilation needed!
+              Named element references via $refs and Vue-style :attr shorthand for cleaner attribute binding.
             </p>
             <div class="bg-purple-900 rounded-lg p-3 text-xs">
               <code class="text-purple-100">
-                XTool.loadComponents([<br/>
-                &nbsp;&nbsp;'components/user-card.ts'<br/>
-                ]); // Types stripped instantly!
+                &lt;input x-ref="myInput"&gt;<br/>
+                &lt;img :src="url" :alt="desc"&gt;
               </code>
             </div>
           </div>
