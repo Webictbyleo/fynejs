@@ -18,6 +18,8 @@ export interface XToolConfig {
     allowGlobals?: string[];
     /** Auto-merge x-prop values into component data (default: false). When false, props are only accessible via $props and propEffects */
     autoMergeProps?: boolean;
+    /** When true, inline x-data components inherit parent x-data scope (default: false). Does not apply to named/registered components. */
+    inheritScope?: boolean;
     /** Router for SPA */
     router?: {
         /** Enable SPA routing (default: false) */
@@ -81,8 +83,9 @@ export interface DirectiveInfo {
 /**
  * Component context available in methods, computed properties, and expressions
  */
-// Ref value types
-export type RefValue = Element | Record<string, any>;
+// Ref value types - can be DOM elements or component context proxies (for x-ref on components)
+// Using 'any' to allow property access on refs without TS errors since type can't be inferred at accessor point
+export type RefValue = any;
 export type RefReturn<T = RefValue> = T | T[] | undefined;
 export interface RefAccessor {
     <T = RefValue>(name: string): RefReturn<T>;
@@ -294,6 +297,8 @@ export interface ComponentDefinition<
     /** Prop change handlers */
     // Prop effects should have full access to methods and computed values with proper inference
     propEffects?: PropEffectsMap<FullContext<TData, TMethods, ComputedValues<TComputed>>> & ThisType<FullContext<TData, TMethods, ComputedValues<TComputed>>>;
+    /** Module-level closure variables to inject into context (e.g., { rangeManager, someHelper }) */
+    closures?: Record<string, unknown>;
     /** Lifecycle hooks */
     mounted?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
     unmounted?: (this: FullContext<TData, TMethods, ComputedValues<TComputed>>) => void;
@@ -338,6 +343,8 @@ export interface RegisteredComponentDefinition<
     computed?: TComputed & ThisType<FullContext<DeepReadonly<TData & TFactoryData>, TMethods, ComputedValues<TComputed>>>;
     /** Prop change handlers */
     propEffects?: PropEffectsMap<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>> & ThisType<FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>>;
+    /** Module-level closure variables to inject into context (e.g., { rangeManager, someHelper }) */
+    closures?: Record<string, unknown>;
     /** Lifecycle hooks */
     mounted?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
     unmounted?: (this: FullContext<TData & TFactoryData, TMethods, ComputedValues<TComputed>>) => void;
