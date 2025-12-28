@@ -1204,6 +1204,39 @@ const XToolFramework = function () {
     const _Afrom = Array.from;
     const _Okeys = Object.keys;
     let _globalActiveEffect = null;
+    const _setAttr = (el, name, val, isCss) => {
+        if (isCss) {
+            const style = el.style;
+            if (val == null || val === false)
+                style.removeProperty(name);
+            else
+                style.setProperty(name, String(val));
+        }
+        else {
+            if (val == null || val === false)
+                el.removeAttribute(name);
+            else if (val === true)
+                el.setAttribute(name, '');
+            else
+                el.setAttribute(name, String(val));
+        }
+    };
+    const _expandAndSet = (el, name, value, isCss) => {
+        const globMatch = name.match(/^(.*)?\[([^\]]+)\](.*)$/);
+        if (globMatch) {
+            const [, prefix = '', keys, suffix = ''] = globMatch;
+            const keyList = keys.split(',').map(k => k.trim()).filter(Boolean);
+            const isObjValue = value && typeof value === 'object' && !Array.isArray(value);
+            for (const key of keyList) {
+                const attrName = prefix + key + suffix;
+                const attrValue = isObjValue && key in value ? value[key] : value;
+                _setAttr(el, attrName, attrValue, isCss);
+            }
+        }
+        else {
+            _setAttr(el, name, value, isCss);
+        }
+    };
     const STR_STYLE = 'style';
     const STR_DISPLAY = 'display';
     const STR_NONE = 'none';
@@ -1259,6 +1292,11 @@ const XToolFramework = function () {
     const EV_CLICK = 'click', EV_INPUT = 'input', EV_CHANGE = 'change', EV_KEYDOWN = 'keydown', EV_KEYUP = 'keyup';
     const EV_DELEGATED = [EV_CLICK, EV_INPUT, EV_CHANGE, EV_KEYDOWN, EV_KEYUP];
     const LS_PENDING = 0, LS_LOADING = 1, LS_LOADED = 2, LS_ERROR = 3;
+    const _KEY_ALIAS_MAP = { enter: ['enter'], esc: ['escape', 'esc'], escape: ['escape', 'esc'], space: [' ', 'space', 'spacebar'], tab: ['tab'], backspace: ['backspace'], delete: ['delete', 'del'], del: ['delete', 'del'], arrowup: ['arrowup', 'up'], arrowdown: ['arrowdown', 'down'], arrowleft: ['arrowleft', 'left'], arrowright: ['arrowright', 'right'], home: ['home'], end: ['end'], pageup: ['pageup'], pagedown: ['pagedown'] };
+    const _BUTTON_MAP = { left: 0, middle: 1, right: 2 };
+    const _varNameRegexCache = new Map();
+    const _wrappedTargets = new WkMap();
+    const _UNWRAP_DOM_TARGET = Symbol('unwrapDomTarget');
     try {
         if (d && d.head && !d.getElementById('x-tool-initial-css')) {
             const style = d.createElement(STR_STYLE);
@@ -1286,6 +1324,7 @@ const XToolFramework = function () {
             this._config = {};
             this._customDirectives = new Map();
             this._autoMergeProps = false;
+            this._inheritScope = false;
             this._currentArrayInterceptorComp = null;
             this._namedComponentDefs = new Map();
             this._delegated = new WkMap();
@@ -1388,6 +1427,7 @@ const XToolFramework = function () {
                     XTOOL_ENABLE_STATIC_DIRECTIVES = this._config.staticDirectives;
                 }
                 this._autoMergeProps = this._config.autoMergeProps === true;
+                this._inheritScope = this._config.inheritScope === true;
                 const _hpf = this._config.prefix;
                 if (_hpf && typeof _hpf === 'string' && _hpf[STR_LENGTH] > 0) {
                     PFX = _hpf;
@@ -1504,6 +1544,8 @@ const XToolFramework = function () {
                 const ready = [];
                 const containerEl = (this._config.container ? d?.querySelector(this._config.container) : null);
                 for (const p of this._pending) {
+                    if (p.comp.isDestroyed)
+                        continue;
                     if (!p.el.isConnected) {
                         remaining.push(p);
                         continue;
@@ -1594,6 +1636,7 @@ const XToolFramework = function () {
                     }
                 }
                 const comp = this.createComponent(data);
+                comp._isInlineXData = true;
                 const initExpr = element.getAttribute(attrName('init')) || undefined;
                 if (initExpr)
                     element.removeAttribute(attrName('init'));
@@ -2460,6 +2503,14 @@ const XToolFramework = function () {
                 beforeDestroy: initDef?.beforeDestroy || def.beforeDestroy
             };
             const comp = this.createComponent(compDef);
+            const lifecycleDirectives = ['mounted', 'unmounted', 'updated', 'before-unmount'];
+            for (const lcName of lifecycleDirectives) {
+                const attrVal = el.getAttribute(attrName(lcName));
+                if (attrVal && parentComp) {
+                    comp._registerLifecycleHandler(lcName, attrVal, parentComp);
+                    el.removeAttribute(attrName(lcName));
+                }
+            }
             const originalChildren = Array.from(el.childNodes);
             if (originalChildren.length)
                 el.replaceChildren();
@@ -2780,6 +2831,8 @@ const XToolFramework = function () {
             this._beforeMountCalled = false;
             this._children = [];
             this._parent = null;
+            this._isInlineXData = false;
+            this._closures = {};
             this._computed = {};
             this._propEffects = {};
             this._computedCache = new Map();
@@ -2799,6 +2852,7 @@ const XToolFramework = function () {
             this._fetchCounter = 0;
             this._contextBase = null;
             this._signalHandlers = new Map();
+            this._lifecycleHandlers = new Map();
             this._isSealed = false;
             this._isFrozen = false;
             this._sealedBeforeFreeze = null;
@@ -2830,6 +2884,16 @@ const XToolFramework = function () {
                     if (hookName === 'beforeMount') {
                         this._beforeMountCalled = true;
                     }
+                }
+                const hookToDirective = {
+                    'mounted': 'mounted',
+                    'unmounted': 'unmounted',
+                    'updated': 'updated',
+                    'beforeUnmount': 'before-unmount'
+                };
+                const directiveName = hookToDirective[hookName];
+                if (directiveName) {
+                    this._fireLifecycleHandlers(directiveName);
                 }
                 if (hookName === 'mounted' && this._xInitExpr) {
                     const expr = this._xInitExpr;
@@ -2869,6 +2933,7 @@ const XToolFramework = function () {
                 this.name = def.name;
             this._id = id;
             this._framework = framework;
+            this._closures = def.closures || {};
             this._originalMethods = def.methods || {};
             this._computed = this._bindFunctionMap(def.computed || {}, 'computed');
             this._propEffects = def.propEffects || {};
@@ -3081,6 +3146,17 @@ const XToolFramework = function () {
             }
             return { wrapper: null, original: fn };
         }
+        _execWithWrapper(wrapper, original, args) {
+            const thisArg = this._createMethodContext();
+            if (wrapper) {
+                try {
+                    return wrapper.call(thisArg, thisArg, args, this._createContextProxy(undefined, undefined));
+                }
+                catch {
+                }
+            }
+            return this._safeExecute(() => original.apply(thisArg, args));
+        }
         _bindFunctionMap(src, kind) {
             const out = {};
             for (const key in (src || {})) {
@@ -3101,57 +3177,28 @@ const XToolFramework = function () {
                         };
                     }
                 }
-                else if (kind === 'methods') {
-                    const { wrapper, original: orig } = this._compileInterceptedWrapper(original);
-                    out[key] = (...args) => {
-                        const prev = this._isInMethodExecution;
-                        const prevInv = this._currentInvoker;
-                        this._isInMethodExecution = true;
-                        this._currentInvoker = key;
-                        const thisArg = this._createMethodContext();
-                        try {
-                            if (wrapper) {
-                                try {
-                                    return this._safeExecute(() => wrapper.call(thisArg, thisArg, args, this._createContextProxy(undefined, undefined)));
-                                }
-                                catch {
-                                    return this._safeExecute(() => orig.apply(thisArg, args));
-                                }
-                            }
-                            else {
-                                return this._safeExecute(() => orig.apply(thisArg, args));
-                            }
-                        }
-                        finally {
-                            this._isInMethodExecution = prev;
-                            this._currentInvoker = prevInv;
-                        }
-                    };
-                }
                 else {
                     const { wrapper, original: orig } = this._compileInterceptedWrapper(original);
-                    out[key] = (newValue, oldValue) => {
+                    const isProp = kind === 'prop';
+                    const invokerKey = isProp ? `prop:${key}` : key;
+                    out[key] = (...args) => {
                         const prevInv = this._currentInvoker;
-                        const prevFlag = this._runningPropEffect;
-                        this._currentInvoker = `prop:${key}`;
-                        this._runningPropEffect = true;
-                        const thisArg = this._createMethodContext();
+                        const prevMethod = isProp ? false : this._isInMethodExecution;
+                        const prevProp = isProp ? this._runningPropEffect : false;
+                        this._currentInvoker = invokerKey;
+                        if (isProp)
+                            this._runningPropEffect = true;
+                        else
+                            this._isInMethodExecution = true;
                         try {
-                            if (wrapper) {
-                                try {
-                                    return this._safeExecute(() => wrapper.call(thisArg, thisArg, [newValue, oldValue], this._createContextProxy(undefined, undefined)));
-                                }
-                                catch {
-                                    return this._safeExecute(() => orig.apply(thisArg, [newValue, oldValue]));
-                                }
-                            }
-                            else {
-                                return this._safeExecute(() => orig.apply(thisArg, [newValue, oldValue]));
-                            }
+                            return this._execWithWrapper(wrapper, orig, args);
                         }
                         finally {
-                            this._runningPropEffect = prevFlag;
                             this._currentInvoker = prevInv;
+                            if (isProp)
+                                this._runningPropEffect = prevProp;
+                            else
+                                this._isInMethodExecution = prevMethod;
                         }
                     };
                 }
@@ -3281,6 +3328,34 @@ const XToolFramework = function () {
             }
         }
         _setXInitExpr(expr) { this._xInitExpr = expr || undefined; }
+        _registerLifecycleHandler(hookName, expr, parent) {
+            let handlers = this._lifecycleHandlers.get(hookName);
+            if (!handlers) {
+                handlers = [];
+                this._lifecycleHandlers.set(hookName, handlers);
+            }
+            handlers.push({ expr, parent });
+        }
+        _fireLifecycleHandlers(directiveName) {
+            const handlers = this._lifecycleHandlers.get(directiveName);
+            if (!handlers || !handlers.length)
+                return;
+            const self = this;
+            for (const { expr, parent } of handlers) {
+                _se(() => {
+                    try {
+                        const fn = new Function('ctx', `with(ctx){ ${expr} }`);
+                        const ctx = parent.getContext(true);
+                        const ctxProxy = parent._createContextProxy(undefined, self._element || undefined);
+                        ctxProxy.$component = self._createMethodContext(true);
+                        fn.call(ctx, ctxProxy);
+                    }
+                    catch (e) {
+                        console.error('Lifecycle handler error:', e);
+                    }
+                });
+            }
+        }
         _runWithGlobalInterception(fn, args, skipExtract) {
             const thisArg = this._createMethodContext();
             if (skipExtract) {
@@ -3375,6 +3450,12 @@ const XToolFramework = function () {
             self._propEffects = {};
             self._activeEffect = null;
             self._signalHandlers.clear();
+            self._allEffects.clear();
+            self._computedDeps.clear();
+            self._computedRefControls.clear();
+            self._reverseComputedDeps = null;
+            self._lifecycleHandlers.clear();
+            self._contextBase = null;
         }
         _onSignal(name, handler) {
             let set = this._signalHandlers.get(name);
@@ -3542,7 +3623,16 @@ const XToolFramework = function () {
             const self = this;
             let processedElements = 0;
             const processElement = (el, isRoot = false) => {
-                if (!isRoot && (el.hasAttribute(attrName('data')) || this._framework._getComponentByElement(el))) {
+                const refAttr = attrName('ref');
+                const isBoundToComponent = !isRoot && this._framework._getComponentByElement(el);
+                if (isBoundToComponent) {
+                    if (el.hasAttribute(refAttr)) {
+                        self._bindRefDirective(el, el.getAttribute(refAttr) || '');
+                        el.removeAttribute(refAttr);
+                    }
+                    return false;
+                }
+                if (!isRoot && el.hasAttribute(attrName('data'))) {
                     return false;
                 }
                 const isComponentTag = el[STR_TAGNAME] === 'COMPONENT';
@@ -3738,7 +3828,6 @@ const XToolFramework = function () {
             const self = this;
             element = self._normalizeTemplateElement(element, directiveName);
             const isAtEvent = directiveName.startsWith('@');
-            const isShortBind = directiveName.startsWith(PFX + ':');
             const isSuperShortBind = directiveName.startsWith(':');
             if (isSuperShortBind) {
                 const attr = directiveName.slice(1);
@@ -3747,64 +3836,65 @@ const XToolFramework = function () {
                     return self._bindAttributeDirective(element, attr, expression);
                 }
             }
+            const isShortBind = directiveName.startsWith(PFX + ':');
             const type = isAtEvent ? ('on:' + directiveName.slice(1)) : directiveName.slice(PFX.length + 1);
             if (!isAtEvent && (isShortBind || type === 'class' || type === STR_STYLE)) {
                 element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, type, expression);
             }
+            if (!isAtEvent && (type === 'text' || type === 'html' || type === 'show')) {
+                return self._bindSimpleDirective(element, expression, type, directiveName);
+            }
+            if (!isAtEvent && (type === 'else' || type === 'else-if')) {
+                return;
+            }
+            if (!isAtEvent && element[STR_TAGNAME] === 'COMPONENT') {
+                const isLifecycle = type === 'mounted' || type === 'unmounted' || type === 'updated' || type === 'before-unmount';
+                const isProp = type === 'prop' || type.startsWith('prop:');
+                if (isLifecycle || isProp) {
+                    return;
+                }
+            }
+            element.removeAttribute(directiveName);
             if (FT_VT && !isAtEvent && (type === 'transition' || type.startsWith('transition.'))) {
                 let modifiers;
                 if (type.startsWith('transition.')) {
                     const modList = type.slice('transition.'.length).split('.').filter(Boolean);
                     modifiers = modList.reduce((acc, m) => { acc[m] = true; return acc; }, {});
                 }
-                element.removeAttribute(directiveName);
                 return self._bindTransitionDirective(element, expression, undefined, modifiers);
             }
-            if (!isAtEvent && (type === 'text' || type === 'html' || type === 'show')) {
-                return self._bindSimpleDirective(element, expression, type, directiveName);
-            }
-            if (!isAtEvent && type === 'ref') {
-                element.removeAttribute(directiveName);
+            if (!isAtEvent && type === 'ref')
                 return self._bindRefDirective(element, expression);
-            }
-            const handled = (!isAtEvent && type === 'if') ? (element.removeAttribute(directiveName), self._bindIfDirective(element, expression), true)
-                : (!isAtEvent && type === 'model') ? (element.removeAttribute(directiveName), self._bindModelDirective(element, expression), true)
-                    : type === 'for' ? (element.removeAttribute(directiveName), self._bindForDirective(element, expression), true)
-                        : false;
-            if (handled)
-                return;
+            if (!isAtEvent && type === 'if')
+                return self._bindIfDirective(element, expression);
+            if (!isAtEvent && type === 'model')
+                return self._bindModelDirective(element, expression);
+            if (type === 'for')
+                return self._bindForDirective(element, expression);
             if (isAtEvent || type.indexOf(':') > -1) {
                 const [prefix, rest] = type.split(':', 2);
                 const [suffix, ...mods] = rest.split('.');
                 const modifiers = mods.reduce((acc, m) => { if (m)
                     acc[m] = true; return acc; }, {});
-                if (!isAtEvent && element[STR_TAGNAME] === 'COMPONENT' && prefix === 'prop') {
-                    return;
-                }
                 if (prefix === 'on') {
-                    element.removeAttribute(directiveName);
                     const customDirective = self.framework._getCustomDirective(suffix);
                     return customDirective
                         ? self._bindCustomDirective(element, suffix, expression, customDirective, modifiers)
                         : self._bindEventDirective(element, suffix, expression, modifiers);
                 }
                 if (prefix === 'transition' && FT_VT) {
-                    element.removeAttribute(directiveName);
                     const map = {
                         'enter': 'enter', 'enter-from': 'enterFrom', 'enter-to': 'enterTo',
                         'leave': 'leave', 'leave-from': 'leaveFrom', 'leave-to': 'leaveTo',
                         'enter-start': 'enterFrom', 'enter-end': 'enterTo',
                         'leave-start': 'leaveFrom', 'leave-end': 'leaveTo',
                     };
-                    const part = map[suffix] || 'toggle';
-                    return self._bindTransitionDirective(element, expression, part, modifiers);
+                    return self._bindTransitionDirective(element, expression, map[suffix] || 'toggle', modifiers);
                 }
                 if (prefix === 'intersect' && FT_EXT_DIRS) {
-                    element.removeAttribute(directiveName);
                     return self._bindIntersectDirective(element, expression, modifiers, suffix);
                 }
-                element.removeAttribute(directiveName);
                 return self._bindAttributeDirective(element, suffix, expression);
             }
         }
@@ -3815,7 +3905,44 @@ const XToolFramework = function () {
             if (!refName)
                 return;
             const self = this;
-            self.framework._registerComponentRef(self, refName, element);
+            const lazyRef = {
+                _element: element,
+                _cachedProxy: null,
+                _framework: self.framework,
+                get _target() {
+                    const childComponent = this._framework._getComponentByElement(this._element);
+                    if (childComponent) {
+                        if (!this._cachedProxy) {
+                            this._cachedProxy = childComponent._createContextProxy();
+                        }
+                        return this._cachedProxy;
+                    }
+                    return this._element;
+                }
+            };
+            const refProxy = new Proxy(lazyRef, {
+                get(target, prop) {
+                    if (prop === '_isLazyRef')
+                        return true;
+                    const resolved = target._target;
+                    const value = resolved[prop];
+                    if (typeof value === 'function') {
+                        return value.bind(resolved);
+                    }
+                    return value;
+                },
+                set(target, prop, value) {
+                    const resolved = target._target;
+                    resolved[prop] = value;
+                    return true;
+                },
+                has(target, prop) {
+                    if (prop === '_isLazyRef')
+                        return true;
+                    return prop in target._target;
+                }
+            });
+            self.framework._registerComponentRef(self, refName, refProxy);
             const dir = { type: 'ref', expression };
             this._addDirective(element, dir);
         }
@@ -3869,11 +3996,13 @@ const XToolFramework = function () {
         _createEffect(updateFn, directiveRef) {
             const effect = () => {
                 this._activeEffect = effect;
+                _globalActiveEffect = effect;
                 try {
                     updateFn();
                 }
                 finally {
                     this._activeEffect = null;
+                    _globalActiveEffect = null;
                 }
             };
             effect();
@@ -3971,61 +4100,7 @@ const XToolFramework = function () {
                 return; cls.split(/\s+/).forEach(c => c && el.classList.add(c)); };
             const rm = (cls) => { if (!cls)
                 return; cls.split(/\s+/).forEach(c => c && el.classList.remove(c)); };
-            const effectiveMs = (fallbackMs) => {
-                try {
-                    const cs = (typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(el) : null;
-                    if (!cs)
-                        return fallbackMs;
-                    const parseTimes = (s) => {
-                        if (!s)
-                            return [];
-                        return s.split(',').map(x => x.trim()).filter(Boolean).map(x => {
-                            if (x.endsWith('ms'))
-                                return parseFloat(x);
-                            if (x.endsWith('s'))
-                                return parseFloat(x) * 1000;
-                            const n = parseFloat(x);
-                            return isNaN(n) ? 0 : n;
-                        });
-                    };
-                    const sumMax = (durations, delays) => {
-                        const n = Math.max(durations.length, delays.length);
-                        let max = 0;
-                        for (let i = 0; i < n; i++) {
-                            const d = durations[i % durations.length] || 0;
-                            const dl = delays[i % delays.length] || 0;
-                            const t = d + dl;
-                            if (t > max)
-                                max = t;
-                        }
-                        return max;
-                    };
-                    const tDur = parseTimes(cs.transitionDuration || '');
-                    const tDel = parseTimes(cs.transitionDelay || '');
-                    let maxT = sumMax(tDur, tDel);
-                    const aDur = parseTimes(cs.animationDuration || '');
-                    const aDel = parseTimes(cs.animationDelay || '');
-                    const itersRaw = (cs.animationIterationCount || '').split(',').map(s => s.trim());
-                    const iters = itersRaw.map(v => (v === 'infinite' ? 0 : (parseFloat(v) || 1)));
-                    const nA = Math.max(aDur.length, aDel.length, iters.length);
-                    let maxA = 0;
-                    for (let i = 0; i < nA; i++) {
-                        const d = aDur[i % aDur.length] || 0;
-                        const dl = aDel[i % aDel.length] || 0;
-                        const it = iters[i % iters.length] || 1;
-                        if (it === 0)
-                            continue;
-                        const t = dl + d * it;
-                        if (t > maxA)
-                            maxA = t;
-                    }
-                    const eff = Math.max(maxT, maxA);
-                    return eff > 0 ? eff : fallbackMs;
-                }
-                catch {
-                    return fallbackMs;
-                }
-            };
+            const effectiveMs = (fallbackMs) => fallbackMs;
             const finishers = [];
             const addFinish = (cb) => finishers.push(cb);
             const cleanup = () => { while (finishers.length) {
@@ -4196,10 +4271,6 @@ const XToolFramework = function () {
             const update = () => {
                 const value = evaluator();
                 const el = element;
-                if (isDirty && directiveName) {
-                    element.removeAttribute(directiveName);
-                    isDirty = false;
-                }
                 switch (type) {
                     case 'text':
                         el.textContent = String(value);
@@ -4215,6 +4286,10 @@ const XToolFramework = function () {
                         _prevShown = next;
                         this._applyShowWithTransition(el, next, originalDisplay);
                         break;
+                }
+                if (isDirty && directiveName) {
+                    element.removeAttribute(directiveName);
+                    isDirty = false;
                 }
             };
             const dirInfo = { type, expression, update: undefined, originalDisplay };
@@ -4318,11 +4393,9 @@ const XToolFramework = function () {
         }
         _bindIfDirective(element, expression) {
             const self = this;
-            const wasDetached = !element.parentNode;
-            let tempFragment = null;
-            if (wasDetached) {
-                tempFragment = d.createDocumentFragment();
-                tempFragment.appendChild(element);
+            if (!element.parentNode) {
+                const frag = d.createDocumentFragment();
+                frag.appendChild(element);
             }
             const placeholder = d.createComment('x-if');
             element.parentNode?.insertBefore(placeholder, element);
@@ -4332,13 +4405,11 @@ const XToolFramework = function () {
             const makeActualBranch = (el) => {
                 if (el[STR_TAGNAME] === STR_TEMPLATE) {
                     const content = el.content;
-                    const elementChildren = Array.from(content.children);
+                    const elementChildren = _Afrom(content.children);
                     if (elementChildren.length === 1) {
                         const cloned = elementChildren[0].cloneNode(true);
-                        const od = (cloned.style[STR_DISPLAY] !== STR_NONE) ? cloned.style[STR_DISPLAY] : undefined;
-                        return {
-                            branch: { el: cloned, isTemplate: true, originalDisplay: od, isFragment: false }
-                        };
+                        const od = cloned.style[STR_DISPLAY] !== STR_NONE ? cloned.style[STR_DISPLAY] : undefined;
+                        return { branch: { el: cloned, isTemplate: true, originalDisplay: od, isFragment: false } };
                     }
                     else if (elementChildren.length > 1) {
                         const anchor = d.createComment('x-if-branch');
@@ -4364,12 +4435,7 @@ const XToolFramework = function () {
             };
             const firstResult = makeActualBranch(element);
             const firstEval = self._createElementEvaluator(expression, element);
-            if (firstResult.branch.isFragment) {
-                branches.push({ ...firstResult.branch, test: firstEval });
-            }
-            else {
-                branches.push({ ...firstResult.branch, test: firstEval });
-            }
+            branches.push({ ...firstResult.branch, test: firstEval });
             const branchTemplates = [firstResult.templateChildren || null];
             const originalNodes = [element];
             if (FT_IFB) {
@@ -4385,12 +4451,7 @@ const XToolFramework = function () {
                         const attr = sib.getAttribute(attrName('else-if')) || '';
                         evalFn = self._createElementEvaluator(_tr(attr), element);
                     }
-                    if (branchResult.branch.isFragment) {
-                        branches.push({ ...branchResult.branch, test: evalFn });
-                    }
-                    else {
-                        branches.push({ ...branchResult.branch, test: evalFn });
-                    }
+                    branches.push({ ...branchResult.branch, test: evalFn });
                     branchTemplates.push(branchResult.templateChildren || null);
                     sib.removeAttribute(attrName('else'));
                     sib.removeAttribute(attrName('else-if'));
@@ -4568,26 +4629,24 @@ const XToolFramework = function () {
             const isOutside = !!modifiers?.outside;
             const isWindow = !!modifiers?.window;
             const deferExec = !!modifiers?.defer;
-            const keyAliasMap = { enter: ['enter'], esc: ['escape', 'esc'], escape: ['escape', 'esc'], space: [' ', 'space', 'spacebar'], tab: ['tab'], backspace: ['backspace'], delete: ['delete', 'del'], del: ['delete', 'del'], arrowup: ['arrowup', 'up'], arrowdown: ['arrowdown', 'down'], arrowleft: ['arrowleft', 'left'], arrowright: ['arrowright', 'right'], home: ['home'], end: ['end'], pageup: ['pageup'], pagedown: ['pagedown'] };
             const comboRequirements = {
                 ctrl: !!modifiers?.ctrl,
                 alt: !!modifiers?.alt,
                 shift: !!modifiers?.shift,
                 meta: !!modifiers?.meta,
             };
-            const buttonMap = { left: 0, middle: 1, right: 2 };
             const touchSingle = !!modifiers?.single;
             const touchMulti = !!modifiers?.multi;
             const modifierKeys = modifiers ? _Okeys(modifiers) : [];
             const allowedKeys = [];
             for (const m of modifierKeys) {
-                const aliases = keyAliasMap[m.toLowerCase()];
+                const aliases = _KEY_ALIAS_MAP[m.toLowerCase()];
                 if (aliases)
                     allowedKeys.push(...aliases);
             }
             const allowedButtons = [];
             for (const m of modifierKeys) {
-                const btn = buttonMap[m.toLowerCase()];
+                const btn = _BUTTON_MAP[m.toLowerCase()];
                 if (btn !== undefined)
                     allowedButtons.push(btn);
             }
@@ -5073,6 +5132,8 @@ const XToolFramework = function () {
                         return true;
                     if (propStr in self._methods)
                         return true;
+                    if (propStr in self._closures)
+                        return true;
                     return false;
                 },
                 get: (target, propStr) => {
@@ -5086,7 +5147,11 @@ const XToolFramework = function () {
                     }
                     if (propStr in specials)
                         return specials[propStr];
-                    return self._methods[propStr];
+                    if (propStr in self._methods)
+                        return self._methods[propStr];
+                    if (propStr in self._closures)
+                        return self._closures[propStr];
+                    return undefined;
                 },
                 set: (_target, propStr, value) => {
                     if (self._isInComputedEvaluation) {
@@ -5138,8 +5203,13 @@ const XToolFramework = function () {
             const wrapTarget = (target) => {
                 if (!target || typeof target.addEventListener !== 'function')
                     return target;
-                return new Proxy(target, {
+                const cached = _wrappedTargets.get(target);
+                if (cached)
+                    return cached;
+                const wrapped = new Proxy(target, {
                     get: (obj, prop) => {
+                        if (prop === _UNWRAP_DOM_TARGET)
+                            return obj;
                         if (prop === 'addEventListener') {
                             return (eventName, handler, options) => {
                                 if (component._isSealed || component._isFrozen)
@@ -5158,6 +5228,16 @@ const XToolFramework = function () {
                             return (sel) => Array.from(obj.querySelectorAll(sel)).map(wrapTarget);
                         if (prop === 'getElementById')
                             return (id) => wrapTarget(obj.getElementById(id));
+                        if (prop === 'getElementsByClassName')
+                            return (cls) => Array.from(obj.getElementsByClassName(cls)).map(wrapTarget);
+                        if (prop === 'getElementsByTagName')
+                            return (tag) => Array.from(obj.getElementsByTagName(tag)).map(wrapTarget);
+                        if (prop === 'closest')
+                            return (sel) => wrapTarget(obj.closest(sel));
+                        if (prop === 'elementFromPoint')
+                            return (x, y) => wrapTarget(obj.elementFromPoint(x, y));
+                        if (prop === 'elementsFromPoint')
+                            return (x, y) => obj.elementsFromPoint(x, y).map(wrapTarget);
                         if (prop === 'document') {
                             const doc = obj.document;
                             return wrapTarget(doc) || doc;
@@ -5170,10 +5250,85 @@ const XToolFramework = function () {
                             const body = obj.body;
                             return wrapTarget(body) || body;
                         }
+                        if (prop === 'head') {
+                            const head = obj.head;
+                            return wrapTarget(head) || head;
+                        }
+                        if (prop === 'documentElement') {
+                            const de = obj.documentElement;
+                            return wrapTarget(de) || de;
+                        }
+                        if (prop === 'activeElement') {
+                            const ae = obj.activeElement;
+                            return wrapTarget(ae) || ae;
+                        }
+                        if (prop === 'parentElement') {
+                            const pe = obj.parentElement;
+                            return wrapTarget(pe) || pe;
+                        }
+                        if (prop === 'parentNode') {
+                            const pn = obj.parentNode;
+                            return wrapTarget(pn) || pn;
+                        }
+                        if (prop === 'firstElementChild') {
+                            const fc = obj.firstElementChild;
+                            return wrapTarget(fc) || fc;
+                        }
+                        if (prop === 'lastElementChild') {
+                            const lc = obj.lastElementChild;
+                            return wrapTarget(lc) || lc;
+                        }
+                        if (prop === 'nextElementSibling') {
+                            const ns = obj.nextElementSibling;
+                            return wrapTarget(ns) || ns;
+                        }
+                        if (prop === 'previousElementSibling') {
+                            const ps = obj.previousElementSibling;
+                            return wrapTarget(ps) || ps;
+                        }
+                        if (prop === 'firstChild') {
+                            const fc = obj.firstChild;
+                            return wrapTarget(fc) || fc;
+                        }
+                        if (prop === 'lastChild') {
+                            const lc = obj.lastChild;
+                            return wrapTarget(lc) || lc;
+                        }
+                        if (prop === 'nextSibling') {
+                            const ns = obj.nextSibling;
+                            return wrapTarget(ns) || ns;
+                        }
+                        if (prop === 'previousSibling') {
+                            const ps = obj.previousSibling;
+                            return wrapTarget(ps) || ps;
+                        }
+                        if (prop === 'ownerDocument') {
+                            const od = obj.ownerDocument;
+                            return wrapTarget(od) || od;
+                        }
+                        if (prop === 'children') {
+                            return Array.from(obj.children).map(wrapTarget);
+                        }
+                        if (prop === 'childNodes') {
+                            return Array.from(obj.childNodes).map(wrapTarget);
+                        }
                         const value = obj[prop];
-                        return typeof value === 'function' ? _se(() => value.bind(obj), value) : value;
+                        if (typeof value === 'function') {
+                            return function (...args) {
+                                const unwrappedArgs = args.map(arg => arg && arg[_UNWRAP_DOM_TARGET] ? arg[_UNWRAP_DOM_TARGET] : arg);
+                                return value.apply(obj, unwrappedArgs);
+                            };
+                        }
+                        return value;
+                    },
+                    set: (obj, prop, value) => {
+                        const rawValue = value && value[_UNWRAP_DOM_TARGET] ? value[_UNWRAP_DOM_TARGET] : value;
+                        obj[prop] = rawValue;
+                        return true;
                     }
                 });
+                _wrappedTargets.set(target, wrapped);
+                return wrapped;
             };
             const ctxSetTimeout = (fn, ms, ...args) => {
                 if (component._isSealed || component._isFrozen || component._isDestroyed)
@@ -5242,10 +5397,21 @@ const XToolFramework = function () {
                     return undefined;
                 return function (...observerArgs) {
                     if (component._isSealed || component._isFrozen)
-                        return { observe() { }, disconnect() { }, unobserve() { } };
+                        return { observe() { }, disconnect() { }, unobserve() { }, takeRecords() { return []; } };
                     const inst = new Orig(...observerArgs);
                     registerResource('observer:' + kind, () => () => { _se(() => inst.disconnect()); });
-                    return inst;
+                    return {
+                        observe(target, options) {
+                            const raw = target && target[_UNWRAP_DOM_TARGET] ? target[_UNWRAP_DOM_TARGET] : target;
+                            return inst.observe(raw, options);
+                        },
+                        unobserve(target) {
+                            const raw = target && target[_UNWRAP_DOM_TARGET] ? target[_UNWRAP_DOM_TARGET] : target;
+                            return inst.unobserve?.(raw);
+                        },
+                        disconnect() { return inst.disconnect(); },
+                        takeRecords() { return inst.takeRecords?.() || []; }
+                    };
                 };
             };
             const staticSpecials = {
@@ -5298,39 +5464,6 @@ const XToolFramework = function () {
             const component = this;
             const base = this._ensureContextBase();
             const mergedScope = targetElement ? this._collectLoopScope(targetElement) : null;
-            const setAttr = (el, name, val, isCss) => {
-                if (isCss) {
-                    const style = el.style;
-                    if (val == null || val === false)
-                        style.removeProperty(name);
-                    else
-                        style.setProperty(name, String(val));
-                }
-                else {
-                    if (val == null || val === false)
-                        el.removeAttribute(name);
-                    else if (val === true)
-                        el.setAttribute(name, '');
-                    else
-                        el.setAttribute(name, String(val));
-                }
-            };
-            const expandAndSet = (el, name, value, isCss) => {
-                const globMatch = name.match(/^(.*)?\[([^\]]+)\](.*)$/);
-                if (globMatch) {
-                    const [, prefix = '', keys, suffix = ''] = globMatch;
-                    const keyList = keys.split(',').map(k => k.trim()).filter(Boolean);
-                    const isObjValue = value && typeof value === 'object' && !Array.isArray(value);
-                    for (const key of keyList) {
-                        const attrName = prefix + key + suffix;
-                        const attrValue = isObjValue && key in value ? value[key] : value;
-                        setAttr(el, attrName, attrValue, isCss);
-                    }
-                }
-                else {
-                    setAttr(el, name, value, isCss);
-                }
-            };
             const dynamicSpecials = {
                 '$target': targetElement || null,
                 '$event': event || null,
@@ -5340,11 +5473,11 @@ const XToolFramework = function () {
                     if (typeof nameOrObj === 'object' && nameOrObj !== null) {
                         for (const key in nameOrObj) {
                             if (Object.prototype.hasOwnProperty.call(nameOrObj, key))
-                                expandAndSet(targetElement, key, nameOrObj[key]);
+                                _expandAndSet(targetElement, key, nameOrObj[key]);
                         }
                     }
                     else if (typeof nameOrObj === 'string') {
-                        expandAndSet(targetElement, nameOrObj, value);
+                        _expandAndSet(targetElement, nameOrObj, value);
                     }
                 },
                 '$css': (nameOrObj, value) => {
@@ -5353,15 +5486,64 @@ const XToolFramework = function () {
                     if (typeof nameOrObj === 'object' && nameOrObj !== null) {
                         for (const key in nameOrObj) {
                             if (Object.prototype.hasOwnProperty.call(nameOrObj, key))
-                                expandAndSet(targetElement, key, nameOrObj[key], true);
+                                _expandAndSet(targetElement, key, nameOrObj[key], true);
                         }
                     }
                     else if (typeof nameOrObj === 'string') {
-                        expandAndSet(targetElement, nameOrObj, value, true);
+                        _expandAndSet(targetElement, nameOrObj, value, true);
                     }
                 }
             };
             const staticSpecials = base.staticSpecials;
+            const inheritScope = component._framework._inheritScope && component._isInlineXData;
+            const getFromParent = (prop) => {
+                if (!inheritScope)
+                    return { found: false, value: undefined };
+                let cur = component._parent;
+                while (cur) {
+                    if (!cur._isInlineXData)
+                        break;
+                    if (prop in cur._data) {
+                        cur._trackDependency(prop);
+                        return { found: true, value: cur._data[prop], owner: cur };
+                    }
+                    if (prop in cur._computed)
+                        return { found: true, value: cur._getComputedValue(prop), owner: cur };
+                    if (prop in cur._methods)
+                        return { found: true, value: cur._methods[prop], owner: cur };
+                    cur = cur._parent;
+                }
+                return { found: false, value: undefined };
+            };
+            const setInParent = (prop, value) => {
+                if (!inheritScope)
+                    return false;
+                let cur = component._parent;
+                while (cur) {
+                    if (!cur._isInlineXData)
+                        break;
+                    if (prop in cur._data) {
+                        cur._data[prop] = value;
+                        return true;
+                    }
+                    cur = cur._parent;
+                }
+                return false;
+            };
+            const hasInParent = (prop) => {
+                if (!inheritScope)
+                    return false;
+                let cur = component._parent;
+                while (cur) {
+                    if (!cur._isInlineXData)
+                        break;
+                    if (prop in cur._data || prop in cur._computed || prop in cur._methods)
+                        return true;
+                    cur = cur._parent;
+                }
+                return false;
+            };
+            const closures = component._closures;
             return new Proxy({}, {
                 get: (_t, propStr) => {
                     if (mergedScope && propStr in mergedScope) {
@@ -5380,6 +5562,16 @@ const XToolFramework = function () {
                         return component._getComputedValue(propStr);
                     if (propStr in component._methods)
                         return component._methods[propStr];
+                    if (propStr in closures)
+                        return closures[propStr];
+                    const parentResult = getFromParent(propStr);
+                    if (parentResult.found) {
+                        const value = parentResult.value;
+                        if (value && typeof value === 'object' && _FT_DR && parentResult.owner) {
+                            return parentResult.owner._wrapData(value, propStr);
+                        }
+                        return value;
+                    }
                     if (propStr in dynamicSpecials)
                         return dynamicSpecials[propStr];
                     if (propStr in staticSpecials)
@@ -5397,15 +5589,23 @@ const XToolFramework = function () {
                             s = Object.getPrototypeOf(s);
                         }
                     }
+                    if (propStr in component._data) {
+                        component._data[propStr] = value;
+                        return true;
+                    }
+                    if (setInParent(propStr, value))
+                        return true;
                     component._data[propStr] = value;
                     return true;
                 },
-                has: (_t, propStr) => !!(mergedScope && propStr in mergedScope) ||
+                has: (_t, propStr) => typeof propStr === 'string' && (!!(mergedScope && propStr in mergedScope) ||
                     propStr in component._data ||
                     propStr in component._computed ||
                     propStr in component._methods ||
+                    propStr in closures ||
+                    hasInParent(propStr) ||
                     propStr in dynamicSpecials ||
-                    propStr in staticSpecials
+                    propStr in staticSpecials)
             });
         }
         _bindCustomDirective(element, _name, expression, directive, modifiers) {
@@ -5600,7 +5800,11 @@ const XToolFramework = function () {
             return null;
         }
         _updateElementDirectivesForVar(root, varName) {
-            const re = new RegExp('(^|[^$\\w])' + varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^$\\w]|$)');
+            let re = _varNameRegexCache.get(varName);
+            if (!re) {
+                re = new RegExp('(^|[^$\\w])' + varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^$\\w]|$)');
+                _varNameRegexCache.set(varName, re);
+            }
             for (const [element, directives] of this._directives) {
                 if (!(root === element || (element instanceof Element && root.contains(element))))
                     continue;
@@ -5640,6 +5844,11 @@ const XToolFramework = function () {
                         this._suspendedEffects.add(d.update);
                     }
                 }
+            }
+            const comp = this._framework._getComponentByElement(root);
+            if (comp && !comp.isDestroyed) {
+                comp._fireLifecycleHandlers('before-unmount');
+                comp._fireLifecycleHandlers('unmounted');
             }
             let child = root.firstElementChild;
             while (child) {

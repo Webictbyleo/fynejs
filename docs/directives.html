@@ -45,7 +45,7 @@
   <link rel="stylesheet" href="./styles.generated.css" />
   
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/fynejs@1.2.0" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/fynejs@latest" defer></script>
   <script src="./shared/navigation.js" defer></script>
   <script src="./shared/footer.js" defer></script>
   <script src="./demo-loader.js" defer></script>
@@ -453,6 +453,81 @@
                 <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ time: '' }" 
      x-init="time = new Date().toLocaleTimeString()"&gt;
   &lt;p&gt;Page loaded at: &lt;span x-text="time"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+            </div>
+
+            <!-- Lifecycle Event Directives -->
+            <div class="directive-section">
+              <h3 class="text-2xl font-black mb-4 text-black flex items-center gap-3">
+                <span class="directive-badge">x-mounted</span>
+                <span class="directive-badge">x-unmounted</span>
+                <span class="directive-badge">x-updated</span>
+                <span class="directive-badge">x-before-unmount</span>
+                Lifecycle Events
+              </h3>
+              <p class="text-gray-600 mb-6 text-lg">
+                React to child component lifecycle events from the parent. These directives allow parent components to execute code when child components are mounted, updated, or destroyed.
+              </p>
+              <div class="code-example">
+                <pre class="code-block" data-lang="html"><code>&lt;!-- Parent component reacting to child lifecycle --&gt;
+&lt;div x-data="{ childMounted: false, childUpdates: 0 }"&gt;
+  &lt;component source="my-widget"
+    x-mounted="childMounted = true; console.log('Child mounted!')"
+    x-unmounted="childMounted = false; console.log('Child destroyed!')"
+    x-updated="childUpdates++"
+    x-before-unmount="console.log('Child about to be destroyed')"&gt;
+  &lt;/component&gt;
+  
+  &lt;p&gt;Child is mounted: &lt;span x-text="childMounted"&gt;&lt;/span&gt;&lt;/p&gt;
+  &lt;p&gt;Child updates: &lt;span x-text="childUpdates"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+              
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mt-6">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-amber-800 font-medium mb-1">Component Elements Only</p>
+                    <p class="text-amber-700 text-sm">
+                      These directives only work on <code class="bg-amber-100 px-1 rounded">&lt;component&gt;</code> elements. They allow parent components to observe and react to child component lifecycle without tight coupling.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-4">
+                <div class="flex items-start gap-3">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  </svg>
+                  <div>
+                    <p class="text-blue-800 font-medium mb-1">Lifecycle Hooks Reference</p>
+                    <div class="text-blue-700 text-sm space-y-1 mt-2">
+                      <p><code class="bg-blue-100 px-1 rounded">x-mounted</code> - Fires after the child component is fully mounted and rendered</p>
+                      <p><code class="bg-blue-100 px-1 rounded">x-updated</code> - Fires after the child component re-renders due to data changes</p>
+                      <p><code class="bg-blue-100 px-1 rounded">x-before-unmount</code> - Fires just before the child component begins destruction</p>
+                      <p><code class="bg-blue-100 px-1 rounded">x-unmounted</code> - Fires after the child component is fully destroyed</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="code-example mt-6">
+                <p class="text-gray-600 mb-4 text-sm font-medium">Example: Conditional rendering with lifecycle tracking</p>
+                <pre class="code-block" data-lang="html"><code>&lt;div x-data="{ showWidget: true, status: 'hidden' }"&gt;
+  &lt;button @click="showWidget = !showWidget"&gt;Toggle Widget&lt;/button&gt;
+  
+  &lt;template x-if="showWidget"&gt;
+    &lt;component source="expensive-widget"
+      x-mounted="status = 'active'"
+      x-unmounted="status = 'destroyed'"&gt;
+    &lt;/component&gt;
+  &lt;/template&gt;
+  
+  &lt;p&gt;Widget status: &lt;span x-text="status"&gt;&lt;/span&gt;&lt;/p&gt;
 &lt;/div&gt;</code></pre>
               </div>
             </div>
