@@ -443,7 +443,7 @@ function stripTypes(source) {
                 i = skipUntil(tokens, i, t => t.type === TokenType.Punctuation && t.value == '{');
                 continue;
             }
-            if (tt === TokenType.Punctuation && v === '!' && tokens[i - 1] && !hasItem(tokens[i - 1]?.type, [TokenType.Arrow, TokenType.Punctuation])) {
+            if (tt === TokenType.Punctuation && v === '!' && token.prev && !hasItem(token.prev.type, [TokenType.Arrow, TokenType.Punctuation])) {
                 i++;
                 continue;
             }
@@ -500,6 +500,9 @@ function stripTypes(source) {
                         if (i < tokens.length && tokens[i].type === TokenType.Punctuation && tokens[i].value === ':') {
                             i++;
                             i = skipType(tokens, i, false);
+                        }
+                        if (i < tokens.length && tokens[i].type === TokenType.Punctuation && tokens[i].value === '!') {
+                            i++;
                         }
                         continue;
                     }
@@ -1516,6 +1519,19 @@ const XToolFramework = function () {
                     }
                     return false;
                 };
+                const isInsideUnboundComponent = (el) => {
+                    let parent = el.parentElement;
+                    while (parent && parent !== container) {
+                        if (parent[STR_TAGNAME] === 'COMPONENT') {
+                            const parentComp = this._getComponentByElement(parent);
+                            if (!parentComp || !parentComp.isBound) {
+                                return true;
+                            }
+                        }
+                        parent = parent.parentElement;
+                    }
+                    return false;
+                };
                 const componentElements = container.querySelectorAll(`[${dataAttr}]`);
                 for (const element of componentElements) {
                     if (isInsideDynamicTemplate(element))
@@ -1525,6 +1541,8 @@ const XToolFramework = function () {
                 }
                 const reusable = container.querySelectorAll('component[source]');
                 for (const el of reusable) {
+                    if (isInsideUnboundComponent(el))
+                        continue;
                     if (!this._getComponentByElement(el))
                         this._instantiateNamedComponent(el);
                 }
@@ -1651,10 +1669,12 @@ const XToolFramework = function () {
             this._discoverNestedNamed = (root, parentHint) => {
                 try {
                     const hosts = [];
-                    if (root[STR_TAGNAME] === 'COMPONENT' && root.hasAttribute('source'))
+                    if (root[STR_TAGNAME] === 'COMPONENT' && root.hasAttribute('source') && !root.__x_slot_content)
                         hosts.push(root);
                     const found = root.querySelectorAll('component[source]');
                     for (const el of found) {
+                        if (el.__x_slot_content)
+                            continue;
                         hosts.push(el);
                     }
                     for (const host of hosts) {
@@ -2514,6 +2534,58 @@ const XToolFramework = function () {
             const originalChildren = Array.from(el.childNodes);
             if (originalChildren.length)
                 el.replaceChildren();
+            const defaultSlotContent = [];
+            const namedSlotContent = {};
+            for (const node of originalChildren) {
+                if (node.nodeType === 1) {
+                    const elem = node;
+                    if (elem.tagName === 'TEMPLATE') {
+                        const tplContent = elem.content;
+                        const slotAttr = elem.getAttribute('slot');
+                        const contentNodes = Array.from(tplContent.childNodes).map(n => n.cloneNode(true));
+                        if (slotAttr) {
+                            if (!namedSlotContent[slotAttr])
+                                namedSlotContent[slotAttr] = [];
+                            for (const cn of contentNodes) {
+                                if (cn.nodeType === 1)
+                                    namedSlotContent[slotAttr].push(cn);
+                            }
+                        }
+                        else {
+                            defaultSlotContent.push(...contentNodes);
+                        }
+                    }
+                    else {
+                        const slotAttr = elem.getAttribute('slot');
+                        if (slotAttr) {
+                            if (!namedSlotContent[slotAttr])
+                                namedSlotContent[slotAttr] = [];
+                            namedSlotContent[slotAttr].push(elem);
+                        }
+                        else {
+                            defaultSlotContent.push(node);
+                        }
+                    }
+                }
+                else {
+                    defaultSlotContent.push(node);
+                }
+            }
+            comp._setSlots(defaultSlotContent, namedSlotContent, parentComp || null);
+            const markSlotContent = (node) => {
+                if (node.nodeType === 1) {
+                    node.__x_slot_content = true;
+                    for (const desc of node.querySelectorAll('*')) {
+                        desc.__x_slot_content = true;
+                    }
+                }
+            };
+            for (const node of defaultSlotContent)
+                markSlotContent(node);
+            for (const name in namedSlotContent) {
+                for (const node of namedSlotContent[name])
+                    markSlotContent(node);
+            }
             if (def.template) {
                 const applyTemplate = (tpl) => {
                     el.innerHTML = tpl;
@@ -2522,8 +2594,8 @@ const XToolFramework = function () {
                         for (const slotEl of slots) {
                             const name = slotEl.getAttribute('name');
                             const matched = name
-                                ? originalChildren.filter(n => n.nodeType === 1 && n.getAttribute('slot') === name)
-                                : originalChildren.filter(n => n.nodeType !== 1 || !n.hasAttribute('slot'));
+                                ? (namedSlotContent[name] || [])
+                                : defaultSlotContent;
                             if (matched.length)
                                 slotEl.replaceWith(...matched);
                         }
@@ -2832,6 +2904,7 @@ const XToolFramework = function () {
             this._children = [];
             this._parent = null;
             this._isInlineXData = false;
+            this._slots = { default: [], named: {}, parentComp: null };
             this._closures = {};
             this._computed = {};
             this._propEffects = {};
@@ -3309,6 +3382,39 @@ const XToolFramework = function () {
                 this._framework._registerElement(this._element, this);
             this._isBound = true;
             this._isMounted = true;
+            const slotParent = this._slots.parentComp;
+            if (slotParent && slotParent.isBound) {
+                const clearSlotMarker = (node) => {
+                    delete node.__x_slot_content;
+                    if (node.nodeType === 1) {
+                        for (const desc of node.querySelectorAll('*')) {
+                            delete desc.__x_slot_content;
+                        }
+                    }
+                };
+                for (const node of this._slots.default) {
+                    if (node.nodeType === 1) {
+                        slotParent._parseDirectives(node);
+                        node.__x_slot_processed = true;
+                        for (const desc of node.querySelectorAll('*')) {
+                            desc.__x_slot_processed = true;
+                        }
+                        clearSlotMarker(node);
+                        this._framework._discoverNestedNamed(node, slotParent);
+                    }
+                }
+                for (const name in this._slots.named) {
+                    for (const node of this._slots.named[name]) {
+                        slotParent._parseDirectives(node);
+                        node.__x_slot_processed = true;
+                        for (const desc of node.querySelectorAll('*')) {
+                            desc.__x_slot_processed = true;
+                        }
+                        clearSlotMarker(node);
+                        this._framework._discoverNestedNamed(node, slotParent);
+                    }
+                }
+            }
             this._parseDirectives(this._element);
             if (this._lifecycle.setup) {
                 this._safeExecute(() => this._runWithGlobalInterception(this._lifecycle.setup, []));
@@ -3326,6 +3432,9 @@ const XToolFramework = function () {
             if (index > -1) {
                 this._children.splice(index, 1);
             }
+        }
+        _setSlots(defaultContent, namedContent, parentComp) {
+            this._slots = { default: defaultContent, named: namedContent, parentComp };
         }
         _setXInitExpr(expr) { this._xInitExpr = expr || undefined; }
         _registerLifecycleHandler(hookName, expr, parent) {
@@ -3633,6 +3742,9 @@ const XToolFramework = function () {
                     return false;
                 }
                 if (!isRoot && el.hasAttribute(attrName('data'))) {
+                    return false;
+                }
+                if (el.__x_slot_processed) {
                     return false;
                 }
                 const isComponentTag = el[STR_TAGNAME] === 'COMPONENT';
@@ -4843,6 +4955,8 @@ const XToolFramework = function () {
                 this._deepReactiveCache = new WkMap();
             if (this._deepReactiveCache.has(raw))
                 return this._deepReactiveCache.get(raw);
+            if (this._isInComputedEvaluation)
+                return raw;
             const makeCollectionWrapper = (name, fn, isArray) => function (...args) {
                 self._assertMutable(parentKey, name);
                 if (isArray) {
@@ -4961,6 +5075,9 @@ const XToolFramework = function () {
             return new Proxy(data, {
                 get: (target, property, receiver) => {
                     const value = Reflect.get(target, property, receiver);
+                    if ((self._isInComputedEvaluation) && value && typeof value === 'object') {
+                        return _unwrap(value);
+                    }
                     if (property === Symbol.iterator)
                         return value;
                     if (typeof property !== 'symbol') {
@@ -5097,6 +5214,16 @@ const XToolFramework = function () {
                 };
             }
             specials['$seal'] = (on = true) => { self._setSealed(!!on); };
+            Object.defineProperty(specials, '$slots', {
+                get: () => {
+                    return {
+                        default: self._slots.default,
+                        ...self._slots.named,
+                        hasSlot: (name) => name ? (self._slots.named[name]?.length > 0) : (self._slots.default.length > 0)
+                    };
+                },
+                enumerable: true
+            });
             specials['$mutate'] = (fn) => {
                 const prevMethod = self._isInMethodExecution;
                 self._isMutationEnabled = false;

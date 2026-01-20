@@ -750,7 +750,6 @@ XTool.registerComponent({
     // Music methods
     togglePlayback() {
       this.isPlaying = !this.isPlaying;
-      
       if (this.isPlaying) {
         this.playbackTimer = setInterval(() => {
           if (this.currentPlayTime < this.musicTracks[this.currentTrackIndex].duration) {

@@ -143,7 +143,6 @@ XTool.registerComponent({
         const id = startId + i + 1;
         this.items.push({ id, name: `Item ${id.toLocaleString()}`, category: this.categories[Math.floor(Math.random() * this.categories.length)], status: this.statuses[Math.floor(Math.random() * this.statuses.length)], score: Math.floor(Math.random() * 1000), icon: this.icons[Math.floor(Math.random() * this.icons.length)], createdAt: new Date().toISOString() });
       }
-      
 
     },
     debounceSearch() { 
