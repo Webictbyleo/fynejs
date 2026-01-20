@@ -119,6 +119,71 @@ export type ComponentContext<
     /** Proxy for direct ref access: $refs.myRef -> element | array | undefined */
     $refs: { [name: string]: RefReturn };
 
+    /**
+     * Slot content distributed to this component.
+     * 
+     * Slots allow parent components to pass content that gets distributed
+     * into specific locations within the child component's template.
+     * 
+     * @example
+     * // Parent usage:
+     * <component source="card">
+     *   <span>Default slot content</span>
+     *   <header slot="header">Header content</header>
+     * </component>
+     * 
+     * // Child template:
+     * <div class="card">
+     *   <div class="header"><slot name="header"></slot></div>
+     *   <div class="body"><slot></slot></div>
+     * </div>
+     * 
+     * // Accessing in component:
+     * mounted() {
+     *   console.log(this.$slots.default.length);    // Number of default slot nodes
+     *   console.log(this.$slots.hasSlot('header')); // true if header slot has content
+     * }
+     */
+    readonly $slots: {
+        /** Default slot content (elements without slot attribute) */
+        readonly default: readonly Node[];
+        /** Named slot content - access by slot name */
+        readonly [name: string]: readonly Node[] | ((name?: string) => boolean);
+        /**
+         * Check if a slot has content
+         * @param name Slot name (omit for default slot)
+         * @returns true if the slot has content nodes
+         */
+        hasSlot(name?: string): boolean;
+    };
+
+    /**
+     * Props passed to this component via x-prop.
+     * 
+     * Props are reactive values passed from parent to child components.
+     * Access them via $props or use propEffects for reactive updates.
+     * 
+     * @example
+     * // Parent usage:
+     * <component source="user-card" x-prop="{ user: selectedUser, isAdmin: true }"></component>
+     * 
+     * // Child component accessing props:
+     * XTool.registerComponent({
+     *   name: 'user-card',
+     *   data: { user: null, isAdmin: false },
+     *   propEffects: {
+     *     user(newValue) { this.user = newValue; },
+     *     isAdmin(newValue) { this.isAdmin = newValue; }
+     *   },
+     *   mounted() {
+     *     // Direct access via $props
+     *     console.log(this.$props.user);
+     *     console.log(this.$props.isAdmin);
+     *   }
+     * });
+     */
+    readonly $props: Record<string, any>;
+
     /** Utility methods */
     /** Destroy the component */
     $destroy(): void;
